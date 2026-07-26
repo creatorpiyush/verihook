@@ -263,6 +263,4 @@ Examples:
   }
 }
 
-if (process.argv[1]?.endsWith('cli.js') || process.argv[1]?.endsWith('cli.cjs')) {
-  runCli();
-}
+runCli();
