@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/verihook.svg)](https://www.npmjs.com/package/verihook)
 [![license](https://img.shields.io/npm/l/verihook.svg)](https://github.com/creatorpiyush/verihook/blob/main/LICENSE)
 
-`verihook` provides a unified, strongly-typed API for verifying webhook signatures across popular services (**Stripe, GitHub, Shopify, Slack, Twilio, Svix/Resend/Clerk, Linear, Razorpay, Zoom, Square, and custom webhooks**).
+`verihook` provides a unified, strongly-typed API for verifying webhook signatures across popular services (**Stripe, GitHub, Shopify, Slack, Twilio, Svix/Resend/Clerk, Meta/WhatsApp, Discord, Linear, Razorpay, Zoom, Square, and custom webhooks**).
 
 No more hunting down bespoke HMAC code snippets for every service or installing 10 heavy SDK dependencies just to verify incoming webhooks!
 
@@ -50,11 +50,33 @@ bun add verihook
 | **Svix** | `'svix'` | `svix-id`, `svix-timestamp`, `svix-signature` |
 | **Resend** | `'resend'` | Uses Svix signatures |
 | **Clerk** | `'clerk'` | Uses Svix signatures |
+| **WhatsApp / Meta** | `'meta'`, `'whatsapp'` | `x-hub-signature-256` (Supports `verifyMetaChallenge` GET handshake) |
+| **Discord** | `'discord'` | `x-signature-ed25519`, `x-signature-timestamp` (Ed25519 signature) |
 | **Linear** | `'linear'` | `linear-signature` |
 | **Razorpay** | `'razorpay'` | `x-razorpay-signature` |
 | **Square** | `'square'` | `x-square-hmacsha256-signature` |
 | **Zoom** | `'zoom'` | `x-zm-signature`, `x-zm-request-timestamp` |
 | **Generic / Custom** | `'generic'` | Configurable header, algorithm, encoding |
+
+---
+
+## ⚡ CLI Simulator (`npx verihook simulate`)
+
+Test your webhook endpoint locally **without needing real SaaS accounts or webhooks**! The CLI generates validly-signed HMAC payloads and POSTs them to your server:
+
+```bash
+# Simulate a Stripe webhook
+npx verihook simulate stripe --url http://localhost:3000/webhooks/stripe
+
+# Simulate a GitHub issues event
+npx verihook simulate github --event issues
+
+# Simulate a WhatsApp message webhook
+npx verihook simulate whatsapp --secret meta_app_secret_123
+
+# Output cURL command instead of sending POST
+npx verihook simulate stripe --curl
+```
 
 ---
 
@@ -97,14 +119,33 @@ try {
 ### Provider Helper Functions
 
 ```ts
-import { verifyStripe, verifyGitHub, verifySlack, verifyResend, verifyClerk } from 'verihook';
+import { verifyStripe, verifyGitHub, verifySlack, verifyWhatsApp, verifyDiscord } from 'verihook';
 
 // Provider-specific shortcut functions
 await verifyStripe(req, process.env.STRIPE_SECRET!);
 await verifyGitHub(req, process.env.GITHUB_SECRET!);
 await verifySlack(req, process.env.SLACK_SECRET!);
-await verifyResend(req, process.env.RESEND_SECRET!);
-await verifyClerk(req, process.env.CLERK_SECRET!);
+await verifyWhatsApp(req, process.env.META_APP_SECRET!);
+await verifyDiscord(req, process.env.DISCORD_PUBLIC_KEY!);
+```
+
+### Meta / WhatsApp Verification Handshake (`verifyMetaChallenge`)
+
+Meta requires a GET challenge handshake when configuring webhooks in Meta App Dashboard:
+
+```ts
+import { verifyMetaChallenge } from 'verihook';
+
+// In your GET /webhooks/whatsapp handler:
+app.get('/webhooks/whatsapp', (req, res) => {
+  const result = verifyMetaChallenge(req.query, process.env.META_VERIFY_TOKEN!);
+
+  if (result.valid) {
+    return res.status(200).send(result.challenge);
+  }
+
+  return res.status(403).send(result.reason);
+});
 ```
 
 ### Error Handling & Error Codes

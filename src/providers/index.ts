@@ -10,6 +10,8 @@ import { stripeVerifier } from './stripe.js';
 import { svixVerifier } from './svix.js';
 import { twilioVerifier } from './twilio.js';
 import { zoomVerifier } from './zoom.js';
+import { metaVerifier } from './meta.js';
+import { discordVerifier } from './discord.js';
 import { genericVerifier } from './generic.js';
 
 export const providers: Record<string, ProviderVerifier> = {
@@ -19,8 +21,13 @@ export const providers: Record<string, ProviderVerifier> = {
   slack: slackVerifier,
   twilio: twilioVerifier,
   svix: svixVerifier,
-  resend: svixVerifier, // Resend uses Svix
-  clerk: svixVerifier,  // Clerk uses Svix
+  resend: svixVerifier,     // Resend uses Svix
+  clerk: svixVerifier,      // Clerk uses Svix
+  meta: metaVerifier,       // Meta / WhatsApp / Instagram / Facebook
+  whatsapp: metaVerifier,
+  facebook: metaVerifier,
+  instagram: metaVerifier,
+  discord: discordVerifier, // Discord Interactions Ed25519
   linear: linearVerifier,
   razorpay: razorpayVerifier,
   square: squareVerifier,
@@ -52,5 +59,7 @@ export {
   svixVerifier,
   twilioVerifier,
   zoomVerifier,
+  metaVerifier,
+  discordVerifier,
   genericVerifier,
 };

@@ -1,24 +1,25 @@
 {
   "name": "verihook",
-  "version": "1.0.1",
-  "description": "Universal typed webhook verifier for Stripe, GitHub, Shopify, Slack, Twilio, Svix, Linear, Razorpay, Zoom, and custom providers.",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "version": "1.1.0",
+  "description": "Universal typed webhook verifier for Stripe, GitHub, Shopify, Slack, Twilio, Svix, Meta, WhatsApp, Discord, Linear, Razorpay, Zoom, and custom providers.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": {
-        "import": "./dist/index.d.ts",
-        "require": "./dist/index.d.cts"
-      },
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     }
+  },
+  "bin": {
+    "verihook": "./dist/cli.js"
   },
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "clean": "rm -rf dist",
@@ -44,11 +45,17 @@
     "svix",
     "resend",
     "clerk",
+    "meta",
+    "whatsapp",
+    "facebook",
+    "instagram",
+    "discord",
     "linear",
     "razorpay",
     "zoom",
     "square",
     "hmac",
+    "ed25519",
     "security",
     "typescript"
   ],

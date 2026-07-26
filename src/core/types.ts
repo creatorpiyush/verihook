@@ -11,6 +11,11 @@ export type ProviderName =
   | 'razorpay'
   | 'square'
   | 'zoom'
+  | 'meta'
+  | 'whatsapp'
+  | 'facebook'
+  | 'instagram'
+  | 'discord'
   | 'generic'
   | (string & {});
 
@@ -40,7 +45,7 @@ export interface NormalizedWebhookRequest {
 export interface VerifyWebhookOptions {
   /**
    * Maximum allowed age of the webhook signature in seconds.
-   * Prevents replay attacks for providers that include timestamps (e.g. Stripe, Slack, Svix).
+   * Prevents replay attacks for providers that include timestamps (e.g. Stripe, Slack, Svix, Zoom, Discord).
    * Set to 0 to disable timestamp verification.
    * @default 300 (5 minutes)
    */
