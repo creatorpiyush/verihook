@@ -12,6 +12,13 @@ import { twilioVerifier } from './twilio.js';
 import { zoomVerifier } from './zoom.js';
 import { metaVerifier } from './meta.js';
 import { discordVerifier } from './discord.js';
+import { twitterVerifier } from './twitter.js';
+import { paypalVerifier } from './paypal.js';
+import { lemonsqueezyVerifier } from './lemonsqueezy.js';
+import { paddleVerifier } from './paddle.js';
+import { pagerdutyVerifier } from './pagerduty.js';
+import { webflowVerifier } from './webflow.js';
+import { workosVerifier } from './workos.js';
 import { genericVerifier } from './generic.js';
 
 export const providers: Record<string, ProviderVerifier> = {
@@ -28,6 +35,14 @@ export const providers: Record<string, ProviderVerifier> = {
   facebook: metaVerifier,
   instagram: metaVerifier,
   discord: discordVerifier, // Discord Interactions Ed25519
+  twitter: twitterVerifier, // Twitter / X API
+  x: twitterVerifier,
+  paypal: paypalVerifier,
+  lemonsqueezy: lemonsqueezyVerifier,
+  paddle: paddleVerifier,
+  pagerduty: pagerdutyVerifier,
+  webflow: webflowVerifier,
+  workos: workosVerifier,
   linear: linearVerifier,
   razorpay: razorpayVerifier,
   square: squareVerifier,
@@ -61,5 +76,12 @@ export {
   zoomVerifier,
   metaVerifier,
   discordVerifier,
+  twitterVerifier,
+  paypalVerifier,
+  lemonsqueezyVerifier,
+  paddleVerifier,
+  pagerdutyVerifier,
+  webflowVerifier,
+  workosVerifier,
   genericVerifier,
 };

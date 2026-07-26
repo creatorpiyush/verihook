@@ -50,7 +50,7 @@ Usage:
   npx verihook simulate <provider> [options]
 
 Supported Providers:
-  stripe, github, shopify, slack, twilio, svix, resend, clerk, meta, whatsapp, linear, razorpay, square, zoom
+  stripe, github, shopify, slack, twilio, svix, resend, clerk, meta, whatsapp, discord, twitter, x, paypal, lemonsqueezy, paddle, pagerduty, webflow, workos, linear, razorpay, square, zoom
 
 Options:
   --url <url>      Target webhook server endpoint (default: http://localhost:3000/webhooks/<provider>)
@@ -62,6 +62,7 @@ Examples:
   npx verihook simulate stripe --url http://localhost:3000/webhooks/stripe
   npx verihook simulate github --event issues
   npx verihook simulate whatsapp --secret meta_app_secret_123
+  npx verihook simulate lemonsqueezy --secret lemon_secret_777
 `);
     return;
   }
@@ -116,6 +117,68 @@ Examples:
       });
       const hmac = await computeHmacSha256(secret, rawBody);
       headers['x-hub-signature-256'] = `sha256=${bytesToHex(hmac)}`;
+      break;
+    }
+
+    case 'twitter':
+    case 'x': {
+      secret = secret || 'twitter_consumer_secret_123';
+      rawBody = JSON.stringify({
+        for_user_id: '12345678',
+        tweet_create_events: [{ id_str: '999888777', text: 'Testing verihook CLI simulation for Twitter/X' }],
+      });
+      const hmac = await computeHmacSha256(secret, rawBody);
+      headers['x-twitter-webhooks-signature'] = `sha256=${bytesToBase64(hmac)}`;
+      break;
+    }
+
+    case 'lemonsqueezy': {
+      secret = secret || 'lemon_secret_123';
+      rawBody = JSON.stringify({
+        meta: { event_name: eventType || 'order_created' },
+        data: { id: '100', attributes: { total: 2900, status: 'paid' } },
+      });
+      const hmac = await computeHmacSha256(secret, rawBody);
+      headers['x-signature'] = bytesToHex(hmac);
+      break;
+    }
+
+    case 'paddle': {
+      secret = secret || 'paddle_secret_123';
+      const timestamp = Math.floor(Date.now() / 1000);
+      rawBody = JSON.stringify({ event_type: eventType || 'transaction.completed', data: { id: 'txn_100' } });
+      const payloadToSign = `${timestamp}:${rawBody}`;
+      const hmac = await computeHmacSha256(secret, payloadToSign);
+      headers['paddle-signature'] = `ts=${timestamp};h=${bytesToHex(hmac)}`;
+      break;
+    }
+
+    case 'pagerduty': {
+      secret = secret || 'pagerduty_secret_123';
+      rawBody = JSON.stringify({ event: { event_type: eventType || 'incident.triggered', id: 'pd_100' } });
+      const hmac = await computeHmacSha256(secret, rawBody);
+      headers['x-pagerduty-signature'] = `v1=${bytesToHex(hmac)}`;
+      break;
+    }
+
+    case 'webflow': {
+      secret = secret || 'webflow_secret_123';
+      const timestamp = Math.floor(Date.now() / 1000);
+      rawBody = JSON.stringify({ triggerType: eventType || 'form_submission', site: 'site_123' });
+      headers['x-webflow-timestamp'] = String(timestamp);
+      const payloadToSign = `${timestamp}:${rawBody}`;
+      const hmac = await computeHmacSha256(secret, payloadToSign);
+      headers['x-webflow-signature'] = `sha256=${bytesToHex(hmac)}`;
+      break;
+    }
+
+    case 'workos': {
+      secret = secret || 'workos_secret_123';
+      const timestamp = Math.floor(Date.now() / 1000);
+      rawBody = JSON.stringify({ event: eventType || 'user.created', data: { id: 'user_100' } });
+      const payloadToSign = `${timestamp}.${rawBody}`;
+      const hmac = await computeHmacSha256(secret, payloadToSign);
+      headers['workos-signature'] = `t=${timestamp},v1=${bytesToHex(hmac)}`;
       break;
     }
 

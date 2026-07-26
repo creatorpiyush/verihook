@@ -16,6 +16,14 @@ export type ProviderName =
   | 'facebook'
   | 'instagram'
   | 'discord'
+  | 'twitter'
+  | 'x'
+  | 'paypal'
+  | 'lemonsqueezy'
+  | 'paddle'
+  | 'pagerduty'
+  | 'webflow'
+  | 'workos'
   | 'generic'
   | (string & {});
 
@@ -45,7 +53,7 @@ export interface NormalizedWebhookRequest {
 export interface VerifyWebhookOptions {
   /**
    * Maximum allowed age of the webhook signature in seconds.
-   * Prevents replay attacks for providers that include timestamps (e.g. Stripe, Slack, Svix, Zoom, Discord).
+   * Prevents replay attacks for providers that include timestamps.
    * Set to 0 to disable timestamp verification.
    * @default 300 (5 minutes)
    */
@@ -55,6 +63,11 @@ export interface VerifyWebhookOptions {
    * Explicit URL override. Required for Twilio signature verification if not available on the request object.
    */
   url?: string;
+
+  /**
+   * PayPal Webhook ID configured in PayPal Developer Dashboard (required for PayPal signature verification).
+   */
+  webhookId?: string;
 
   /**
    * Current timestamp in seconds or milliseconds for testing or custom time synchronization.

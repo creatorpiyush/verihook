@@ -52,6 +52,13 @@ bun add verihook
 | **Clerk** | `'clerk'` | Uses Svix signatures |
 | **WhatsApp / Meta** | `'meta'`, `'whatsapp'` | `x-hub-signature-256` (Supports `verifyMetaChallenge` GET handshake) |
 | **Discord** | `'discord'` | `x-signature-ed25519`, `x-signature-timestamp` (Ed25519 signature) |
+| **Twitter / X** | `'twitter'`, `'x'` | `x-twitter-webhooks-signature` (Supports `verifyTwitterCrc` GET handshake) |
+| **PayPal** | `'paypal'` | Transmission headers + `crc32` payload signing (RSA-SHA256 & HMAC) |
+| **LemonSqueezy** | `'lemonsqueezy'` | `x-signature` |
+| **Paddle** | `'paddle'` | `paddle-signature` (`ts=...;h=...`) |
+| **PagerDuty** | `'pagerduty'` | `x-pagerduty-signature` (`v1=...`) |
+| **Webflow** | `'webflow'` | `x-webflow-signature`, `x-webflow-timestamp` |
+| **WorkOS** | `'workos'` | `workos-signature` (`t=...,v1=...`) or `svix-signature` |
 | **Linear** | `'linear'` | `linear-signature` |
 | **Razorpay** | `'razorpay'` | `x-razorpay-signature` |
 | **Square** | `'square'` | `x-square-hmacsha256-signature` |

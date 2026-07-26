@@ -1,4 +1,4 @@
-import { hexToBytes, stringToBytes } from '../utils/encoding.js';
+import { base64ToBytes, hexToBytes, stringToBytes } from '../utils/encoding.js';
 
 /**
  * Perform constant-time comparison of two strings or Uint8Arrays to prevent timing attacks.
@@ -20,6 +20,30 @@ export function timingSafeEqual(
   }
 
   return result === 0;
+}
+
+/**
+ * Pre-computed CRC32 IEEE 802.3 lookup table.
+ */
+const CRC32_TABLE = new Uint32Array(256);
+for (let i = 0; i < 256; i++) {
+  let c = i;
+  for (let j = 0; j < 8; j++) {
+    c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  }
+  CRC32_TABLE[i] = c;
+}
+
+/**
+ * Computes an IEEE 802.3 CRC-32 checksum (used for PayPal webhook validation).
+ */
+export function computeCrc32(data: string | Uint8Array): number {
+  const bytes = typeof data === 'string' ? stringToBytes(data) : data;
+  let crc = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) {
+    crc = CRC32_TABLE[(crc ^ bytes[i]) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
 }
 
 /**
@@ -45,7 +69,7 @@ export async function computeSha256(data: string | Uint8Array): Promise<Uint8Arr
 }
 
 /**
- * Computes an HMAC digest using Web Crypto API.
+ * Computes an HMAC digest using Web Crypto API or Node crypto fallback.
  */
 export async function computeHmac(
   algorithm: 'SHA-256' | 'SHA-1' | 'SHA-512',
@@ -156,6 +180,49 @@ export async function verifyEd25519(
     });
 
     return nodeCrypto.verify(null, Buffer.from(dataBytes), keyObject, Buffer.from(sigBytes));
+  } catch (err) {
+    return false;
+  }
+}
+
+/**
+ * Verifies an RSA-SHA256 signature using PEM public key/cert or DER bytes.
+ */
+export async function verifyRsaSha256(
+  publicKeyOrCert: string | Uint8Array,
+  signature: string | Uint8Array,
+  data: string | Uint8Array
+): Promise<boolean> {
+  try {
+    const sigBytes = typeof signature === 'string'
+      ? (signature.includes('=') || signature.includes('/') ? base64ToBytes(signature) : hexToBytes(signature))
+      : signature;
+    const dataBytes = typeof data === 'string' ? stringToBytes(data) : data;
+
+    const cryptoSubtle = globalThis.crypto?.subtle;
+
+    if (cryptoSubtle && typeof publicKeyOrCert === 'string' && !publicKeyOrCert.includes('-----BEGIN')) {
+      const keyDer = base64ToBytes(publicKeyOrCert);
+      const cryptoKey = await cryptoSubtle.importKey(
+        'spki',
+        keyDer as unknown as BufferSource,
+        { name: 'RSASSSA-PKCS1-v1_5', hash: { name: 'SHA-256' } },
+        false,
+        ['verify']
+      );
+
+      return await cryptoSubtle.verify(
+        'RSASSSA-PKCS1-v1_5',
+        cryptoKey,
+        sigBytes as unknown as BufferSource,
+        dataBytes as unknown as BufferSource
+      );
+    }
+
+    const nodeCrypto = await import('node:crypto');
+    const verify = nodeCrypto.createVerify('RSA-SHA256');
+    verify.update(Buffer.from(dataBytes));
+    return verify.verify(publicKeyOrCert as any, Buffer.from(sigBytes));
   } catch (err) {
     return false;
   }
