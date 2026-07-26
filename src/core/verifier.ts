@@ -23,7 +23,7 @@ export async function verifyWebhook(
   secret: string,
   options?: VerifyWebhookOptions
 ): Promise<VerificationResult> {
-  if (!secret) {
+  if (!secret && provider !== 'paypal') {
     return {
       valid: false,
       provider,
@@ -35,7 +35,7 @@ export async function verifyWebhook(
   try {
     const verifier = getProviderVerifier(provider);
     const normalizedReq = await normalizeRequest(req);
-    return await verifier.verify(normalizedReq, secret, options);
+    return await verifier.verify(normalizedReq, secret || '', options);
   } catch (err: any) {
     const code: VerificationErrorCode = err?.code || WebhookErrorCode.UNKNOWN_ERROR;
 
@@ -66,7 +66,7 @@ export async function verifyWebhookOrThrow(
     throw new WebhookVerificationError(
       result.provider,
       result.reason || 'Verification failed',
-      result.code || WebhookErrorCode.INVALID_SIGNATURE
+      (result.code as VerificationErrorCode) || WebhookErrorCode.INVALID_SIGNATURE
     );
   }
   return result;
@@ -117,3 +117,26 @@ export const verifyWhatsApp = (req: WebhookRequestInput, secret: string, opts?: 
 
 export const verifyDiscord = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
   verifyWebhook('discord', req, secret, opts);
+
+export const verifyTwitter = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
+  verifyWebhook('twitter', req, secret, opts);
+
+export const verifyX = verifyTwitter;
+
+export const verifyPayPal = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
+  verifyWebhook('paypal', req, secret, opts);
+
+export const verifyLemonSqueezy = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
+  verifyWebhook('lemonsqueezy', req, secret, opts);
+
+export const verifyPaddle = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
+  verifyWebhook('paddle', req, secret, opts);
+
+export const verifyPagerDuty = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
+  verifyWebhook('pagerduty', req, secret, opts);
+
+export const verifyWebflow = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
+  verifyWebhook('webflow', req, secret, opts);
+
+export const verifyWorkOS = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
+  verifyWebhook('workos', req, secret, opts);

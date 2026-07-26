@@ -182,6 +182,13 @@ All verifiers assign an explicit code from `WebhookErrorCode` to the `Verificati
 | **Svix / Resend / Clerk** | `svix-signature` | HMAC-SHA256 / Base64 | `${svixId}.${svixTimestamp}.${rawBody}` | ✅ Default 300s |
 | **Meta / WhatsApp** | `x-hub-signature-256` | HMAC-SHA256 / Hex | `rawBody` (Supports GET handshake) | N/A |
 | **Discord** | `x-signature-ed25519` | Ed25519 / Hex | `${timestamp}${rawBody}` | ✅ Default 300s |
+| **Twitter / X** | `x-twitter-webhooks-signature` | HMAC-SHA256 / Base64 | `rawBody` (Supports GET CRC handshake) | N/A |
+| **PayPal** | `paypal-transmission-sig` | RSA-SHA256 / Base64 or HMAC | `${transmissionId}|${time}|${webhookId}|${crc32}` | N/A |
+| **LemonSqueezy** | `x-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
+| **Paddle** | `paddle-signature` | HMAC-SHA256 / Hex | `${ts}:${rawBody}` | ✅ Default 300s |
+| **PagerDuty** | `x-pagerduty-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
+| **Webflow** | `x-webflow-signature` | HMAC-SHA256 / Hex | `${timestamp}:${rawBody}` or `rawBody` | ✅ Default 300s |
+| **WorkOS** | `workos-signature` | HMAC-SHA256 / Hex | `${timestamp}.${rawBody}` | ✅ Default 300s |
 | **Linear** | `linear-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
 | **Razorpay** | `x-razorpay-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
 | **Square** | `x-square-hmacsha256-signature` | HMAC-SHA256 / Base64 | `url + rawBody` | N/A |

@@ -5,6 +5,33 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-07-26
+
+### Added
+- 🐦 **Twitter / X API (`'twitter'`, `'x'`)**:
+  - `x-twitter-webhooks-signature` HMAC-SHA256 signature verification (`verifyTwitter` / `verifyX`).
+  - `verifyTwitterCrc(crcToken, consumerSecret)` helper for GET CRC challenge handshake.
+- 💳 **PayPal (`'paypal'`)**:
+  - `verifyPayPal` signature verification using transmission headers (`transmissionId|time|webhookId|crc32`).
+  - RSA-SHA256 public certificate / key signature verification with zero runtime dependencies.
+- 🍋 **LemonSqueezy (`'lemonsqueezy'`)**:
+  - `x-signature` HMAC-SHA256 signature verification (`verifyLemonSqueezy`).
+- 🏓 **Paddle (`'paddle'`)**:
+  - `paddle-signature` (`ts=...;h=...`) signature verification (`verifyPaddle`).
+- 🚨 **PagerDuty (`'pagerduty'`)**:
+  - `x-pagerduty-signature` (`v1=...`) HMAC-SHA256 signature verification (`verifyPagerDuty`).
+- 🕸️ **Webflow (`'webflow'`)**:
+  - `x-webflow-signature` HMAC-SHA256 signature verification (`verifyWebflow`).
+- 💼 **WorkOS (`'workos'`)**:
+  - `workos-signature` (`t=...,v1=...`) / Svix-compatible webhook verification (`verifyWorkOS`).
+- ⚡ **CLI Expansion**:
+  - Updated CLI simulator (`npx verihook simulate`) to support all 7 new providers.
+- 🧮 **New Utilities**:
+  - Added `computeCrc32` and `verifyRsaSha256` in core exports.
+
+### Changed
+- Expanded unit test suite to **76 unit tests** passing across 25 test files.
+
 ---
 
 ## [1.1.0] - 2026-07-26
