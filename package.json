@@ -16,7 +16,9 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "clean": "rm -rf dist",
@@ -52,6 +54,17 @@
   ],
   "author": "Piyush Anand",
   "license": "MIT",
+  "homepage": "https://github.com/creatorpiyush/verihook#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/creatorpiyush/verihook.git"
+  },
+  "bugs": {
+    "url": "https://github.com/creatorpiyush/verihook/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "tsup": "^8.0.1",
@@ -59,6 +72,6 @@
     "vitest": "^4.1.10"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.17.0"
   }
 }
