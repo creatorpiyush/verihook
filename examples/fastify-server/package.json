@@ -1,0 +1,19 @@
+{
+  "name": "verihook-fastify-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx server.ts",
+    "start": "node --import tsx server.ts"
+  },
+  "dependencies": {
+    "fastify": "^4.26.0",
+    "verihook": "file:../.."
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}
