@@ -1,0 +1,64 @@
+{
+  "name": "verihook",
+  "version": "1.0.0",
+  "description": "Universal typed webhook verifier for Stripe, GitHub, Shopify, Slack, Twilio, Svix, Linear, Razorpay, Zoom, and custom providers.",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": {
+        "import": "./dist/index.d.ts",
+        "require": "./dist/index.d.cts"
+      },
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm run test && npm run build",
+    "pre-commit": "bash scripts/pre-commit.sh",
+    "pre-release": "bash scripts/pre-release.sh",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
+  },
+  "keywords": [
+    "webhook",
+    "verify",
+    "verifier",
+    "signature",
+    "stripe",
+    "github",
+    "shopify",
+    "slack",
+    "twilio",
+    "svix",
+    "resend",
+    "clerk",
+    "linear",
+    "razorpay",
+    "zoom",
+    "square",
+    "hmac",
+    "security",
+    "typescript"
+  ],
+  "author": "Piyush Anand",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
