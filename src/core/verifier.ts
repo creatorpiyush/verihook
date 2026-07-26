@@ -108,3 +108,12 @@ export const verifySquare = (req: WebhookRequestInput, secret: string, opts?: Ve
 
 export const verifyZoom = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
   verifyWebhook('zoom', req, secret, opts);
+
+export const verifyMeta = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
+  verifyWebhook('meta', req, secret, opts);
+
+export const verifyWhatsApp = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
+  verifyWebhook('whatsapp', req, secret, opts);
+
+export const verifyDiscord = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
+  verifyWebhook('discord', req, secret, opts);

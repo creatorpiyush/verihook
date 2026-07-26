@@ -180,6 +180,8 @@ All verifiers assign an explicit code from `WebhookErrorCode` to the `Verificati
 | **Slack** | `x-slack-signature` | HMAC-SHA256 / Hex | `v0:${timestamp}:${rawBody}` | ✅ Default 300s |
 | **Twilio** | `x-twilio-signature` | HMAC-SHA1 / Base64 | Form: `url + sortedKeysAndValues` <br> JSON: `url?bodySHA256=hashHex` | N/A |
 | **Svix / Resend / Clerk** | `svix-signature` | HMAC-SHA256 / Base64 | `${svixId}.${svixTimestamp}.${rawBody}` | ✅ Default 300s |
+| **Meta / WhatsApp** | `x-hub-signature-256` | HMAC-SHA256 / Hex | `rawBody` (Supports GET handshake) | N/A |
+| **Discord** | `x-signature-ed25519` | Ed25519 / Hex | `${timestamp}${rawBody}` | ✅ Default 300s |
 | **Linear** | `linear-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
 | **Razorpay** | `x-razorpay-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
 | **Square** | `x-square-hmacsha256-signature` | HMAC-SHA256 / Base64 | `url + rawBody` | N/A |

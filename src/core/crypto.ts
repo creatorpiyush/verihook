@@ -1,4 +1,4 @@
-import { stringToBytes } from '../utils/encoding.js';
+import { hexToBytes, stringToBytes } from '../utils/encoding.js';
 
 /**
  * Perform constant-time comparison of two strings or Uint8Arrays to prevent timing attacks.
@@ -100,4 +100,63 @@ export function computeHmacSha512(
   data: string | Uint8Array
 ): Promise<Uint8Array> {
   return computeHmac('SHA-512', secret, data);
+}
+
+// SPKI header prefix for raw 32-byte Ed25519 public keys
+const ED25519_SPKI_HEADER = new Uint8Array([
+  0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00,
+]);
+
+/**
+ * Verifies an Ed25519 signature against a public key using Web Crypto API / Node crypto fallback.
+ */
+export async function verifyEd25519(
+  publicKey: string | Uint8Array,
+  signature: string | Uint8Array,
+  data: string | Uint8Array
+): Promise<boolean> {
+  try {
+    const pubBytes = typeof publicKey === 'string' ? hexToBytes(publicKey) : publicKey;
+    const sigBytes = typeof signature === 'string' ? hexToBytes(signature) : signature;
+    const dataBytes = typeof data === 'string' ? stringToBytes(data) : data;
+
+    if (pubBytes.length !== 32 || sigBytes.length !== 64) {
+      return false;
+    }
+
+    const cryptoSubtle = globalThis.crypto?.subtle;
+
+    if (cryptoSubtle) {
+      const spkiKey = new Uint8Array(ED25519_SPKI_HEADER.length + pubBytes.length);
+      spkiKey.set(ED25519_SPKI_HEADER, 0);
+      spkiKey.set(pubBytes, ED25519_SPKI_HEADER.length);
+
+      const cryptoKey = await cryptoSubtle.importKey(
+        'spki',
+        spkiKey as unknown as BufferSource,
+        { name: 'Ed25519' },
+        false,
+        ['verify']
+      );
+
+      return await cryptoSubtle.verify(
+        { name: 'Ed25519' },
+        cryptoKey,
+        sigBytes as unknown as BufferSource,
+        dataBytes as unknown as BufferSource
+      );
+    }
+
+    const nodeCrypto = await import('node:crypto');
+    const spkiKey = Buffer.concat([Buffer.from(ED25519_SPKI_HEADER), Buffer.from(pubBytes)]);
+    const keyObject = nodeCrypto.createPublicKey({
+      key: spkiKey,
+      format: 'der',
+      type: 'spki',
+    });
+
+    return nodeCrypto.verify(null, Buffer.from(dataBytes), keyObject, Buffer.from(sigBytes));
+  } catch (err) {
+    return false;
+  }
 }
