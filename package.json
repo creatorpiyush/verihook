@@ -1,6 +1,6 @@
 {
   "name": "verihook",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Universal typed webhook verifier for Stripe, GitHub, Shopify, Slack, Twilio, Svix, Linear, Razorpay, Zoom, and custom providers.",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
