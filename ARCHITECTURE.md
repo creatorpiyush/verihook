@@ -170,6 +170,29 @@ All verifiers assign an explicit code from `WebhookErrorCode` to the `Verificati
 
 ---
 
+### F. Framework Middleware Abstractions (`src/middleware/`)
+`verihook` provides 1-line middleware factories for Express and Next.js / Web API runtimes while keeping zero external dependencies:
+
+#### 1. Express Middleware (`verihookExpress`)
+- **Location**: `verihook/express` (`src/middleware/express.ts`).
+- **Signature**: `verihookExpress(provider, secret, options?)`
+- **Behavior**:
+  - Automatically collects unparsed body chunks if stream hasn't been consumed.
+  - Verifies signature using `verifyWebhook()`.
+  - Attaches `req.verihook` (`{ valid, provider, payload, timestamp }`) and `req.verifiedPayload`.
+  - Automatically returns HTTP 401 JSON error responses on failure or delegates to optional `onError` callback.
+
+#### 2. Next.js Route Handler Factory (`createWebhookHandler`)
+- **Location**: `verihook/next` (`src/middleware/next.ts`).
+- **Signature**: `createWebhookHandler(provider, secret, handler, options?)`
+- **Behavior**:
+  - Compatible with Next.js App Router (`export const POST = createWebhookHandler(...)`) and Web API Fetch `Request`/`Response` runtimes.
+  - Clones `Request` to extract body without mutating original stream.
+  - Invokes `handler(payload, result, req)` upon successful verification.
+  - Automatically formats and returns JSON `Response` objects.
+
+---
+
 ## 4. Provider Implementation Matrix
 
 | Provider | Target Header | Algorithm & Encoding | Signature Base Payload | Replay Tolerance |
