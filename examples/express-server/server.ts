@@ -64,24 +64,23 @@ app.post('/webhooks/svix', async (req: Request, res: Response) => {
   res.status(200).json({ received: true });
 });
 
+import { verihookExpress } from 'verihook/express';
+// Note: Can also be imported from 'verihook'
+
 /**
- * 3. Stripe Webhook Handler (using verifyWebhookOrThrow)
+ * 3. Stripe Webhook Handler (using 1-line verihookExpress middleware)
  */
-app.post('/webhooks/stripe', async (req: Request, res: Response) => {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_stripe_secret_123';
-
-  try {
-    const result = await verifyWebhookOrThrow('stripe', req, secret);
-    const payload = JSON.parse(req.body.toString('utf-8'));
-
-    console.log('✅ [Stripe] Verified event type:', payload.type, 'Timestamp:', result.timestamp);
-    console.log('📦 Stripe Event Payload Data:', payload.data.object);
+app.post(
+  '/webhooks/stripe',
+  verihookExpress('stripe', process.env.STRIPE_WEBHOOK_SECRET || 'whsec_stripe_secret_123'),
+  (req: any, res: Response) => {
+    // req.verifiedPayload and req.verihook are guaranteed valid and payload parsed!
+    const payload = req.verifiedPayload;
+    console.log('✅ [Stripe] Verified event type via verihookExpress:', payload.type);
+    console.log('📦 Stripe Event Payload Data:', payload.data?.object);
     res.status(200).json({ received: true });
-  } catch (err: any) {
-    console.error('❌ [Stripe] Webhook error:', err.message);
-    res.status(401).json({ error: err.reason || 'Unauthorized' });
   }
-});
+);
 
 /**
  * 4. Slack Webhook Handler
