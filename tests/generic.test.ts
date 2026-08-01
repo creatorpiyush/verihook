@@ -43,4 +43,20 @@ describe('Generic Webhook Verifier', () => {
 
     expect(result.valid).toBe(true);
   });
+
+  it('should verify uppercase hex signature header in generic verifier', async () => {
+    const hmac = await computeHmac('SHA-256', secret, body);
+    const signature = bytesToHex(hmac).toUpperCase();
+
+    const req = {
+      headers: { 'x-signature': signature },
+      body,
+    };
+
+    const result = await verifyWebhook('generic', req, secret, {
+      encoding: 'hex',
+    });
+
+    expect(result.valid).toBe(true);
+  });
 });

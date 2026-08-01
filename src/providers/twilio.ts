@@ -40,7 +40,7 @@ export const twilioVerifier: ProviderVerifier = {
     if (isFormUrlEncoded && req.rawBody) {
       // Standard Twilio Form signature: URL + sorted key/value parameters
       const params = new URLSearchParams(req.rawBody);
-      const sortedKeys = Array.from(params.keys()).sort();
+      const sortedKeys = Array.from(new Set(params.keys())).sort();
 
       for (const key of sortedKeys) {
         const values = params.getAll(key);

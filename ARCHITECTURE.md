@@ -8,7 +8,7 @@ This document details the architectural design, security mechanisms, request nor
 
 ## 1. Executive Overview
 
-`verihook` provides a unified, strongly-typed interface (`verifyWebhook(provider, req, secret)`) for verifying incoming webhook signatures across 11+ major SaaS providers.
+`verihook` provides a unified, strongly-typed interface (`verifyWebhook(provider, req, secret)`) for verifying incoming webhook signatures across 20+ major SaaS providers (27 provider identifiers).
 
 ### Core Objectives
 1. **Zero External Runtime Dependencies**: Powered by native Web Crypto API (`crypto.subtle`) with Node.js `node:crypto` fallback.

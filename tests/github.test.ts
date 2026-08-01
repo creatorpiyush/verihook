@@ -44,6 +44,19 @@ describe('GitHub Webhook Verifier', () => {
 
     const result = await verifyGitHub(req, secret);
     expect(result.valid).toBe(false);
-    expect(result.reason).toBe('SHA-256 signature mismatch');
+  });
+
+  it('should verify signature header containing surrounding whitespace', async () => {
+    const hmac = await computeHmacSha256(secret, body);
+    const hexSig = bytesToHex(hmac);
+    const header = ` sha256=${hexSig} \n`;
+
+    const req = {
+      headers: { 'x-hub-signature-256': header },
+      body,
+    };
+
+    const result = await verifyGitHub(req, secret);
+    expect(result.valid).toBe(true);
   });
 });

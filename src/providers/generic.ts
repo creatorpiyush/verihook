@@ -44,7 +44,11 @@ export const genericVerifier: ProviderVerifier = {
       cleanSignature = `${algorithmName}=${cleanSignature}`;
     }
 
-    if (!timingSafeEqual(cleanSignature, expectedSig)) {
+    const isHexEncoding = encoding === 'hex' || encoding === 'prefix-hex';
+    const finalCleanSig = isHexEncoding ? cleanSignature.toLowerCase() : cleanSignature;
+    const finalExpectedSig = isHexEncoding ? expectedSig.toLowerCase() : expectedSig;
+
+    if (!timingSafeEqual(finalCleanSig, finalExpectedSig)) {
       return {
         valid: false,
         provider: 'generic',
