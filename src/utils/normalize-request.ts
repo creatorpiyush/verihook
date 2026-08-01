@@ -19,8 +19,10 @@ export function normalizeHeaders(headers?: WebhookHeaders): Record<string, strin
 
   // Standard Web Fetch API Headers or Map
   if (headers && typeof (headers as any).forEach === 'function') {
-    (headers as any).forEach((value: string, key: string) => {
-      result[key.toLowerCase()] = value;
+    (headers as any).forEach((value: any, key: string) => {
+      if (value !== undefined && value !== null) {
+        result[key.toLowerCase()] = Array.isArray(value) ? value.join(', ') : String(value);
+      }
     });
     return result;
   }

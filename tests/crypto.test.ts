@@ -52,4 +52,11 @@ describe('Crypto Utilities & Constant Time Comparison', () => {
     const hex = bytesToHex(hmacBytes);
     expect(hex).toBe('8b5f48702995c1598c573db1e21866a9b825d4a794d169d7060a03605796360b');
   });
+
+  it('should verify RSA signatures provided as base64 without equal signs or slashes', async () => {
+    const { verifyRsaSha256 } = await import('../src/core/crypto.js');
+    // Non-matching signature should safely return false without throwing hex decoding errors
+    const result = await verifyRsaSha256('invalid_cert', 'aB3dEfG', 'payload');
+    expect(result).toBe(false);
+  });
 });

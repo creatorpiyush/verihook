@@ -22,7 +22,8 @@ export const githubVerifier: ProviderVerifier = {
     }
 
     if (sig256) {
-      const cleanSig = sig256.startsWith('sha256=') ? sig256.slice(7) : sig256;
+      const trimmed = sig256.trim();
+      const cleanSig = trimmed.startsWith('sha256=') ? trimmed.slice(7) : trimmed;
       const expectedBytes = await computeHmacSha256(secret, req.rawBody);
       const expectedHex = bytesToHex(expectedBytes);
 
@@ -42,7 +43,8 @@ export const githubVerifier: ProviderVerifier = {
     }
 
     if (sig1) {
-      const cleanSig = sig1.startsWith('sha1=') ? sig1.slice(5) : sig1;
+      const trimmed = sig1.trim();
+      const cleanSig = trimmed.startsWith('sha1=') ? trimmed.slice(5) : trimmed;
       const expectedBytes = await computeHmacSha1(secret, req.rawBody);
       const expectedHex = bytesToHex(expectedBytes);
 

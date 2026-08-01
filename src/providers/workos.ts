@@ -30,8 +30,8 @@ export const workosVerifier: ProviderVerifier = {
     const parts = signature.split(',');
     for (const part of parts) {
       const [k, v] = part.split('=');
-      if (k.trim() === 't') timestampStr = v.trim();
-      if (k.trim() === 'v1') sigHex = v.trim();
+      if (k && k.trim() === 't' && v) timestampStr = v.trim();
+      if (k && k.trim() === 'v1' && v) sigHex = v.trim();
     }
 
     if (!timestampStr || !sigHex) {

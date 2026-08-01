@@ -5,6 +5,22 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-08-01
+
+### Fixed
+- 🔐 **RSA Signature Decoding**: Fixed Base64 format detection in `verifyRsaSha256` for signatures that do not contain `=` padding or `/` characters.
+- 🛡️ **Base64 Fallback Validation**: Updated `base64ToBytes` with explicit character set and length validation so non-base64 secrets cleanly fall back to UTF-8 bytes in `svixVerifier` across Node.js and browser environments.
+- 🔤 **Generic Verifier Hex Case-Insensitivity**: Added lowercase normalization to `genericVerifier` when matching hex and prefix-hex signature headers.
+- 🔁 **Twilio Multi-Value Form Parameter Signing**: Deduplicated parameter key names using `Set` in `twilioVerifier` to properly sort and sign multi-value form parameters.
+- 💥 **WorkOS & Paddle Header Parsing Safety**: Added safe key-value checks (`k && v`) in `workosVerifier` and `paddleVerifier` to avoid unhandled `TypeError` exceptions on malformed header strings.
+- ✂️ **GitHub Signature Header Trimming**: Added whitespace trimming to `githubVerifier` before inspecting signature prefixes (`sha256=`, `sha1=`).
+- ⚡ **CLI Twilio Simulation URL Formatting**: Fixed query delimiter (`?` vs `&`) logic when simulating Twilio webhooks against target URLs that contain query parameters.
+
+### Added
+- 🧪 **Regression Test Suite Additions**: Added unit tests covering RSA Base64 signature parsing, uppercase hex matching, multi-value form parameters, malformed headers, and CLI simulation handling, bringing total test count to **95 unit tests** across 27 test files.
+
+---
+
 ## [1.3.0] - 2026-08-01
 
 ### Added

@@ -66,4 +66,15 @@ describe('normalizeRequest & Utilities', () => {
     expect(normalized.rawBody).toBe('raw payload string');
     expect(normalized.url).toBe('/api/webhooks/shopify');
   });
+
+  it('should normalize Map objects containing arrays or non-string values', () => {
+    const mapHeaders = new Map<string, any>([
+      ['X-Custom-Array', ['a', 'b']],
+      ['X-Custom-Num', 12345],
+    ]);
+
+    const headers = normalizeHeaders(mapHeaders as any);
+    expect(headers['x-custom-array']).toBe('a, b');
+    expect(headers['x-custom-num']).toBe('12345');
+  });
 });
