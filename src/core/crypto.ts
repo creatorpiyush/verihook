@@ -194,9 +194,17 @@ export async function verifyRsaSha256(
   data: string | Uint8Array
 ): Promise<boolean> {
   try {
-    const sigBytes = typeof signature === 'string'
-      ? (signature.includes('=') || signature.includes('/') ? base64ToBytes(signature) : hexToBytes(signature))
-      : signature;
+    let sigBytes: Uint8Array;
+    if (typeof signature === 'string') {
+      const cleanSig = signature.trim();
+      if (/^[0-9a-fA-F]+$/.test(cleanSig) && cleanSig.length % 2 === 0) {
+        sigBytes = hexToBytes(cleanSig);
+      } else {
+        sigBytes = base64ToBytes(cleanSig);
+      }
+    } else {
+      sigBytes = signature;
+    }
     const dataBytes = typeof data === 'string' ? stringToBytes(data) : data;
 
     const cryptoSubtle = globalThis.crypto?.subtle;

@@ -25,8 +25,8 @@ export const paddleVerifier: ProviderVerifier = {
     const parts = signatureHeader.split(';');
     for (const part of parts) {
       const [k, v] = part.split('=');
-      if (k === 'ts') timestampStr = v;
-      if (k === 'h') signature = v;
+      if (k && k.trim() === 'ts' && v) timestampStr = v.trim();
+      if (k && k.trim() === 'h' && v) signature = v.trim();
     }
 
     if (!timestampStr || !signature) {

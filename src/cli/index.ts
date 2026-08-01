@@ -214,7 +214,8 @@ Examples:
       rawBody = JSON.stringify({ MessageSid: 'SM12345', Body: 'Simulated SMS' });
       const hashBytes = await computeSha256(rawBody);
       const hashHex = bytesToHex(hashBytes).toLowerCase();
-      const dataToSign = `${targetUrl}?bodySHA256=${encodeURIComponent(hashHex)}`;
+      const delimiter = targetUrl.includes('?') ? '&' : '?';
+      const dataToSign = `${targetUrl}${delimiter}bodySHA256=${encodeURIComponent(hashHex)}`;
       const hmac = await computeHmacSha1(secret, dataToSign);
       headers['x-twilio-signature'] = bytesToBase64(hmac);
       break;

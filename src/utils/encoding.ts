@@ -42,10 +42,14 @@ export function bytesToBase64(bytes: Uint8Array): string {
 }
 
 export function base64ToBytes(base64: string): Uint8Array {
-  if (typeof Buffer !== 'undefined') {
-    return new Uint8Array(Buffer.from(base64, 'base64'));
+  const cleaned = base64.trim();
+  if (!/^[A-Za-z0-9+/=]+$/.test(cleaned) || cleaned.length % 4 === 1) {
+    throw new Error('Invalid base64 string');
   }
-  const binary = globalThis.atob(base64);
+  if (typeof Buffer !== 'undefined') {
+    return new Uint8Array(Buffer.from(cleaned, 'base64'));
+  }
+  const binary = globalThis.atob(cleaned);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
     bytes[i] = binary.charCodeAt(i);

@@ -33,4 +33,15 @@ describe('WorkOS Webhook Verifier', () => {
     expect(result.valid).toBe(false);
     expect(result.code).toBe('MISSING_HEADER');
   });
+
+  it('should gracefully handle malformed header segments without throwing TypeError', async () => {
+    const req = {
+      headers: { 'workos-signature': 't=1700000000,malformed_part_without_equals' },
+      body,
+    };
+
+    const result = await verifyWorkOS(req, secret);
+    expect(result.valid).toBe(false);
+    expect(result.code).toBe('MISSING_HEADER');
+  });
 });

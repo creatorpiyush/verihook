@@ -5,7 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/verihook.svg)](https://www.npmjs.com/package/verihook)
 [![license](https://img.shields.io/npm/l/verihook.svg)](https://github.com/creatorpiyush/verihook/blob/main/LICENSE)
 
-`verihook` provides a unified, strongly-typed API for verifying webhook signatures across popular services (**Stripe, GitHub, Shopify, Slack, Twilio, Svix/Resend/Clerk, Meta/WhatsApp, Discord, Linear, Razorpay, Zoom, Square, and custom webhooks**).
+`verihook` provides a unified, strongly-typed API for verifying webhook signatures across popular services (**Stripe, GitHub, Shopify, Slack, Twilio, Svix/Resend/Clerk, Meta/WhatsApp, Discord, Twitter/X, PayPal, LemonSqueezy, Paddle, PagerDuty, Webflow, WorkOS, Linear, Razorpay, Square, Zoom, and custom webhooks**).
 
 No more hunting down bespoke HMAC code snippets for every service or installing 10 heavy SDK dependencies just to verify incoming webhooks!
 

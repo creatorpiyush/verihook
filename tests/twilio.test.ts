@@ -105,4 +105,23 @@ describe('Twilio Webhook Verifier', () => {
     expect(result.code).toBe('MISSING_URL');
     expect(result.reason).toContain('Missing request URL');
   });
+
+  it('should verify form payloads containing repeated parameter key names', async () => {
+    const multiValBody = 'tag=alpha&tag=beta';
+    const dataToSign = `${url}tagalphatagbeta`;
+    const hmac = await computeHmacSha1(secret, dataToSign);
+    const signature = bytesToBase64(hmac);
+
+    const req = {
+      headers: {
+        'x-twilio-signature': signature,
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: multiValBody,
+      url,
+    };
+
+    const result = await verifyTwilio(req, secret);
+    expect(result.valid).toBe(true);
+  });
 });
