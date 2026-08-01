@@ -50,6 +50,12 @@ export { bytesToBase64, bytesToHex, stringToBytes, base64ToBytes, hexToBytes } f
 
 export { WebhookErrorCode } from './core/types.js';
 
+export { verihookExpress } from './express.js';
+export type { VerihookExpressOptions, VerihookRequestAdditions } from './express.js';
+
+export { createWebhookHandler } from './next.js';
+export type { VerihookNextOptions, NextWebhookCallback } from './next.js';
+
 export type {
   ProviderName,
   ProviderVerifier,
@@ -60,3 +66,4 @@ export type {
   WebhookRequestInput,
   NormalizedWebhookRequest,
 } from './core/types.js';
+

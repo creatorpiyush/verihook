@@ -4,7 +4,7 @@ This plan outlines high-value, developer-first feature proposals and provider ad
 
 ---
 
-## 1. Provider Ecosystem Expansion (v1.2.0)
+## 1. Provider Ecosystem Expansion (v1.2.0) — ✅ Completed
 
 Add native verification for the remaining major SaaS platforms:
 
@@ -20,7 +20,7 @@ Add native verification for the remaining major SaaS platforms:
 
 ---
 
-## 2. One-Line Framework Middlewares (v1.3.0)
+## 2. One-Line Framework Middlewares (v1.3.0) — ✅ Completed
 
 Provide 1-line middleware abstractions for popular Node & Edge frameworks:
 
@@ -91,7 +91,8 @@ const result = await verifyWebhook('stripe', req, secret, {
 
 ## Priority & Phasing Summary
 
-- **Phase 1 (v1.2.0)**: Add **PayPal, LemonSqueezy, Paddle, X/Twitter, PagerDuty, Webflow**.
-- **Phase 2 (v1.3.0)**: Add **Express & Next.js middleware helpers**.
+- **Phase 1 (v1.2.0)**: Add **PayPal, LemonSqueezy, Paddle, X/Twitter, PagerDuty, Webflow**. ✅
+- **Phase 2 (v1.3.0)**: Add **Express & Next.js middleware helpers**. ✅
 - **Phase 3 (v1.4.0)**: Add **`npx verihook listen` CLI inspector**.
 - **Phase 4 (v1.5.0)**: Add **Replay protection / deduplication store**.
+

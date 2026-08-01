@@ -16,6 +16,7 @@ No more hunting down bespoke HMAC code snippets for every service or installing 
 ## Features
 
 - ⚡ **Zero Runtime Dependencies**: Powered by standard Web Crypto API (`crypto.subtle`) with Node.js fallback.
+- 🚀 **1-Line Framework Middlewares**: Native Express middleware (`verihookExpress`) and Next.js Route Handler factory (`createWebhookHandler`).
 - 🌐 **Edge Ready**: Runs anywhere — Node.js, Vercel Edge, Cloudflare Workers, Deno, Bun, Next.js, Hono, Express, Fastify.
 - 🔐 **Timing-Safe**: Protects against side-channel timing attacks out of the box.
 - 🎯 **Unified Typed API**: Simple `verifyWebhook(provider, req, secret)` interface across all providers.
@@ -199,50 +200,34 @@ if (!result.valid) {
 
 ## Framework Integration Examples
 
-### Next.js App Router (Route Handler)
+### Next.js App Router (1-Line Route Handler Factory)
 
 ```ts
-import { verifyWebhook } from 'verihook';
-import { NextResponse } from 'next/server';
+import { createWebhookHandler } from 'verihook/next'; // or 'verihook'
 
-export async function POST(req: Request) {
-  const result = await verifyWebhook('stripe', req, process.env.STRIPE_WEBHOOK_SECRET!);
-
-  if (!result.valid) {
-    return NextResponse.json({ error: result.reason }, { status: 401 });
-  }
-
-  const payload = await req.json();
-  // Handle verified event...
-
-  return NextResponse.json({ received: true });
-}
+export const POST = createWebhookHandler('github', process.env.GITHUB_SECRET!, async (payload, result) => {
+  // Executed ONLY if signature is 100% valid!
+  console.log('Verified issue event:', payload.action);
+});
 ```
 
-### Express.js
-
-> **Note**: Ensure you capture the raw body as a string or Buffer before JSON parsing!
+### Express.js (1-Line Middleware)
 
 ```ts
 import express from 'express';
-import { verifyWebhook } from 'verihook';
+import { verihookExpress } from 'verihook/express'; // or 'verihook'
 
 const app = express();
 
-app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  const result = await verifyWebhook('github', req, process.env.GITHUB_SECRET!);
-
-  if (!result.valid) {
-    return res.status(401).json({ error: result.reason });
+app.post(
+  '/webhooks/stripe',
+  verihookExpress('stripe', process.env.STRIPE_SECRET!),
+  (req, res) => {
+    // req.verifiedPayload is guaranteed valid and raw body preserved!
+    console.log('Verified stripe event:', req.verifiedPayload.type);
+    res.json({ received: true });
   }
-
-  // Parse raw body string/Buffer to process verified event data
-  const payload = JSON.parse(req.body.toString('utf-8'));
-  console.log('Verified Event Action:', payload.action);
-  console.log('Verified Event Data:', payload.issue || payload.data?.object);
-
-  res.status(200).json({ success: true });
-});
+);
 ```
 
 ### Hono / Cloudflare Workers

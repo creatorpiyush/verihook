@@ -5,6 +5,27 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-08-01
+
+### Added
+- 🚀 **1-Line Express Middleware (`verihookExpress`)**:
+  - Subpath import `verihook/express` and root export `import { verihookExpress } from 'verihook'`.
+  - Automatic stream buffering if request body has not been read yet.
+  - Attaches `req.verihook` (`{ valid, provider, payload, timestamp }`) and `req.verifiedPayload`.
+  - Automatic HTTP 401 response handling with structured error payload or custom `onError` handler.
+  - Dynamic secret resolution via `secret: (req) => string | Promise<string>`.
+- ⚡ **1-Line Next.js Route Handler Factory (`createWebhookHandler`)**:
+  - Subpath import `verihook/next` and root export `import { createWebhookHandler } from 'verihook'`.
+  - Compatible with Next.js App Router (`export const POST = createWebhookHandler(...)`) and Web API `Request`/`Response`.
+  - Safe payload parsing via `req.clone()` without stream corruption.
+  - Automatic HTTP 200/401 `Response` creation with custom `onError` and dynamic secret support.
+- 📦 **Subpath Exports**:
+  - Configured tree-shakeable subpath exports `./express` and `./next` in `package.json` and `tsup.config.ts`.
+- 🧪 **Expanded Test Suite**:
+  - Added full Vitest test suites `express-middleware.test.ts` and `next-middleware.test.ts`, bringing total test count to **87 unit tests** across 27 test files.
+
+---
+
 ## [1.2.1] - 2026-07-26
 
 ### Fixed
