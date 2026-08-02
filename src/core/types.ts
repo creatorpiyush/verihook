@@ -89,7 +89,61 @@ export interface VerifyWebhookOptions {
    * Encoding of the signature in header (e.g. 'hex', 'base64', 'prefix-hex').
    */
   encoding?: 'hex' | 'base64' | 'prefix-hex';
+
+  /**
+   * Telemetry callback invoked on every verification attempt (pass/fail).
+   */
+  onVerify?: WebhookLoggerFn;
+
+  /**
+   * Telemetry callback invoked on every verification attempt (alias for onVerify).
+   */
+  log?: WebhookLoggerFn;
 }
+
+export interface WebhookVerificationEvent {
+  /**
+   * Target provider identifier (e.g. 'stripe', 'github', 'twilio').
+   */
+  provider: ProviderName;
+
+  /**
+   * Whether signature verification succeeded.
+   */
+  valid: boolean;
+
+  /**
+   * Error code if verification failed.
+   */
+  code?: VerificationErrorCode;
+
+  /**
+   * Human-readable failure explanation if applicable.
+   */
+  reason?: string;
+
+  /**
+   * Extracted webhook timestamp if available (Unix epoch in seconds).
+   */
+  timestamp?: number;
+
+  /**
+   * Verification execution duration in milliseconds.
+   */
+  durationMs: number;
+
+  /**
+   * Epoch timestamp (ms) when verification was attempted.
+   */
+  attemptedAt: number;
+
+  /**
+   * Preserved raw Error instance if an unexpected exception was caught.
+   */
+  error?: Error;
+}
+
+export type WebhookLoggerFn = (event: WebhookVerificationEvent) => void | Promise<void>;
 
 export enum WebhookErrorCode {
   INVALID_SIGNATURE = 'INVALID_SIGNATURE',

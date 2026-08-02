@@ -3,6 +3,9 @@ set -e
 
 echo "=== Running Pre-Commit Checks ==="
 
+echo "0. Running NPM install..."
+npm install
+
 echo "1. Running typecheck..."
 npm run typecheck
 

@@ -56,6 +56,8 @@ export type { VerihookExpressOptions, VerihookRequestAdditions } from './express
 export { createWebhookHandler } from './next.js';
 export type { VerihookNextOptions, NextWebhookCallback } from './next.js';
 
+export { setGlobalLogger, getGlobalLogger, clearGlobalLogger } from './core/logger.js';
+
 export type {
   ProviderName,
   ProviderVerifier,
@@ -65,5 +67,7 @@ export type {
   WebhookHeaders,
   WebhookRequestInput,
   NormalizedWebhookRequest,
+  WebhookVerificationEvent,
+  WebhookLoggerFn,
 } from './core/types.js';
 

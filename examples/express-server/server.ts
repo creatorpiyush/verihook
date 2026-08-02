@@ -1,8 +1,16 @@
 import dotenv from 'dotenv';
 import express, { Request, Response } from 'express';
-import { verifyWebhook, verifyWebhookOrThrow } from 'verihook';
+import { setGlobalLogger, verifyWebhook, verifyWebhookOrThrow } from 'verihook';
 
 dotenv.config();
+
+// Register global telemetry logger for application-wide verification observability
+setGlobalLogger((event) => {
+  console.log(`📊 [Telemetry Log] ${event.provider.toUpperCase()} verify attempt -> valid: ${event.valid} (${event.durationMs}ms)`);
+  if (!event.valid) {
+    console.warn(`⚠️ [Telemetry Log] Failed reason: ${event.code} - ${event.reason}`);
+  }
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;

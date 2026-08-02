@@ -3,6 +3,9 @@ set -e
 
 echo "=== Running Pre-Release Checklist & Build ==="
 
+echo "0. Running NPM install..."
+npm install
+
 echo "1. Cleaning previous builds..."
 npm run clean
 

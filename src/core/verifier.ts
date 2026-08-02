@@ -1,6 +1,7 @@
 import { getProviderVerifier } from '../providers/index.js';
 import { normalizeRequest } from '../utils/normalize-request.js';
 import { WebhookVerificationError } from './errors.js';
+import { getGlobalLogger } from './logger.js';
 import {
   ProviderName,
   VerificationErrorCode,
@@ -8,7 +9,42 @@ import {
   VerifyWebhookOptions,
   WebhookErrorCode,
   WebhookRequestInput,
+  WebhookVerificationEvent,
 } from './types.js';
+
+function dispatchTelemetry(
+  result: VerificationResult,
+  startTime: number,
+  attemptedAt: number,
+  options?: VerifyWebhookOptions
+): void {
+  const durationMs = Math.round((performance.now() - startTime) * 100) / 100;
+  const event: WebhookVerificationEvent = {
+    provider: result.provider,
+    valid: result.valid,
+    code: result.code,
+    reason: result.reason,
+    timestamp: result.timestamp,
+    durationMs,
+    attemptedAt,
+    error: result.error,
+  };
+
+  const perCallLogger = options?.onVerify || options?.log;
+  const globalLogger = getGlobalLogger();
+
+  if (perCallLogger) {
+    try {
+      Promise.resolve(perCallLogger(event)).catch(() => {});
+    } catch {}
+  }
+
+  if (globalLogger) {
+    try {
+      Promise.resolve(globalLogger(event)).catch(() => {});
+    } catch {}
+  }
+}
 
 /**
  * Universal webhook verification function.
@@ -23,23 +59,29 @@ export async function verifyWebhook(
   secret: string,
   options?: VerifyWebhookOptions
 ): Promise<VerificationResult> {
+  const attemptedAt = Date.now();
+  const startTime = performance.now();
+
   if (!secret && provider !== 'paypal') {
-    return {
+    const result: VerificationResult = {
       valid: false,
       provider,
       code: WebhookErrorCode.INVALID_SECRET,
       reason: 'Webhook secret is required',
     };
+    dispatchTelemetry(result, startTime, attemptedAt, options);
+    return result;
   }
 
+  let result: VerificationResult;
   try {
     const verifier = getProviderVerifier(provider);
     const normalizedReq = await normalizeRequest(req);
-    return await verifier.verify(normalizedReq, secret || '', options);
+    result = await verifier.verify(normalizedReq, secret || '', options);
   } catch (err: any) {
     const code: VerificationErrorCode = err?.code || WebhookErrorCode.UNKNOWN_ERROR;
 
-    return {
+    result = {
       valid: false,
       provider,
       code,
@@ -47,6 +89,9 @@ export async function verifyWebhook(
       error: err instanceof Error ? err : new Error(String(err)),
     };
   }
+
+  dispatchTelemetry(result, startTime, attemptedAt, options);
+  return result;
 }
 
 /**
