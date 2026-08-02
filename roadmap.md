@@ -50,7 +50,33 @@ export const POST = createWebhookHandler('github', process.env.GITHUB_SECRET!, a
 
 ---
 
-## 3. CLI Enhancements — `npx verihook listen` & Webhook Inspector (v1.4.0)
+## 3. Verification Logging & Telemetry Hooks (v1.4.0)
+
+Provide global and per-call verification event callbacks for logging every verification attempt (pass/fail/expired/invalid signature), designed for production observability (Datadog, Winston, Pino, Axiom, Console, Sentry, OpenTelemetry).
+
+```ts
+import { setGlobalLogger, verifyWebhook } from 'verihook';
+
+// Global telemetry hook for all verifications in the application
+setGlobalLogger((event) => {
+  console.log(`[verihook] ${event.provider} - valid: ${event.valid} (${event.durationMs}ms)`);
+  if (!event.valid) {
+    console.warn(`[verihook] Verification failed: ${event.code} - ${event.reason}`);
+  }
+});
+
+// Per-call logger override
+const result = await verifyWebhook('stripe', req, secret, {
+  onVerify: (event) => {
+    // Structured telemetry event: { provider, valid, code, reason, timestamp, durationMs, attemptedAt, error }
+    metrics.increment('webhook.verification', 1, { provider: event.provider, valid: String(event.valid) });
+  },
+});
+```
+
+---
+
+## 4. CLI Enhancements — `npx verihook listen` & Webhook Inspector (v1.5.0)
 
 Expand the CLI simulator into a full local developer toolchain:
 
@@ -73,7 +99,7 @@ Expand the CLI simulator into a full local developer toolchain:
 
 ---
 
-## 4. Replay Protection & Deduplication Store (v1.5.0)
+## 5. Replay Protection & Deduplication Store (v1.6.0)
 
 Provide optional event deduplication state store to prevent duplicate event execution within tolerance windows:
 
@@ -93,6 +119,7 @@ const result = await verifyWebhook('stripe', req, secret, {
 
 - **Phase 1 (v1.2.0)**: Add **PayPal, LemonSqueezy, Paddle, X/Twitter, PagerDuty, Webflow**. ✅
 - **Phase 2 (v1.3.0)**: Add **Express & Next.js middleware helpers**. ✅
-- **Phase 3 (v1.4.0)**: Add **`npx verihook listen` CLI inspector**.
-- **Phase 4 (v1.5.0)**: Add **Replay protection / deduplication store**.
+- **Phase 3 (v1.4.0)**: Add **Verification Logging & Telemetry Hooks (`setGlobalLogger`, `onVerify`)**. 🎯
+- **Phase 4 (v1.5.0)**: Add **`npx verihook listen` CLI inspector**.
+- **Phase 5 (v1.6.0)**: Add **Replay protection / deduplication store**.
 

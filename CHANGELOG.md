@@ -5,6 +5,20 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-08-02
+
+### Added
+- 📊 **Verification Logging & Telemetry Hooks (`setGlobalLogger`, `onVerify`)**:
+  - Global application-wide telemetry callback via `setGlobalLogger(loggerFn)` and `getGlobalLogger()`.
+  - Per-verification telemetry callback options `onVerify` and `log` in `VerifyWebhookOptions`.
+  - Structured `WebhookVerificationEvent` payload containing `provider`, `valid`, `code`, `reason`, `timestamp`, `durationMs`, `attemptedAt`, and optional `error`.
+  - Isolated exception handling ensuring logging callback errors never affect verification results or throw unhandled exceptions.
+  - Native performance measurement using high-resolution `performance.now()`.
+- 🧪 **Telemetry Test Suite (`tests/telemetry.test.ts`)**:
+  - Added test suite for global & per-call telemetry dispatching, timing metadata accuracy, and exception safety, bringing total test suite to **100 unit tests** across 28 test files.
+
+---
+
 ## [1.3.1] - 2026-08-01
 
 ### Fixed
