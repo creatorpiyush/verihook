@@ -80,7 +80,7 @@ describe("verihook CLI Simulator", () => {
       "generic",
     ];
 
-    const validBase64Secret = "whsec_dGVzdF9zZWNyZXRfMTIz";
+    const validBase64Secret = "whsec_dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==";
 
     for (const p of providers) {
       await runCli(["simulate", p, "--secret", validBase64Secret, "--curl"]);

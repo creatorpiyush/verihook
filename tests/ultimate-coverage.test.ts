@@ -172,7 +172,7 @@ describe("Ultimate Coverage Boost for >97%+ Test Suite", () => {
         },
         body: "raw",
       },
-      "whsec_dGVzdF9zZWNyZXRfMTIz",
+      "whsec_dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==",
     );
     expect(svixRes.code).toBe("MISSING_HEADER");
 

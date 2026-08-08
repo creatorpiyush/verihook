@@ -48,7 +48,7 @@ echo -e "${GREEN}  ✓ CLI simulate github --event push --curl succeeded${NC}"
 node dist/cli.js simulate twilio --curl > /dev/null
 echo -e "${GREEN}  ✓ CLI simulate twilio --curl succeeded${NC}"
 
-node dist/cli.js simulate svix --secret whsec_dGVzdF9zZWNyZXRfMTIz --curl > /dev/null
+node dist/cli.js simulate svix --secret whsec_dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw== --curl > /dev/null
 echo -e "${GREEN}  ✓ CLI simulate svix --curl succeeded${NC}"
 
 node dist/cli.js simulate lemonsqueezy --secret lemon_123 --curl > /dev/null

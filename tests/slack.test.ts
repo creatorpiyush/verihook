@@ -5,7 +5,7 @@ import { bytesToHex } from "../src/utils/encoding.js";
 
 describe("Slack Webhook Verifier", () => {
   const secret = "slack_signing_secret_888";
-  const body = "token=gIOm5BIZJR0DZ3enR.123&team_id=T0001";
+  const body = "token=slack_token_test_123&team_id=T0001";
   const timestamp = 1700000000;
 
   it("should verify valid Slack signature", async () => {
