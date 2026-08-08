@@ -1,6 +1,6 @@
 {
   "name": "verihook",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Universal typed webhook verifier for Stripe, GitHub, Shopify, Slack, Twilio, Svix, Meta, WhatsApp, Discord, Twitter, PayPal, LemonSqueezy, Paddle, PagerDuty, Webflow, WorkOS, Linear, Razorpay, Zoom, and custom providers.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -36,11 +36,17 @@
     "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:regression": "vitest run tests/regression.test.ts",
+    "test:all": "bash scripts/test-all.sh",
     "typecheck": "tsc --noEmit",
-    "verify": "npm run typecheck && npm run test && npm run build",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "audit": "npm audit --audit-level=high",
+    "verify": "npm run format:check && npm run typecheck && npm run test:coverage && npm run build",
     "pre-commit": "bash scripts/pre-commit.sh",
     "pre-release": "bash scripts/pre-release.sh",
-    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
+    "prepublishOnly": "npm run format:check && npm run typecheck && npm run test:coverage && npm run build"
   },
   "keywords": [
     "webhook",
@@ -83,10 +89,15 @@
     "access": "public"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
-    "tsup": "^8.0.1",
-    "typescript": "^5.3.3",
-    "vitest": "^4.1.10"
+    "@types/node": "20.19.43",
+    "@vitest/coverage-v8": "4.1.10",
+    "prettier": "3.9.6",
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  },
+  "overrides": {
+    "esbuild": "0.28.1"
   },
   "engines": {
     "node": ">=18.17.0"

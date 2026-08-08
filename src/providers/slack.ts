@@ -1,21 +1,27 @@
-import { computeHmacSha256, timingSafeEqual } from '../core/crypto.js';
-import { NormalizedWebhookRequest, ProviderVerifier, VerificationResult, VerifyWebhookOptions, WebhookErrorCode } from '../core/types.js';
-import { bytesToHex } from '../utils/encoding.js';
+import { computeHmacSha256, timingSafeEqual } from "../core/crypto.js";
+import {
+  NormalizedWebhookRequest,
+  ProviderVerifier,
+  VerificationResult,
+  VerifyWebhookOptions,
+  WebhookErrorCode,
+} from "../core/types.js";
+import { bytesToHex } from "../utils/encoding.js";
 
 export const slackVerifier: ProviderVerifier = {
-  name: 'slack',
+  name: "slack",
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,
-    options?: VerifyWebhookOptions
+    options?: VerifyWebhookOptions,
   ): Promise<VerificationResult> {
-    const signature = req.headers['x-slack-signature'];
-    const timestampStr = req.headers['x-slack-request-timestamp'];
+    const signature = req.headers["x-slack-signature"];
+    const timestampStr = req.headers["x-slack-request-timestamp"];
 
     if (!signature) {
       return {
         valid: false,
-        provider: 'slack',
+        provider: "slack",
         code: WebhookErrorCode.MISSING_HEADER,
         reason: 'Missing "x-slack-signature" header',
       };
@@ -24,7 +30,7 @@ export const slackVerifier: ProviderVerifier = {
     if (!timestampStr) {
       return {
         valid: false,
-        provider: 'slack',
+        provider: "slack",
         code: WebhookErrorCode.MISSING_HEADER,
         reason: 'Missing "x-slack-request-timestamp" header',
       };
@@ -34,7 +40,7 @@ export const slackVerifier: ProviderVerifier = {
     if (isNaN(timestamp)) {
       return {
         valid: false,
-        provider: 'slack',
+        provider: "slack",
         code: WebhookErrorCode.MISSING_HEADER,
         reason: 'Invalid "x-slack-request-timestamp" format',
       };
@@ -46,7 +52,7 @@ export const slackVerifier: ProviderVerifier = {
       if (Math.abs(now - timestamp) > tolerance) {
         return {
           valid: false,
-          provider: 'slack',
+          provider: "slack",
           code: WebhookErrorCode.EXPIRED_TIMESTAMP,
           timestamp,
           reason: `Timestamp outside tolerance window (timestamp: ${timestamp}, current: ${now}, tolerance: ${tolerance}s)`,
@@ -61,16 +67,16 @@ export const slackVerifier: ProviderVerifier = {
     if (!timingSafeEqual(signature.trim(), expectedSig)) {
       return {
         valid: false,
-        provider: 'slack',
+        provider: "slack",
         code: WebhookErrorCode.INVALID_SIGNATURE,
         timestamp,
-        reason: 'Signature mismatch',
+        reason: "Signature mismatch",
       };
     }
 
     return {
       valid: true,
-      provider: 'slack',
+      provider: "slack",
       timestamp,
     };
   },

@@ -1,20 +1,26 @@
-import { verifyEd25519 } from '../core/crypto.js';
-import { NormalizedWebhookRequest, ProviderVerifier, VerificationResult, VerifyWebhookOptions, WebhookErrorCode } from '../core/types.js';
+import { verifyEd25519 } from "../core/crypto.js";
+import {
+  NormalizedWebhookRequest,
+  ProviderVerifier,
+  VerificationResult,
+  VerifyWebhookOptions,
+  WebhookErrorCode,
+} from "../core/types.js";
 
 export const discordVerifier: ProviderVerifier = {
-  name: 'discord',
+  name: "discord",
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,
-    options?: VerifyWebhookOptions
+    options?: VerifyWebhookOptions,
   ): Promise<VerificationResult> {
-    const signature = req.headers['x-signature-ed25519'];
-    const timestampStr = req.headers['x-signature-timestamp'];
+    const signature = req.headers["x-signature-ed25519"];
+    const timestampStr = req.headers["x-signature-timestamp"];
 
     if (!signature) {
       return {
         valid: false,
-        provider: 'discord',
+        provider: "discord",
         code: WebhookErrorCode.MISSING_HEADER,
         reason: 'Missing "x-signature-ed25519" header',
       };
@@ -23,7 +29,7 @@ export const discordVerifier: ProviderVerifier = {
     if (!timestampStr) {
       return {
         valid: false,
-        provider: 'discord',
+        provider: "discord",
         code: WebhookErrorCode.MISSING_HEADER,
         reason: 'Missing "x-signature-timestamp" header',
       };
@@ -33,7 +39,7 @@ export const discordVerifier: ProviderVerifier = {
     if (isNaN(timestamp)) {
       return {
         valid: false,
-        provider: 'discord',
+        provider: "discord",
         code: WebhookErrorCode.MISSING_HEADER,
         reason: 'Invalid "x-signature-timestamp" header format',
       };
@@ -45,7 +51,7 @@ export const discordVerifier: ProviderVerifier = {
       if (Math.abs(now - timestamp) > tolerance) {
         return {
           valid: false,
-          provider: 'discord',
+          provider: "discord",
           code: WebhookErrorCode.EXPIRED_TIMESTAMP,
           timestamp,
           reason: `Timestamp outside tolerance window (timestamp: ${timestamp}, current: ${now}, tolerance: ${tolerance}s)`,
@@ -59,16 +65,16 @@ export const discordVerifier: ProviderVerifier = {
     if (!isValid) {
       return {
         valid: false,
-        provider: 'discord',
+        provider: "discord",
         code: WebhookErrorCode.INVALID_SIGNATURE,
         timestamp,
-        reason: 'Ed25519 signature mismatch',
+        reason: "Ed25519 signature mismatch",
       };
     }
 
     return {
       valid: true,
-      provider: 'discord',
+      provider: "discord",
       timestamp,
     };
   },

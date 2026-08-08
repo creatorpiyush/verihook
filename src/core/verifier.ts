@@ -1,7 +1,7 @@
-import { getProviderVerifier } from '../providers/index.js';
-import { normalizeRequest } from '../utils/normalize-request.js';
-import { WebhookVerificationError } from './errors.js';
-import { getGlobalLogger } from './logger.js';
+import { getProviderVerifier } from "../providers/index.js";
+import { normalizeRequest } from "../utils/normalize-request.js";
+import { WebhookVerificationError } from "./errors.js";
+import { getGlobalLogger } from "./logger.js";
 import {
   ProviderName,
   VerificationErrorCode,
@@ -10,13 +10,13 @@ import {
   WebhookErrorCode,
   WebhookRequestInput,
   WebhookVerificationEvent,
-} from './types.js';
+} from "./types.js";
 
 function dispatchTelemetry(
   result: VerificationResult,
   startTime: number,
   attemptedAt: number,
-  options?: VerifyWebhookOptions
+  options?: VerifyWebhookOptions,
 ): void {
   const durationMs = Math.round((performance.now() - startTime) * 100) / 100;
   const event: WebhookVerificationEvent = {
@@ -35,14 +35,30 @@ function dispatchTelemetry(
 
   if (perCallLogger) {
     try {
-      Promise.resolve(perCallLogger(event)).catch(() => {});
-    } catch {}
+      Promise.resolve(perCallLogger(event)).catch((err) => {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[verihook] per-call telemetry logger failed:", err);
+        }
+      });
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[verihook] per-call telemetry logger exception:", err);
+      }
+    }
   }
 
   if (globalLogger) {
     try {
-      Promise.resolve(globalLogger(event)).catch(() => {});
-    } catch {}
+      Promise.resolve(globalLogger(event)).catch((err) => {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[verihook] global telemetry logger failed:", err);
+        }
+      });
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[verihook] global telemetry logger exception:", err);
+      }
+    }
   }
 }
 
@@ -57,17 +73,17 @@ export async function verifyWebhook(
   provider: ProviderName,
   req: WebhookRequestInput,
   secret: string,
-  options?: VerifyWebhookOptions
+  options?: VerifyWebhookOptions,
 ): Promise<VerificationResult> {
   const attemptedAt = Date.now();
   const startTime = performance.now();
 
-  if (!secret && provider !== 'paypal') {
+  if (!secret && provider !== "paypal") {
     const result: VerificationResult = {
       valid: false,
       provider,
       code: WebhookErrorCode.INVALID_SECRET,
-      reason: 'Webhook secret is required',
+      reason: "Webhook secret is required",
     };
     dispatchTelemetry(result, startTime, attemptedAt, options);
     return result;
@@ -77,15 +93,20 @@ export async function verifyWebhook(
   try {
     const verifier = getProviderVerifier(provider);
     const normalizedReq = await normalizeRequest(req);
-    result = await verifier.verify(normalizedReq, secret || '', options);
-  } catch (err: any) {
-    const code: VerificationErrorCode = err?.code || WebhookErrorCode.UNKNOWN_ERROR;
+    result = await verifier.verify(normalizedReq, secret || "", options);
+  } catch (err: unknown) {
+    const errObj = err as Record<string, unknown> | null;
+    const code: VerificationErrorCode =
+      errObj && typeof errObj.code === "string"
+        ? (errObj.code as VerificationErrorCode)
+        : WebhookErrorCode.UNKNOWN_ERROR;
+    const message = err instanceof Error ? err.message : String(err);
 
     result = {
       valid: false,
       provider,
       code,
-      reason: err?.message || 'Unknown verification error',
+      reason: message || "Unknown verification error",
       error: err instanceof Error ? err : new Error(String(err)),
     };
   }
@@ -104,84 +125,151 @@ export async function verifyWebhookOrThrow(
   provider: ProviderName,
   req: WebhookRequestInput,
   secret: string,
-  options?: VerifyWebhookOptions
+  options?: VerifyWebhookOptions,
 ): Promise<VerificationResult> {
   const result = await verifyWebhook(provider, req, secret, options);
   if (!result.valid) {
     throw new WebhookVerificationError(
       result.provider,
-      result.reason || 'Verification failed',
-      (result.code as VerificationErrorCode) || WebhookErrorCode.INVALID_SIGNATURE
+      result.reason || "Verification failed",
+      (result.code as VerificationErrorCode) ||
+        WebhookErrorCode.INVALID_SIGNATURE,
     );
   }
   return result;
 }
 
 // Provider-specific helper shortcuts
-export const verifyStripe = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('stripe', req, secret, opts);
+export const verifyStripe = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("stripe", req, secret, opts);
 
-export const verifyGitHub = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('github', req, secret, opts);
+export const verifyGitHub = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("github", req, secret, opts);
 
-export const verifyShopify = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('shopify', req, secret, opts);
+export const verifyShopify = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("shopify", req, secret, opts);
 
-export const verifySlack = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('slack', req, secret, opts);
+export const verifySlack = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("slack", req, secret, opts);
 
-export const verifyTwilio = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('twilio', req, secret, opts);
+export const verifyTwilio = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("twilio", req, secret, opts);
 
-export const verifySvix = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('svix', req, secret, opts);
+export const verifySvix = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("svix", req, secret, opts);
 
-export const verifyResend = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('resend', req, secret, opts);
+export const verifyResend = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("resend", req, secret, opts);
 
-export const verifyClerk = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('clerk', req, secret, opts);
+export const verifyClerk = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("clerk", req, secret, opts);
 
-export const verifyLinear = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('linear', req, secret, opts);
+export const verifyLinear = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("linear", req, secret, opts);
 
-export const verifyRazorpay = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('razorpay', req, secret, opts);
+export const verifyRazorpay = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("razorpay", req, secret, opts);
 
-export const verifySquare = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('square', req, secret, opts);
+export const verifySquare = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("square", req, secret, opts);
 
-export const verifyZoom = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('zoom', req, secret, opts);
+export const verifyZoom = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("zoom", req, secret, opts);
 
-export const verifyMeta = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('meta', req, secret, opts);
+export const verifyMeta = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("meta", req, secret, opts);
 
-export const verifyWhatsApp = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('whatsapp', req, secret, opts);
+export const verifyWhatsApp = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("whatsapp", req, secret, opts);
 
-export const verifyDiscord = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('discord', req, secret, opts);
+export const verifyDiscord = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("discord", req, secret, opts);
 
-export const verifyTwitter = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('twitter', req, secret, opts);
+export const verifyTwitter = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("twitter", req, secret, opts);
 
 export const verifyX = verifyTwitter;
 
-export const verifyPayPal = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('paypal', req, secret, opts);
+export const verifyPayPal = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("paypal", req, secret, opts);
 
-export const verifyLemonSqueezy = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('lemonsqueezy', req, secret, opts);
+export const verifyLemonSqueezy = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("lemonsqueezy", req, secret, opts);
 
-export const verifyPaddle = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('paddle', req, secret, opts);
+export const verifyPaddle = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("paddle", req, secret, opts);
 
-export const verifyPagerDuty = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('pagerduty', req, secret, opts);
+export const verifyPagerDuty = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("pagerduty", req, secret, opts);
 
-export const verifyWebflow = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('webflow', req, secret, opts);
+export const verifyWebflow = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("webflow", req, secret, opts);
 
-export const verifyWorkOS = (req: WebhookRequestInput, secret: string, opts?: VerifyWebhookOptions) =>
-  verifyWebhook('workos', req, secret, opts);
+export const verifyWorkOS = (
+  req: WebhookRequestInput,
+  secret: string,
+  opts?: VerifyWebhookOptions,
+) => verifyWebhook("workos", req, secret, opts);

@@ -3,14 +3,16 @@ import {
   WebhookHeaders,
   WebhookRequestInput,
   WebhookRequestInputObject,
-} from '../core/types.js';
-import { InvalidBodyError } from '../core/errors.js';
-import { bytesToString } from './encoding.js';
+} from "../core/types.js";
+import { InvalidBodyError } from "../core/errors.js";
+import { bytesToString } from "./encoding.js";
 
 /**
  * Normalizes headers from various input formats into a record of lowercase header keys to string values.
  */
-export function normalizeHeaders(headers?: WebhookHeaders): Record<string, string> {
+export function normalizeHeaders(
+  headers?: WebhookHeaders,
+): Record<string, string> {
   const result: Record<string, string> = {};
 
   if (!headers) {
@@ -18,10 +20,19 @@ export function normalizeHeaders(headers?: WebhookHeaders): Record<string, strin
   }
 
   // Standard Web Fetch API Headers or Map
-  if (headers && typeof (headers as any).forEach === 'function') {
-    (headers as any).forEach((value: any, key: string) => {
+  if (
+    headers &&
+    typeof (headers as unknown as { forEach: Function }).forEach === "function"
+  ) {
+    (
+      headers as unknown as {
+        forEach: (cb: (v: unknown, k: string) => void) => void;
+      }
+    ).forEach((value: unknown, key: string) => {
       if (value !== undefined && value !== null) {
-        result[key.toLowerCase()] = Array.isArray(value) ? value.join(', ') : String(value);
+        result[key.toLowerCase()] = Array.isArray(value)
+          ? value.join(", ")
+          : String(value);
       }
     });
     return result;
@@ -34,7 +45,7 @@ export function normalizeHeaders(headers?: WebhookHeaders): Record<string, strin
     const val = rawObj[key];
     if (val !== undefined && val !== null) {
       if (Array.isArray(val)) {
-        result[lowerKey] = val.join(', ');
+        result[lowerKey] = val.join(", ");
       } else {
         result[lowerKey] = String(val);
       }
@@ -48,14 +59,15 @@ export function normalizeHeaders(headers?: WebhookHeaders): Record<string, strin
  * Normalizes body input into raw string.
  */
 export function normalizeBody(
-  bodyInput: string | Uint8Array | ArrayBuffer | Record<string, any> | any,
-  isExplicitRawBody = false
+  bodyInput:
+    string | Uint8Array | ArrayBuffer | Record<string, unknown> | unknown,
+  isExplicitRawBody = false,
 ): string {
   if (bodyInput === undefined || bodyInput === null) {
-    return '';
+    return "";
   }
 
-  if (typeof bodyInput === 'string') {
+  if (typeof bodyInput === "string") {
     return bodyInput;
   }
 
@@ -67,11 +79,11 @@ export function normalizeBody(
     return bytesToString(new Uint8Array(bodyInput));
   }
 
-  if (typeof Buffer !== 'undefined' && Buffer.isBuffer(bodyInput)) {
-    return bodyInput.toString('utf-8');
+  if (typeof Buffer !== "undefined" && Buffer.isBuffer(bodyInput)) {
+    return bodyInput.toString("utf-8");
   }
 
-  if (typeof bodyInput === 'object') {
+  if (typeof bodyInput === "object") {
     if (!isExplicitRawBody) {
       throw new InvalidBodyError();
     }
@@ -85,18 +97,18 @@ export function normalizeBody(
  * Main normalization function that handles Web Fetch Request objects, Express requests, Next.js requests, etc.
  */
 export async function normalizeRequest(
-  input: WebhookRequestInput
+  input: WebhookRequestInput,
 ): Promise<NormalizedWebhookRequest> {
   if (!input) {
-    throw new Error('[verihook] Request input cannot be null or undefined');
+    throw new Error("[verihook] Request input cannot be null or undefined");
   }
 
   // 1. Standard Web Fetch Request (or Request-like object with .clone() and .text())
   if (
-    typeof input === 'object' &&
-    'headers' in input &&
-    typeof (input as Request).clone === 'function' &&
-    typeof (input as Request).text === 'function'
+    typeof input === "object" &&
+    "headers" in input &&
+    typeof (input as Request).clone === "function" &&
+    typeof (input as Request).text === "function"
   ) {
     const fetchReq = input as Request;
     const cloned = fetchReq.clone();

@@ -1,24 +1,31 @@
-import { computeHmacSha256, timingSafeEqual } from '../core/crypto.js';
-import { NormalizedWebhookRequest, ProviderVerifier, VerificationResult, VerifyWebhookOptions, WebhookErrorCode } from '../core/types.js';
-import { base64ToBytes, bytesToBase64 } from '../utils/encoding.js';
+import { computeHmacSha256, timingSafeEqual } from "../core/crypto.js";
+import {
+  NormalizedWebhookRequest,
+  ProviderVerifier,
+  VerificationResult,
+  VerifyWebhookOptions,
+  WebhookErrorCode,
+} from "../core/types.js";
+import { base64ToBytes, bytesToBase64 } from "../utils/encoding.js";
 
 export const svixVerifier: ProviderVerifier = {
-  name: 'svix',
+  name: "svix",
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,
-    options?: VerifyWebhookOptions
+    options?: VerifyWebhookOptions,
   ): Promise<VerificationResult> {
-    const svixId = req.headers['svix-id'];
-    const svixTimestamp = req.headers['svix-timestamp'];
-    const svixSignature = req.headers['svix-signature'];
+    const svixId = req.headers["svix-id"];
+    const svixTimestamp = req.headers["svix-timestamp"];
+    const svixSignature = req.headers["svix-signature"];
 
     if (!svixId || !svixTimestamp || !svixSignature) {
       return {
         valid: false,
-        provider: 'svix',
+        provider: "svix",
         code: WebhookErrorCode.MISSING_HEADER,
-        reason: 'Missing required Svix headers ("svix-id", "svix-timestamp", or "svix-signature")',
+        reason:
+          'Missing required Svix headers ("svix-id", "svix-timestamp", or "svix-signature")',
       };
     }
 
@@ -26,7 +33,7 @@ export const svixVerifier: ProviderVerifier = {
     if (isNaN(timestamp)) {
       return {
         valid: false,
-        provider: 'svix',
+        provider: "svix",
         code: WebhookErrorCode.MISSING_HEADER,
         reason: 'Invalid "svix-timestamp" header format',
       };
@@ -38,7 +45,7 @@ export const svixVerifier: ProviderVerifier = {
       if (Math.abs(now - timestamp) > tolerance) {
         return {
           valid: false,
-          provider: 'svix',
+          provider: "svix",
           code: WebhookErrorCode.EXPIRED_TIMESTAMP,
           timestamp,
           reason: `Timestamp outside tolerance window (timestamp: ${timestamp}, current: ${now}, tolerance: ${tolerance}s)`,
@@ -47,7 +54,7 @@ export const svixVerifier: ProviderVerifier = {
     }
 
     let secretBytes: Uint8Array;
-    if (secret.startsWith('whsec_')) {
+    if (secret.startsWith("whsec_")) {
       secretBytes = base64ToBytes(secret.slice(6));
     } else {
       try {
@@ -61,10 +68,10 @@ export const svixVerifier: ProviderVerifier = {
     const hmacBytes = await computeHmacSha256(secretBytes, payloadToSign);
     const expectedBase64 = bytesToBase64(hmacBytes);
 
-    const signatures = svixSignature.split(' ').map((s) => s.trim());
+    const signatures = svixSignature.split(" ").map((s) => s.trim());
     const valid = signatures.some((sig) => {
-      const [version, b64] = sig.split(',');
-      if (version === 'v1' && b64) {
+      const [version, b64] = sig.split(",");
+      if (version === "v1" && b64) {
         return timingSafeEqual(b64, expectedBase64);
       }
       return false;
@@ -73,16 +80,16 @@ export const svixVerifier: ProviderVerifier = {
     if (!valid) {
       return {
         valid: false,
-        provider: 'svix',
+        provider: "svix",
         code: WebhookErrorCode.INVALID_SIGNATURE,
         timestamp,
-        reason: 'Signature mismatch',
+        reason: "Signature mismatch",
       };
     }
 
     return {
       valid: true,
-      provider: 'svix',
+      provider: "svix",
       timestamp,
     };
   },
