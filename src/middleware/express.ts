@@ -13,7 +13,6 @@ export interface ExpressRequestLike {
   originalUrl?: string;
   method?: string;
   on?: (event: string, listener: (...args: unknown[]) => void) => void;
-  [key: string]: unknown;
 }
 
 export interface ExpressResponseLike {
@@ -79,7 +78,7 @@ export function verihookExpress(
     req: ExpressRequestLike,
     res: ExpressResponseLike,
     next: ExpressNextLike,
-  ) => {
+  ): Promise<void> => {
     try {
       const resolvedSecret =
         typeof secret === "function" ? await secret(req) : secret;
@@ -98,10 +97,11 @@ export function verihookExpress(
           totalBytes += bufferChunk.length;
           if (totalBytes > maxBytes) {
             setSecurityHeaders(res);
-            return res.status(413).json({
+            res.status(413).json({
               error: `Payload size exceeds limit of ${maxBytes} bytes`,
               code: "PAYLOAD_TOO_LARGE",
             });
+            return;
           }
           chunks.push(bufferChunk);
         }
@@ -119,15 +119,17 @@ export function verihookExpress(
 
       if (!result.valid) {
         if (options?.onError) {
-          return await options.onError(result, req, res, next);
+          await options.onError(result, req, res, next);
+          return;
         }
 
         if (options?.respondOnError !== false) {
           setSecurityHeaders(res);
-          return res.status(401).json({
+          res.status(401).json({
             error: result.reason,
             code: result.code,
           });
+          return;
         }
         return next(result);
       }
@@ -174,11 +176,13 @@ export function verihookExpress(
       };
 
       if (options?.onError) {
-        return await options.onError(errorResult, req, res, next);
+        await options.onError(errorResult, req, res, next);
+        return;
       }
       if (options?.respondOnError !== false) {
         setSecurityHeaders(res);
-        return res.status(500).json({ error: errorMsg });
+        res.status(500).json({ error: errorMsg });
+        return;
       }
       next(err);
     }

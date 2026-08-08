@@ -72,7 +72,7 @@ describe("Comprehensive Provider Edge Cases & Negative Paths", () => {
         },
         body: bodyStr,
       },
-      "whsec_dGVzdF9zZWNyZXRfMTIz",
+      "whsec_dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==",
     );
     expect(invalidSigRes.valid).toBe(false);
   });

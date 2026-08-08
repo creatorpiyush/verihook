@@ -385,7 +385,7 @@ Examples:
       const rawSecret =
         secret && secret.startsWith("whsec_")
           ? secret.slice(6)
-          : secret || "MfKQ9r8GKY2ly3ShZsKm7zpAKGJikF3g";
+          : secret || "dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==";
       const msgId = `msg_${Date.now()}`;
       const timestamp = Math.floor(Date.now() / 1000);
       rawBody = JSON.stringify({
@@ -393,10 +393,8 @@ Examples:
         data: { id: "usr_simulated_100" },
       });
       const payloadToSign = `${msgId}.${timestamp}.${rawBody}`;
-      const hmac = await computeHmacSha256(
-        base64ToBytes(rawSecret),
-        payloadToSign,
-      );
+      const keyBytes = base64ToBytes(rawSecret);
+      const hmac = await computeHmacSha256(keyBytes, payloadToSign);
       headers["svix-id"] = msgId;
       headers["svix-timestamp"] = String(timestamp);
       headers["svix-signature"] = `v1,${bytesToBase64(hmac)}`;
@@ -406,7 +404,7 @@ Examples:
     case "slack": {
       secret = secret || "slack_signing_secret_123";
       const timestamp = Math.floor(Date.now() / 1000);
-      rawBody = "token=gIOm5BIZJR0DZ3enR&team_id=T0001&command=%2Fverihook";
+      rawBody = "token=slack_token_test_123&team_id=T0001&command=%2Fverihook";
       headers["content-type"] = "application/x-www-form-urlencoded";
       headers["x-slack-request-timestamp"] = String(timestamp);
       const sigBase = `v0:${timestamp}:${rawBody}`;

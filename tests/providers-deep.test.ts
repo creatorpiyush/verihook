@@ -134,7 +134,7 @@ describe("Deep Provider Edge Cases for >95% Coverage", () => {
         headers: { "svix-signature": "v1,sig", "svix-id": "msg_1" },
         body: bodyStr,
       },
-      "whsec_dGVzdF9zZWNyZXRfMTIz",
+      "whsec_dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==",
     );
     expect(noTsRes.code).toBe("MISSING_HEADER");
 
@@ -143,7 +143,7 @@ describe("Deep Provider Edge Cases for >95% Coverage", () => {
         headers: { "svix-signature": "v1,sig", "svix-timestamp": "1700000000" },
         body: bodyStr,
       },
-      "whsec_dGVzdF9zZWNyZXRfMTIz",
+      "whsec_dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==",
     );
     expect(noIdRes.code).toBe("MISSING_HEADER");
   });
