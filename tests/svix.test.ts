@@ -4,7 +4,7 @@ import { verifySvix, verifyWebhook } from "../src/index.js";
 import { base64ToBytes, bytesToBase64 } from "../src/utils/encoding.js";
 
 describe("Svix / Resend / Clerk Webhook Verifier", () => {
-  const rawSecret = "MfKQ9r8GKY2ly3ShZsKm7zpAKGJikF3g";
+  const rawSecret = "dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==";
   const whsecSecret = `whsec_${rawSecret}`;
   const body = JSON.stringify({
     type: "user.created",

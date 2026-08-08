@@ -101,13 +101,13 @@ describe("Comprehensive End-to-End Regression Suite", () => {
     expect(slackRes.valid).toBe(true);
 
     // Svix / Resend / Clerk
-    const svixSecret = "whsec_dGVzdF9zZWNyZXRfMTIz";
+    const svixSecret = "whsec_dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==";
     const svixBody = JSON.stringify({ event: "user.created" });
     const msgId = "msg_reg_100";
     const svixToSign = `${msgId}.${ts}.${svixBody}`;
     const svixHmac = bytesToBase64(
       await computeHmacSha256(
-        base64ToBytes("dGVzdF9zZWNyZXRfMTIz"),
+        base64ToBytes("dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw=="),
         svixToSign,
       ),
     );

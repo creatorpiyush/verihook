@@ -57,7 +57,7 @@ app.post('/webhooks/github', async (req: Request, res: Response) => {
  * 2. Svix / Resend / Clerk Webhook Handler
  */
 app.post('/webhooks/svix', async (req: Request, res: Response) => {
-  const secret = process.env.SVIX_WEBHOOK_SECRET || 'whsec_MfKQ9r8GKY2ly3ShZsKm7zpAKGJikF3g';
+  const secret = process.env.SVIX_WEBHOOK_SECRET || 'whsec_dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==';
 
   const result = await verifyWebhook('svix', req, secret);
 

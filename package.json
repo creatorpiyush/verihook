@@ -1,6 +1,6 @@
 {
   "name": "verihook",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Universal typed webhook verifier for Stripe, GitHub, Shopify, Slack, Twilio, Svix, Meta, WhatsApp, Discord, Twitter, PayPal, LemonSqueezy, Paddle, PagerDuty, Webflow, WorkOS, Linear, Razorpay, Zoom, and custom providers.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -23,7 +23,7 @@
     }
   },
   "bin": {
-    "verihook": "./dist/cli.js"
+    "verihook": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -46,7 +46,7 @@
     "verify": "npm run format:check && npm run typecheck && npm run test:coverage && npm run build",
     "pre-commit": "bash scripts/pre-commit.sh",
     "pre-release": "bash scripts/pre-release.sh",
-    "prepublishOnly": "npm run format:check && npm run typecheck && npm run test:coverage && npm run build"
+    "prepublishOnly": "npm run test:all"
   },
   "keywords": [
     "webhook",
