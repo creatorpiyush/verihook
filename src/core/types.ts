@@ -1,40 +1,38 @@
 export type ProviderName =
-  | 'stripe'
-  | 'github'
-  | 'shopify'
-  | 'slack'
-  | 'twilio'
-  | 'svix'
-  | 'resend'
-  | 'clerk'
-  | 'linear'
-  | 'razorpay'
-  | 'square'
-  | 'zoom'
-  | 'meta'
-  | 'whatsapp'
-  | 'facebook'
-  | 'instagram'
-  | 'discord'
-  | 'twitter'
-  | 'x'
-  | 'paypal'
-  | 'lemonsqueezy'
-  | 'paddle'
-  | 'pagerduty'
-  | 'webflow'
-  | 'workos'
-  | 'generic'
+  | "stripe"
+  | "github"
+  | "shopify"
+  | "slack"
+  | "twilio"
+  | "svix"
+  | "resend"
+  | "clerk"
+  | "linear"
+  | "razorpay"
+  | "square"
+  | "zoom"
+  | "meta"
+  | "whatsapp"
+  | "facebook"
+  | "instagram"
+  | "discord"
+  | "twitter"
+  | "x"
+  | "paypal"
+  | "lemonsqueezy"
+  | "paddle"
+  | "pagerduty"
+  | "webflow"
+  | "workos"
+  | "generic"
   | (string & {});
 
 export type WebhookHeaders =
-  | Headers
-  | Record<string, string | string[] | undefined>
-  | Map<string, string>;
+  Headers | Record<string, string | string[] | undefined> | Map<string, string>;
 
 export interface WebhookRequestInputObject {
   headers?: WebhookHeaders;
-  body?: string | Uint8Array | ArrayBuffer | Record<string, any> | any;
+  body?: string | Uint8Array | ArrayBuffer | Record<string, unknown> | unknown;
   rawBody?: string | Uint8Array | ArrayBuffer;
   url?: string;
   originalUrl?: string;
@@ -83,12 +81,12 @@ export interface VerifyWebhookOptions {
    * Custom HMAC algorithm (e.g. 'sha256', 'sha1', 'sha512'). Used for generic provider.
    * @default 'sha256'
    */
-  algorithm?: 'sha256' | 'sha1' | 'sha512';
+  algorithm?: "sha256" | "sha1" | "sha512";
 
   /**
    * Encoding of the signature in header (e.g. 'hex', 'base64', 'prefix-hex').
    */
-  encoding?: 'hex' | 'base64' | 'prefix-hex';
+  encoding?: "hex" | "base64" | "prefix-hex";
 
   /**
    * Telemetry callback invoked on every verification attempt (pass/fail).
@@ -99,6 +97,11 @@ export interface VerifyWebhookOptions {
    * Telemetry callback invoked on every verification attempt (alias for onVerify).
    */
   log?: WebhookLoggerFn;
+
+  /**
+   * Maximum allowed body size in bytes for unparsed streaming requests (defaults to 2MB = 2,097,152 bytes).
+   */
+  maxBodySize?: number;
 }
 
 export interface WebhookVerificationEvent {
@@ -143,17 +146,19 @@ export interface WebhookVerificationEvent {
   error?: Error;
 }
 
-export type WebhookLoggerFn = (event: WebhookVerificationEvent) => void | Promise<void>;
+export type WebhookLoggerFn = (
+  event: WebhookVerificationEvent,
+) => void | Promise<void>;
 
 export enum WebhookErrorCode {
-  INVALID_SIGNATURE = 'INVALID_SIGNATURE',
-  EXPIRED_TIMESTAMP = 'EXPIRED_TIMESTAMP',
-  MISSING_HEADER = 'MISSING_HEADER',
-  MISSING_URL = 'MISSING_URL',
-  INVALID_SECRET = 'INVALID_SECRET',
-  INVALID_BODY = 'INVALID_BODY',
-  UNSUPPORTED_PROVIDER = 'UNSUPPORTED_PROVIDER',
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+  INVALID_SIGNATURE = "INVALID_SIGNATURE",
+  EXPIRED_TIMESTAMP = "EXPIRED_TIMESTAMP",
+  MISSING_HEADER = "MISSING_HEADER",
+  MISSING_URL = "MISSING_URL",
+  INVALID_SECRET = "INVALID_SECRET",
+  INVALID_BODY = "INVALID_BODY",
+  UNSUPPORTED_PROVIDER = "UNSUPPORTED_PROVIDER",
+  UNKNOWN_ERROR = "UNKNOWN_ERROR",
 }
 
 export type VerificationErrorCode = `${WebhookErrorCode}`;
@@ -199,6 +204,6 @@ export interface ProviderVerifier {
   verify(
     req: NormalizedWebhookRequest,
     secret: string,
-    options?: VerifyWebhookOptions
+    options?: VerifyWebhookOptions,
   ): Promise<VerificationResult>;
 }

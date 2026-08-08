@@ -2,7 +2,7 @@
 
 > **Universal, typed webhook signature verifier** for TypeScript and JavaScript.
 
-This document details the architectural design, security mechanisms, request normalization pipeline, and provider verification specification of `verihook`.
+This document details the architectural design, security mechanisms, request normalization pipeline, type system, and provider verification specification of `verihook`.
 
 ---
 
@@ -12,9 +12,11 @@ This document details the architectural design, security mechanisms, request nor
 
 ### Core Objectives
 1. **Zero External Runtime Dependencies**: Powered by native Web Crypto API (`crypto.subtle`) with Node.js `node:crypto` fallback.
-2. **Universal Framework Portability**: Seamlessly processes standard Fetch API `Request` objects, Node.js HTTP/Express `req`, Fastify, Next.js App Router, Hono, and Cloudflare Workers.
-3. **Side-Channel Timing Protection**: Enforces constant-time string comparisons across all provider signature verification logic.
-4. **Edge Ready**: Runs identically across Node.js (>= 18), Vercel Edge, Cloudflare Workers, Deno, and Bun.
+2. **Hardened Security**: Multi-layered defense including constant-time timing-safe equality checks, SSRF origin validation, unparsed stream payload byte limits (`maxBodySize`), and standard HTTP security headers (`nosniff`, `DENY`).
+3. **Universal Framework Portability**: Seamlessly processes standard Fetch API `Request` objects, Node.js HTTP/Express `req`, Fastify, Next.js App Router, Hono, and Cloudflare Workers.
+4. **Side-Channel Timing Protection**: Enforces constant-time string comparisons across all provider signature verification logic.
+5. **Strict Type Safety**: Completely eliminates `any` types in favor of strict `unknown` guards, explicit interfaces, and zero-dependency boundary validation schemas.
+6. **Edge Ready**: Runs identically across Node.js (>= 18), Vercel Edge, Cloudflare Workers, Deno, and Bun.
 
 ---
 
@@ -25,14 +27,14 @@ flowchart TD
     A["Incoming Webhook Request"] --> B["normalizeRequest Engine"]
     B --> C{"Input Type?"}
     C -->|Fetch Request| D["Extract headers, clone body via text"]
-    C -->|Express / Node req| E["Extract req.headers & req.rawBody"]
+    C -->|Express / Node req| E["Stream buffer (maxBodySize limit)"]
     C -->|Plain Object| F["Extract object headers & body"]
     D --> G["NormalizedWebhookRequest"]
     E --> G
     F --> G
     G --> H["verifyWebhook Provider Registry"]
     H --> I["Execute Provider Verifier"]
-    I --> J["Compute HMAC via Web Crypto"]
+    I --> J["Compute HMAC / Ed25519 / RSA via Web Crypto"]
     J --> K["timingSafeEqual Comparison"]
     K --> L["Return VerificationResult"]
 ```
@@ -118,7 +120,14 @@ export function timingSafeEqual(a: string | Uint8Array, b: string | Uint8Array):
 
 ---
 
-### D. Extensible Provider Plugin System (`src/providers/index.ts`)
+### D. Zero-Dependency Boundary Validator (`src/schemas/index.ts`)
+To maintain **zero runtime dependencies** while ensuring input type safety:
+- Implements `validateCliArgs` and `validateVerifyWebhookOptions` for validating CLI flags and verification options.
+- Validates payload size thresholds, algorithm enums (`'sha256' | 'sha1' | 'sha512'`), encoding strings (`'hex' | 'base64' | 'prefix-hex'`), and URL syntax without external packages.
+
+---
+
+### E. Extensible Provider Plugin System (`src/providers/index.ts`)
 Every provider implements the `ProviderVerifier` interface:
 
 ```ts
@@ -148,8 +157,8 @@ registerProvider({
 
 ---
 
-### E. Error Classification & Domain Errors (`src/core/errors.ts`)
-Instead of relying on string matching or generic error messages, `verihook` implements a structured error classification architecture:
+### F. Error Classification & Domain Errors (`src/core/errors.ts`)
+`verihook` implements a structured error classification architecture:
 
 #### 1. `WebhookErrorCode` Enum
 All verifiers assign an explicit code from `WebhookErrorCode` to the `VerificationResult`:
@@ -166,34 +175,49 @@ All verifiers assign an explicit code from `WebhookErrorCode` to the `Verificati
 - `WebhookVerificationError`: Thrown by `verifyWebhookOrThrow()`, contains `provider`, `reason`, and structured `code`.
 - `InvalidBodyError`: Thrown when a pre-parsed JSON object is passed without `rawBody`.
 - `UnsupportedProviderError`: Thrown when an unknown provider string is requested.
-- **Context Preservation**: Unexpected exceptions attach the raw `Error` instance to `result.error` so observability tools preserve stack traces.
 
 ---
 
-### F. Framework Middleware Abstractions (`src/middleware/`)
-`verihook` provides 1-line middleware factories for Express and Next.js / Web API runtimes while keeping zero external dependencies:
+### G. Framework Middleware & Security Hardening (`src/middleware/`)
+1-line middleware abstractions with built-in runtime hardening:
 
 #### 1. Express Middleware (`verihookExpress`)
 - **Location**: `verihook/express` (`src/middleware/express.ts`).
-- **Signature**: `verihookExpress(provider, secret, options?)`
-- **Behavior**:
-  - Automatically collects unparsed body chunks if stream hasn't been consumed.
-  - Verifies signature using `verifyWebhook()`.
-  - Attaches `req.verihook` (`{ valid, provider, payload, timestamp }`) and `req.verifiedPayload`.
-  - Automatically returns HTTP 401 JSON error responses on failure or delegates to optional `onError` callback.
+- **Stream Limit Protection**: Buffers unparsed body streams with an explicit `maxBodySize` threshold (default 2MB = 2,097,152 bytes), terminating stream consumption and returning HTTP 413 Payload Too Large if exceeded.
+- **Security Headers**: Automatically sets `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY` on error responses.
 
 #### 2. Next.js Route Handler Factory (`createWebhookHandler`)
 - **Location**: `verihook/next` (`src/middleware/next.ts`).
-- **Signature**: `createWebhookHandler(provider, secret, handler, options?)`
-- **Behavior**:
-  - Compatible with Next.js App Router (`export const POST = createWebhookHandler(...)`) and Web API Fetch `Request`/`Response` runtimes.
-  - Clones `Request` to extract body without mutating original stream.
-  - Invokes `handler(payload, result, req)` upon successful verification.
-  - Automatically formats and returns JSON `Response` objects.
+- **Behavior**: Clones Web API `Request` objects, verifies signature, executes handler, and returns `Response` objects containing standard security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`).
 
 ---
 
-## 4. Provider Implementation Matrix
+## 4. SSRF Origin Protection Engine (`src/cli/index.ts`)
+
+The CLI webhook simulator (`npx verihook simulate`) includes multi-layered SSRF origin validation:
+
+1. **Unconditional Cloud Metadata Blocking**:
+   Blocks known cloud Instance Metadata Services (IMDS) and internal control plane hosts:
+   - `169.254.169.254` (AWS, GCP, Azure, OpenStack, DigitalOcean, Alibaba)
+   - `169.254.170.2` (AWS ECS Task Metadata)
+   - `168.63.129.16` (Azure Wire Server IP)
+   - `100.100.100.200` (Alibaba Cloud IMDS)
+   - `metadata.google.internal` (GCP Metadata)
+   - `metadata.tencentyun.com` (Tencent Cloud)
+   - `kubernetes.default.svc` (Kubernetes Service CIDR)
+2. **Subnet & Range Detection**:
+   - `169.254.0.0/16` Link-Local IPv4 subnet range
+   - `::ffff:169.254.x.x` IPv4-mapped IPv6 & `fe80::` IPv6 Link-Local
+3. **Alternative Encoding Detection**:
+   - Octal IP strings (e.g. `0251.0376.0251.0376`)
+   - Integer / Hex representations (e.g. `2852039166`, `0xa9fea9fe`)
+4. **Remote Host Guardrails**:
+   - Disallows non-HTTP protocols (`file://`, `ftp://`, `gopher://`).
+   - Requires `--allow-remote` or `VERIHOOK_ALLOW_REMOTE=true` when targeting non-local destinations.
+
+---
+
+## 5. Provider Implementation Matrix
 
 | Provider | Target Header | Algorithm & Encoding | Signature Base Payload | Replay Tolerance |
 | :--- | :--- | :--- | :--- | :--- |
@@ -220,8 +244,9 @@ All verifiers assign an explicit code from `WebhookErrorCode` to the `Verificati
 
 ---
 
-## 5. Security & Build Hygiene
+## 6. Security & Build Hygiene
 
-- **Pre-publish Validation**: Automated `"prepublishOnly": "npm run typecheck && npm run test && npm run build"` script prevents publishing broken artifacts.
+- **Automated Verification Pipeline**: `"verify": "npm run format:check && npm run typecheck && npm run test:coverage && npm run build"` validates formatting, strict TypeScript types, V8 unit test coverage, and builds in sequence.
+- **CI Security Auditing**: GitHub Actions workflow includes mandatory `npm audit --audit-level=high` step.
 - **Zero Runtime Overhead**: No third-party runtime npm dependencies (`"dependencies": {}`).
-- **Dual Bundle**: Ships CommonJS (`dist/index.cjs`) & ESM (`dist/index.js`) with TypeScript types (`dist/index.d.ts`).
+- **Dual Bundle**: Ships CommonJS (`dist/index.js`) & ESM (`dist/index.mjs`) with TypeScript declaration maps (`dist/index.d.ts`).

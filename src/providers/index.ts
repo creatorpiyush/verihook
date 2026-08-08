@@ -1,25 +1,25 @@
-import { ProviderName, ProviderVerifier } from '../core/types.js';
-import { UnsupportedProviderError } from '../core/errors.js';
-import { githubVerifier } from './github.js';
-import { linearVerifier } from './linear.js';
-import { razorpayVerifier } from './razorpay.js';
-import { shopifyVerifier } from './shopify.js';
-import { slackVerifier } from './slack.js';
-import { squareVerifier } from './square.js';
-import { stripeVerifier } from './stripe.js';
-import { svixVerifier } from './svix.js';
-import { twilioVerifier } from './twilio.js';
-import { zoomVerifier } from './zoom.js';
-import { metaVerifier } from './meta.js';
-import { discordVerifier } from './discord.js';
-import { twitterVerifier } from './twitter.js';
-import { paypalVerifier } from './paypal.js';
-import { lemonsqueezyVerifier } from './lemonsqueezy.js';
-import { paddleVerifier } from './paddle.js';
-import { pagerdutyVerifier } from './pagerduty.js';
-import { webflowVerifier } from './webflow.js';
-import { workosVerifier } from './workos.js';
-import { genericVerifier } from './generic.js';
+import { ProviderName, ProviderVerifier } from "../core/types.js";
+import { UnsupportedProviderError } from "../core/errors.js";
+import { githubVerifier } from "./github.js";
+import { linearVerifier } from "./linear.js";
+import { razorpayVerifier } from "./razorpay.js";
+import { shopifyVerifier } from "./shopify.js";
+import { slackVerifier } from "./slack.js";
+import { squareVerifier } from "./square.js";
+import { stripeVerifier } from "./stripe.js";
+import { svixVerifier } from "./svix.js";
+import { twilioVerifier } from "./twilio.js";
+import { zoomVerifier } from "./zoom.js";
+import { metaVerifier } from "./meta.js";
+import { discordVerifier } from "./discord.js";
+import { twitterVerifier } from "./twitter.js";
+import { paypalVerifier } from "./paypal.js";
+import { lemonsqueezyVerifier } from "./lemonsqueezy.js";
+import { paddleVerifier } from "./paddle.js";
+import { pagerdutyVerifier } from "./pagerduty.js";
+import { webflowVerifier } from "./webflow.js";
+import { workosVerifier } from "./workos.js";
+import { genericVerifier } from "./generic.js";
 
 export const providers: Record<string, ProviderVerifier> = {
   stripe: stripeVerifier,
@@ -28,9 +28,9 @@ export const providers: Record<string, ProviderVerifier> = {
   slack: slackVerifier,
   twilio: twilioVerifier,
   svix: svixVerifier,
-  resend: svixVerifier,     // Resend uses Svix
-  clerk: svixVerifier,      // Clerk uses Svix
-  meta: metaVerifier,       // Meta / WhatsApp / Instagram / Facebook
+  resend: svixVerifier, // Resend uses Svix
+  clerk: svixVerifier, // Clerk uses Svix
+  meta: metaVerifier, // Meta / WhatsApp / Instagram / Facebook
   whatsapp: metaVerifier,
   facebook: metaVerifier,
   instagram: metaVerifier,

@@ -1,21 +1,27 @@
-import { computeHmacSha256, timingSafeEqual } from '../core/crypto.js';
-import { NormalizedWebhookRequest, ProviderVerifier, VerificationResult, VerifyWebhookOptions, WebhookErrorCode } from '../core/types.js';
-import { bytesToHex } from '../utils/encoding.js';
+import { computeHmacSha256, timingSafeEqual } from "../core/crypto.js";
+import {
+  NormalizedWebhookRequest,
+  ProviderVerifier,
+  VerificationResult,
+  VerifyWebhookOptions,
+  WebhookErrorCode,
+} from "../core/types.js";
+import { bytesToHex } from "../utils/encoding.js";
 
 export const zoomVerifier: ProviderVerifier = {
-  name: 'zoom',
+  name: "zoom",
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,
-    options?: VerifyWebhookOptions
+    options?: VerifyWebhookOptions,
   ): Promise<VerificationResult> {
-    const signature = req.headers['x-zm-signature'];
-    const timestampStr = req.headers['x-zm-request-timestamp'];
+    const signature = req.headers["x-zm-signature"];
+    const timestampStr = req.headers["x-zm-request-timestamp"];
 
     if (!signature) {
       return {
         valid: false,
-        provider: 'zoom',
+        provider: "zoom",
         code: WebhookErrorCode.MISSING_HEADER,
         reason: 'Missing "x-zm-signature" header',
       };
@@ -24,7 +30,7 @@ export const zoomVerifier: ProviderVerifier = {
     if (!timestampStr) {
       return {
         valid: false,
-        provider: 'zoom',
+        provider: "zoom",
         code: WebhookErrorCode.MISSING_HEADER,
         reason: 'Missing "x-zm-request-timestamp" header',
       };
@@ -34,7 +40,7 @@ export const zoomVerifier: ProviderVerifier = {
     if (isNaN(timestamp)) {
       return {
         valid: false,
-        provider: 'zoom',
+        provider: "zoom",
         code: WebhookErrorCode.MISSING_HEADER,
         reason: 'Invalid "x-zm-request-timestamp" header format',
       };
@@ -46,7 +52,7 @@ export const zoomVerifier: ProviderVerifier = {
       if (Math.abs(now - timestamp) > tolerance) {
         return {
           valid: false,
-          provider: 'zoom',
+          provider: "zoom",
           code: WebhookErrorCode.EXPIRED_TIMESTAMP,
           timestamp,
           reason: `Timestamp outside tolerance window (timestamp: ${timestamp}, current: ${now}, tolerance: ${tolerance}s)`,
@@ -61,16 +67,16 @@ export const zoomVerifier: ProviderVerifier = {
     if (!timingSafeEqual(signature.trim(), expectedHex)) {
       return {
         valid: false,
-        provider: 'zoom',
+        provider: "zoom",
         code: WebhookErrorCode.INVALID_SIGNATURE,
         timestamp,
-        reason: 'Signature mismatch',
+        reason: "Signature mismatch",
       };
     }
 
     return {
       valid: true,
-      provider: 'zoom',
+      provider: "zoom",
       timestamp,
     };
   },
