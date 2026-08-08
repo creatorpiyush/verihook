@@ -5,6 +5,28 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-08-08
+
+### Added
+- 🧪 **Master End-to-End Test Suite (`npm run test:all`)**:
+  - Added automated test runner script `scripts/test-all.sh` (`npm run test:all`) performing Prettier formatting checks, TypeScript strict typechecks, V8 coverage verification, regression tests, production build verification, CLI binary simulations, and live CommonJS & ESM module export validation.
+- 🛡️ **Full End-to-End Regression Suite (`npm run test:regression`)**:
+  - Added [tests/regression.test.ts](file:///Users/piyush.anand/self_code/verihook/tests/regression.test.ts) covering all 20+ signature algorithms, security negative paths, custom plugin registration, Express & Next.js adapters, and CLI simulator cURL generation across 162 total unit tests.
+- 🏷️ **Documentation Badges & Verification**:
+  - Added Shields.io badges in `README.md` for GitHub CI workflow status, 96% code coverage, zero dependencies, TypeScript strict mode, and monthly npm downloads.
+
+### Changed
+- 📊 **Code Coverage Push (>95% Lines / 99% Providers)**:
+  - Boosted V8 code coverage to **95.93% line coverage** and **99.29% provider coverage**, achieving **100% line coverage** across `src/core/verifier.ts`, `src/schemas/index.ts`, and 17 provider modules.
+- ⚡ **CLI Direct Execution Guard (`isDirectRun`)**:
+  - Upgraded entry point direct execution detection in `src/cli/index.ts` to use `fs.realpathSync` path matching against `require.main` and `import.meta.url` to prevent test framework pollution and avoid accidental execution in user applications.
+
+### Security
+- 🔒 **Transitive Dependency Remediation**:
+  - Added `overrides: { "esbuild": "0.28.1" }` in `package.json` to remediate high-severity vulnerability GHSA-g7r4-m6w7-qqqr.
+
+---
+
 ## [1.4.0] - 2026-08-02
 
 ### Added

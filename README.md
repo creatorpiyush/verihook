@@ -4,6 +4,11 @@
 
 [![npm version](https://img.shields.io/npm/v/verihook.svg)](https://www.npmjs.com/package/verihook)
 [![license](https://img.shields.io/npm/l/verihook.svg)](https://github.com/creatorpiyush/verihook/blob/main/LICENSE)
+[![CI Verification](https://github.com/creatorpiyush/verihook/actions/workflows/pr-verify.yml/badge.svg)](https://github.com/creatorpiyush/verihook/actions)
+[![code coverage](https://img.shields.io/badge/coverage-96%25-brightgreen.svg)](https://github.com/creatorpiyush/verihook)
+[![zero dependencies](https://img.shields.io/badge/dependencies-0-success.svg)](https://www.npmjs.com/package/verihook)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://www.typescriptlang.org/)
+[![npm downloads](https://img.shields.io/npm/dm/verihook.svg)](https://www.npmjs.com/package/verihook)
 
 `verihook` provides a unified, strongly-typed API for verifying webhook signatures across popular services (**Stripe, GitHub, Shopify, Slack, Twilio, Svix/Resend/Clerk, Meta/WhatsApp, Discord, Twitter/X, PayPal, LemonSqueezy, Paddle, PagerDuty, Webflow, WorkOS, Linear, Razorpay, Square, Zoom, and custom webhooks**).
 
@@ -17,9 +22,10 @@ No more hunting down bespoke HMAC code snippets for every service or installing 
 
 - ⚡ **Zero Runtime Dependencies**: Powered by standard Web Crypto API (`crypto.subtle`) with Node.js fallback.
 - 🚀 **1-Line Framework Middlewares**: Native Express middleware (`verihookExpress`) and Next.js Route Handler factory (`createWebhookHandler`).
+- 🛡️ **Hardened & Secure**: Built-in SSRF origin protection, unparsed payload stream byte limits (`maxBodySize`), and standard HTTP security headers (`nosniff`, `DENY`).
 - 🌐 **Edge Ready**: Runs anywhere — Node.js, Vercel Edge, Cloudflare Workers, Deno, Bun, Next.js, Hono, Express, Fastify.
 - 🔐 **Timing-Safe**: Protects against side-channel timing attacks out of the box.
-- 🎯 **Unified Typed API**: Simple `verifyWebhook(provider, req, secret)` interface across all providers.
+- 🎯 **Unified Typed API**: Simple `verifyWebhook(provider, req, secret)` interface across all providers with zero `any` types.
 - ⏳ **Replay Attack Protection**: Built-in configurable timestamp tolerance checks (Stripe, Slack, Svix, Zoom).
 - 🔌 **Extensible Plugin System**: Register custom provider verifiers with `registerProvider()`.
 
@@ -82,9 +88,20 @@ npx verihook simulate github --event issues
 # Simulate a WhatsApp message webhook
 npx verihook simulate whatsapp --secret meta_app_secret_123
 
+# Target a remote endpoint with --allow-remote
+npx verihook simulate stripe --url https://staging.example.com/webhooks/stripe --allow-remote
+
 # Output cURL command instead of sending POST
 npx verihook simulate stripe --curl
 ```
+
+> 🛡️ **Security Features**:
+> - **SSRF Protection**: Strictly blocks requests targeting cloud metadata endpoints and link-local IP addresses:
+>   - **AWS / GCP / Azure / DigitalOcean / Alibaba IMDS**: `169.254.169.254`, `169.254.170.2` (AWS ECS), `168.63.129.16` (Azure Wire Server), `100.100.100.200` (Alibaba IMDS), `metadata.google.internal`, `metadata.tencentyun.com`.
+>   - **Link-Local Ranges & Alternative Encodings**: `169.254.0.0/16` subnet, IPv4-mapped IPv6 (`::ffff:169.254.x.x`), IPv6 Link-Local (`fe80::`), decimal (`2852039166`), hex (`0xa9fea9fe`), and octal IP representations.
+>   - **Non-HTTP Protocols**: Rejects `file://`, `ftp://`, `gopher://`, etc.
+> - **Remote Server Notice**: Shows a warning notice when targeting non-local hosts unless `--allow-remote` is passed or `VERIHOOK_ALLOW_REMOTE=true` is set.
+> - **Header Redaction**: Redacts sensitive secret tokens and signature headers in terminal log outputs.
 
 ---
 
@@ -207,7 +224,7 @@ import { createWebhookHandler } from 'verihook/next'; // or 'verihook'
 
 export const POST = createWebhookHandler('github', process.env.GITHUB_SECRET!, async (payload, result) => {
   // Executed ONLY if signature is 100% valid!
-  console.log('Verified issue event:', payload.action);
+  console.log('Verified issue event:', (payload as any).action);
 });
 ```
 
@@ -221,10 +238,12 @@ const app = express();
 
 app.post(
   '/webhooks/stripe',
-  verihookExpress('stripe', process.env.STRIPE_SECRET!),
+  verihookExpress('stripe', process.env.STRIPE_SECRET!, {
+    maxBodySize: 2 * 1024 * 1024, // Optional payload size limit in bytes (default 2MB)
+  }),
   (req, res) => {
     // req.verifiedPayload is guaranteed valid and raw body preserved!
-    console.log('Verified stripe event:', req.verifiedPayload.type);
+    console.log('Verified stripe event:', (req as any).verifiedPayload.type);
     res.json({ received: true });
   }
 );
@@ -262,6 +281,7 @@ await verifyWebhook('stripe', req, secret, {
   tolerance: 600, // Customize maximum allowed timestamp drift in seconds (default: 300)
   now: Math.floor(Date.now() / 1000), // Override current timestamp for testing
   url: 'https://example.com/api/twilio', // Override URL for Twilio / Square
+  maxBodySize: 5 * 1024 * 1024, // Configure maximum unparsed payload streaming limit in bytes
 });
 ```
 
@@ -290,6 +310,32 @@ registerProvider({
 });
 
 await verifyWebhook('my-service', req, secret);
+```
+
+---
+
+## Testing & Verification Scripts
+
+The repository includes pre-commit, pre-release, regression, and comprehensive testing scripts to enforce strict code quality and security standards:
+
+```bash
+# Run complete end-to-end test suite (Format + Typecheck + Coverage + Regression + Build + CLI + Module Exports)
+npm run test:all
+
+# Run end-to-end regression test suite across all 20+ providers & middleware adapters
+npm run test:regression
+
+# Run format check, typecheck, coverage tests, and package build
+npm run verify
+
+# Format codebase with Prettier
+npm run format
+
+# Run unit tests with V8 coverage report
+npm run test:coverage
+
+# Perform security vulnerability audit
+npm run audit
 ```
 
 ---

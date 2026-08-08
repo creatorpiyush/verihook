@@ -1,33 +1,39 @@
-import { computeHmacSha256, timingSafeEqual } from '../core/crypto.js';
-import { NormalizedWebhookRequest, ProviderVerifier, VerificationResult, VerifyWebhookOptions, WebhookErrorCode } from '../core/types.js';
-import { bytesToHex } from '../utils/encoding.js';
+import { computeHmacSha256, timingSafeEqual } from "../core/crypto.js";
+import {
+  NormalizedWebhookRequest,
+  ProviderVerifier,
+  VerificationResult,
+  VerifyWebhookOptions,
+  WebhookErrorCode,
+} from "../core/types.js";
+import { bytesToHex } from "../utils/encoding.js";
 
 export const stripeVerifier: ProviderVerifier = {
-  name: 'stripe',
+  name: "stripe",
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,
-    options?: VerifyWebhookOptions
+    options?: VerifyWebhookOptions,
   ): Promise<VerificationResult> {
-    const signatureHeader = req.headers['stripe-signature'];
+    const signatureHeader = req.headers["stripe-signature"];
     if (!signatureHeader) {
       return {
         valid: false,
-        provider: 'stripe',
+        provider: "stripe",
         code: WebhookErrorCode.MISSING_HEADER,
         reason: 'Missing "stripe-signature" header',
       };
     }
 
-    const parts = signatureHeader.split(',');
+    const parts = signatureHeader.split(",");
     let timestamp: number | undefined;
     const signatures: string[] = [];
 
     for (const part of parts) {
-      const [key, value] = part.trim().split('=');
-      if (key === 't') {
+      const [key, value] = part.trim().split("=");
+      if (key === "t") {
         timestamp = parseInt(value, 10);
-      } else if (key === 'v1') {
+      } else if (key === "v1") {
         signatures.push(value);
       }
     }
@@ -35,7 +41,7 @@ export const stripeVerifier: ProviderVerifier = {
     if (!timestamp || isNaN(timestamp)) {
       return {
         valid: false,
-        provider: 'stripe',
+        provider: "stripe",
         code: WebhookErrorCode.MISSING_HEADER,
         reason: 'Invalid "stripe-signature" header format: timestamp missing',
       };
@@ -44,9 +50,10 @@ export const stripeVerifier: ProviderVerifier = {
     if (signatures.length === 0) {
       return {
         valid: false,
-        provider: 'stripe',
+        provider: "stripe",
         code: WebhookErrorCode.MISSING_HEADER,
-        reason: 'Invalid "stripe-signature" header format: v1 signature missing',
+        reason:
+          'Invalid "stripe-signature" header format: v1 signature missing',
       };
     }
 
@@ -56,7 +63,7 @@ export const stripeVerifier: ProviderVerifier = {
       if (Math.abs(now - timestamp) > tolerance) {
         return {
           valid: false,
-          provider: 'stripe',
+          provider: "stripe",
           code: WebhookErrorCode.EXPIRED_TIMESTAMP,
           timestamp,
           reason: `Timestamp outside tolerance window (signature timestamp: ${timestamp}, current: ${now}, tolerance: ${tolerance}s)`,
@@ -73,16 +80,16 @@ export const stripeVerifier: ProviderVerifier = {
     if (!isValid) {
       return {
         valid: false,
-        provider: 'stripe',
+        provider: "stripe",
         code: WebhookErrorCode.INVALID_SIGNATURE,
         timestamp,
-        reason: 'Signature mismatch',
+        reason: "Signature mismatch",
       };
     }
 
     return {
       valid: true,
-      provider: 'stripe',
+      provider: "stripe",
       timestamp,
     };
   },

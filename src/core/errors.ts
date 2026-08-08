@@ -1,4 +1,8 @@
-import { ProviderName, VerificationErrorCode, WebhookErrorCode } from './types.js';
+import {
+  ProviderName,
+  VerificationErrorCode,
+  WebhookErrorCode,
+} from "./types.js";
 
 export class WebhookVerificationError extends Error {
   public readonly provider: ProviderName;
@@ -8,10 +12,10 @@ export class WebhookVerificationError extends Error {
   constructor(
     provider: ProviderName,
     reason: string,
-    code: VerificationErrorCode = WebhookErrorCode.INVALID_SIGNATURE
+    code: VerificationErrorCode = WebhookErrorCode.INVALID_SIGNATURE,
   ) {
     super(`[verihook] ${provider} verification failed: ${reason}`);
-    this.name = 'WebhookVerificationError';
+    this.name = "WebhookVerificationError";
     this.provider = provider;
     this.reason = reason;
     this.code = code;
@@ -28,9 +32,9 @@ export class InvalidBodyError extends Error {
   constructor(message?: string) {
     super(
       message ||
-        'Parsed object passed as request body without rawBody. Webhook signature verification requires the exact, unparsed raw payload string/Buffer before JSON parsing. Pass rawBody or configure middleware (e.g. express.raw({ type: "*/*" })) to preserve original request bytes.'
+        'Parsed object passed as request body without rawBody. Webhook signature verification requires the exact, unparsed raw payload string/Buffer before JSON parsing. Pass rawBody or configure middleware (e.g. express.raw({ type: "*/*" })) to preserve original request bytes.',
     );
-    this.name = 'InvalidBodyError';
+    this.name = "InvalidBodyError";
 
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, InvalidBodyError);
@@ -39,12 +43,15 @@ export class InvalidBodyError extends Error {
 }
 
 export class UnsupportedProviderError extends Error {
-  public readonly code: VerificationErrorCode = WebhookErrorCode.UNSUPPORTED_PROVIDER;
+  public readonly code: VerificationErrorCode =
+    WebhookErrorCode.UNSUPPORTED_PROVIDER;
   public readonly provider: string;
 
   constructor(provider: string, supportedProviders: string[]) {
-    super(`[verihook] Unsupported provider "${provider}". Supported providers: ${supportedProviders.join(', ')}`);
-    this.name = 'UnsupportedProviderError';
+    super(
+      `[verihook] Unsupported provider "${provider}". Supported providers: ${supportedProviders.join(", ")}`,
+    );
+    this.name = "UnsupportedProviderError";
     this.provider = provider;
 
     if (Error.captureStackTrace) {

@@ -1,19 +1,25 @@
-import { computeHmacSha256, timingSafeEqual } from '../core/crypto.js';
-import { NormalizedWebhookRequest, ProviderVerifier, VerificationResult, VerifyWebhookOptions, WebhookErrorCode } from '../core/types.js';
-import { bytesToBase64 } from '../utils/encoding.js';
+import { computeHmacSha256, timingSafeEqual } from "../core/crypto.js";
+import {
+  NormalizedWebhookRequest,
+  ProviderVerifier,
+  VerificationResult,
+  VerifyWebhookOptions,
+  WebhookErrorCode,
+} from "../core/types.js";
+import { bytesToBase64 } from "../utils/encoding.js";
 
 export const squareVerifier: ProviderVerifier = {
-  name: 'square',
+  name: "square",
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,
-    options?: VerifyWebhookOptions
+    options?: VerifyWebhookOptions,
   ): Promise<VerificationResult> {
-    const signature = req.headers['x-square-hmacsha256-signature'];
+    const signature = req.headers["x-square-hmacsha256-signature"];
     if (!signature) {
       return {
         valid: false,
-        provider: 'square',
+        provider: "square",
         code: WebhookErrorCode.MISSING_HEADER,
         reason: 'Missing "x-square-hmacsha256-signature" header',
       };
@@ -23,9 +29,10 @@ export const squareVerifier: ProviderVerifier = {
     if (!url) {
       return {
         valid: false,
-        provider: 'square',
+        provider: "square",
         code: WebhookErrorCode.MISSING_URL,
-        reason: 'Missing request URL. Provide request URL or pass options.url explicitly for Square verification',
+        reason:
+          "Missing request URL. Provide request URL or pass options.url explicitly for Square verification",
       };
     }
 
@@ -36,15 +43,15 @@ export const squareVerifier: ProviderVerifier = {
     if (!timingSafeEqual(signature.trim(), expectedBase64)) {
       return {
         valid: false,
-        provider: 'square',
+        provider: "square",
         code: WebhookErrorCode.INVALID_SIGNATURE,
-        reason: 'Signature mismatch',
+        reason: "Signature mismatch",
       };
     }
 
     return {
       valid: true,
-      provider: 'square',
+      provider: "square",
     };
   },
 };

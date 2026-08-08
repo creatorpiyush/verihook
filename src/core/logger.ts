@@ -1,4 +1,4 @@
-import { WebhookLoggerFn } from './types.js';
+import { WebhookLoggerFn } from "./types.js";
 
 let globalLogger: WebhookLoggerFn | undefined;
 

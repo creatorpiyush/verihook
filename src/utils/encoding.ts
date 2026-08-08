@@ -10,17 +10,17 @@ export function bytesToString(bytes: Uint8Array): string {
 }
 
 export function bytesToHex(bytes: Uint8Array): string {
-  let hex = '';
+  let hex = "";
   for (let i = 0; i < bytes.length; i++) {
-    hex += bytes[i].toString(16).padStart(2, '0');
+    hex += bytes[i].toString(16).padStart(2, "0");
   }
   return hex;
 }
 
 export function hexToBytes(hex: string): Uint8Array {
-  const cleanHex = hex.replace(/^0x/i, '');
+  const cleanHex = hex.replace(/^0x/i, "");
   if (cleanHex.length % 2 !== 0) {
-    throw new Error('Invalid hex string length');
+    throw new Error("Invalid hex string length");
   }
   const bytes = new Uint8Array(cleanHex.length / 2);
   for (let i = 0; i < bytes.length; i++) {
@@ -30,10 +30,10 @@ export function hexToBytes(hex: string): Uint8Array {
 }
 
 export function bytesToBase64(bytes: Uint8Array): string {
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(bytes).toString('base64');
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(bytes).toString("base64");
   }
-  let binary = '';
+  let binary = "";
   const len = bytes.byteLength;
   for (let i = 0; i < len; i++) {
     binary += String.fromCharCode(bytes[i]);
@@ -44,10 +44,10 @@ export function bytesToBase64(bytes: Uint8Array): string {
 export function base64ToBytes(base64: string): Uint8Array {
   const cleaned = base64.trim();
   if (!/^[A-Za-z0-9+/=]+$/.test(cleaned) || cleaned.length % 4 === 1) {
-    throw new Error('Invalid base64 string');
+    throw new Error("Invalid base64 string");
   }
-  if (typeof Buffer !== 'undefined') {
-    return new Uint8Array(Buffer.from(cleaned, 'base64'));
+  if (typeof Buffer !== "undefined") {
+    return new Uint8Array(Buffer.from(cleaned, "base64"));
   }
   const binary = globalThis.atob(cleaned);
   const bytes = new Uint8Array(binary.length);
