@@ -1,6 +1,10 @@
 export interface ParsedCliArgs {
+  command?: "simulate" | "listen";
   provider?: string;
   url?: string;
+  forwardTo?: string;
+  port?: number;
+  path?: string;
   secret?: string;
   event?: string;
   printCurl?: boolean;
@@ -32,6 +36,14 @@ export function validateCliArgs(
   const errors: string[] = [];
   const result: ParsedCliArgs = {};
 
+  if (input.command !== undefined) {
+    if (input.command !== "simulate" && input.command !== "listen") {
+      errors.push('command must be either "simulate" or "listen"');
+    } else {
+      result.command = input.command;
+    }
+  }
+
   if (input.provider !== undefined) {
     if (typeof input.provider !== "string" || input.provider.trim() === "") {
       errors.push("provider must be a non-empty string");
@@ -50,6 +62,41 @@ export function validateCliArgs(
       } catch {
         errors.push(`Invalid URL format: "${input.url}"`);
       }
+    }
+  }
+
+  if (input.forwardTo !== undefined && input.forwardTo !== "") {
+    if (typeof input.forwardTo !== "string") {
+      errors.push("forwardTo must be a string");
+    } else {
+      try {
+        new URL(input.forwardTo);
+        result.forwardTo = input.forwardTo;
+      } catch {
+        errors.push(`Invalid forwardTo URL format: "${input.forwardTo}"`);
+      }
+    }
+  }
+
+  if (input.port !== undefined) {
+    const portNum = Number(input.port);
+    if (
+      isNaN(portNum) ||
+      !Number.isInteger(portNum) ||
+      portNum < 1 ||
+      portNum > 65535
+    ) {
+      errors.push("port must be an integer between 1 and 65535");
+    } else {
+      result.port = portNum;
+    }
+  }
+
+  if (input.path !== undefined) {
+    if (typeof input.path !== "string") {
+      errors.push("path must be a string");
+    } else {
+      result.path = input.path;
     }
   }
 

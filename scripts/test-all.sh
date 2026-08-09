@@ -54,7 +54,10 @@ echo -e "${GREEN}  ✓ CLI simulate svix --curl succeeded${NC}"
 node dist/cli.js simulate lemonsqueezy --secret lemon_123 --curl > /dev/null
 echo -e "${GREEN}  ✓ CLI simulate lemonsqueezy --curl succeeded${NC}"
 
-node dist/cli.js simulate > /dev/null
+node -e "require('./dist/cli.js').runListenServer({ command: 'listen', provider: 'stripe', secret: 'whsec_test', forwardTo: 'http://localhost:3000/webhooks/stripe' }).then(s => s.close())" > /dev/null
+echo -e "${GREEN}  ✓ CLI listen live relay proxy binary startup succeeded${NC}"
+
+node dist/cli.js > /dev/null
 echo -e "${GREEN}  ✓ CLI help menu rendered cleanly${NC}\n"
 
 # 7. Module Exports Verification
@@ -64,7 +67,12 @@ const v = require('./dist/index.js');
 const e = require('./dist/express.js');
 const n = require('./dist/next.js');
 const c = require('./dist/cli.js');
-if (typeof v.verifyWebhook !== 'function' || typeof e.verihookExpress !== 'function' || typeof n.createWebhookHandler !== 'function') {
+if (
+  typeof v.verifyWebhook !== 'function' ||
+  typeof e.verihookExpress !== 'function' ||
+  typeof n.createWebhookHandler !== 'function' ||
+  typeof c.runListenServer !== 'function'
+) {
   console.error('Missing expected CommonJS exports');
   process.exit(1);
 }
@@ -72,9 +80,12 @@ if (typeof v.verifyWebhook !== 'function' || typeof e.verihookExpress !== 'funct
 echo -e "${GREEN}  ✓ CommonJS require exports verified!${NC}"
 
 node -e "
-import('./dist/express.mjs').then(({ verihookExpress }) => {
-  if (typeof verihookExpress !== 'function') {
-    console.error('Missing ESM verihookExpress export');
+Promise.all([
+  import('./dist/express.mjs'),
+  import('./dist/cli.mjs')
+]).then(([{ verihookExpress }, { runListenServer }]) => {
+  if (typeof verihookExpress !== 'function' || typeof runListenServer !== 'function') {
+    console.error('Missing ESM exports');
     process.exit(1);
   }
 });

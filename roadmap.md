@@ -110,7 +110,7 @@ const result = await verifyWebhook('stripe', req, secret, {
 
 ---
 
-## 6. Live Local Relay Proxy — `npx verihook listen` (v1.7.0) 🎯
+## 6. Live Local Relay Proxy — `npx verihook listen` (v1.7.0) — ✅ Completed
 
 Expand the CLI toolchain into a live local developer relay proxy:
 
@@ -119,7 +119,7 @@ Expand the CLI toolchain into a live local developer relay proxy:
   npx verihook listen stripe --forward-to http://localhost:3000/webhooks/stripe
   ```
 - **Functionality**:
-  - Intercepts incoming webhooks, validates signatures in real time, and prints colorized output (Headers, Timestamp, Payload Diff, Signature Match Status) in terminal before forwarding to your local server.
+  - Intercepts incoming webhooks, validates signatures in real time, and prints colorized output (Headers, Timestamp, Signature Match Status) in terminal before forwarding to your local server.
   - Supports forwarding specific event preset templates (e.g. `--event payment_intent.succeeded`).
 
 ---
@@ -131,5 +131,5 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **Phase 3 (v1.4.0)**: Add **Verification Logging & Telemetry Hooks (`setGlobalLogger`, `onVerify`)**. ✅
 - **Phase 4 (v1.5.0 / v1.5.1)**: Add **CLI Simulator, E2E Test Suite & Express TS Typing fix**. ✅
 - **Phase 5 (v1.6.0)**: Add **Replay protection / deduplication store (`MemoryDedupeStore`)**. ✅
-- **Phase 6 (v1.7.0)**: Add **`npx verihook listen` live local relay proxy**. 🎯
+- **Phase 6 (v1.7.0)**: Add **`npx verihook listen` live local relay proxy**. ✅
 

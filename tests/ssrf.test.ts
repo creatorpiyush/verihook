@@ -9,6 +9,7 @@ describe("SSRF Protection & URL Validation", () => {
         "stripe",
         "--url",
         "http://169.254.169.254/latest/meta-data",
+        "--curl",
       ]),
     ).rejects.toThrow(/SSRF Prevention/);
   });
@@ -20,6 +21,7 @@ describe("SSRF Protection & URL Validation", () => {
         "stripe",
         "--url",
         "http://169.254.170.2/v2/metadata",
+        "--curl",
       ]),
     ).rejects.toThrow(/SSRF Prevention/);
   });
@@ -31,13 +33,14 @@ describe("SSRF Protection & URL Validation", () => {
         "stripe",
         "--url",
         "http://metadata.google.internal/computeMetadata/v1/",
+        "--curl",
       ]),
     ).rejects.toThrow(/SSRF Prevention/);
   });
 
   it("should block non-HTTP protocols (e.g. file://)", async () => {
     await expect(
-      runCli(["simulate", "stripe", "--url", "file:///etc/passwd"]),
+      runCli(["simulate", "stripe", "--url", "file:///etc/passwd", "--curl"]),
     ).rejects.toThrow(/Forbidden URL protocol/);
   });
 });

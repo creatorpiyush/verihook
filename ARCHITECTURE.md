@@ -2,7 +2,7 @@
 
 > **Universal, typed webhook signature verifier** for TypeScript and JavaScript.
 
-This document details the architectural design, security mechanisms, request normalization pipeline, type system, and provider verification specification of `verihook`.
+This document details the architectural design, security mechanisms, request normalization pipeline, type system, provider verification specification, and CLI developer toolchain of `verihook`.
 
 ---
 
@@ -14,9 +14,10 @@ This document details the architectural design, security mechanisms, request nor
 1. **Zero External Runtime Dependencies**: Powered by native Web Crypto API (`crypto.subtle`) with Node.js `node:crypto` fallback.
 2. **Hardened Security**: Multi-layered defense including constant-time timing-safe equality checks, SSRF origin validation, unparsed stream payload byte limits (`maxBodySize`), and standard HTTP security headers (`nosniff`, `DENY`).
 3. **Universal Framework Portability**: Seamlessly processes standard Fetch API `Request` objects, Node.js HTTP/Express `req`, Fastify, Next.js App Router, Hono, and Cloudflare Workers.
-4. **Side-Channel Timing Protection**: Enforces constant-time string comparisons across all provider signature verification logic.
-5. **Strict Type Safety**: Completely eliminates `any` types in favor of strict `unknown` guards, explicit interfaces, and zero-dependency boundary validation schemas.
-6. **Edge Ready**: Runs identically across Node.js (>= 18), Vercel Edge, Cloudflare Workers, Deno, and Bun.
+4. **Local Developer Toolchain**: Includes a CLI binary for simulating signed webhooks (`npx verihook simulate`) and a zero-dependency live local relay proxy (`npx verihook listen`) for real-time local webhook inspection and forwarding.
+5. **Side-Channel Timing Protection**: Enforces constant-time string comparisons across all provider signature verification logic.
+6. **Strict Type Safety**: Completely eliminates `any` types in favor of strict `unknown` guards, explicit interfaces, and zero-dependency boundary validation schemas.
+7. **Edge Ready**: Runs identically across Node.js (>= 18), Vercel Edge, Cloudflare Workers, Deno, and Bun.
 
 ---
 
@@ -24,7 +25,7 @@ This document details the architectural design, security mechanisms, request nor
 
 ```mermaid
 flowchart TD
-    A["Incoming Webhook Request"] --> B["normalizeRequest Engine"]
+    A["Incoming Webhook Request / CLI Proxy"] --> B["normalizeRequest Engine"]
     B --> C{"Input Type?"}
     C -->|Fetch Request| D["Extract headers, clone body via text"]
     C -->|Express / Node req| E["Stream buffer (maxBodySize limit)"]
@@ -37,6 +38,8 @@ flowchart TD
     I --> J["Compute HMAC / Ed25519 / RSA via Web Crypto"]
     J --> K["timingSafeEqual Comparison"]
     K --> L["Return VerificationResult"]
+    L -->|CLI Listen Server| M["Log & Forward to Local App Server"]
+    L -->|Framework Middleware| N["Execute App Route Handler"]
 ```
 
 ---
@@ -123,7 +126,7 @@ export function timingSafeEqual(a: string | Uint8Array, b: string | Uint8Array):
 ### D. Zero-Dependency Boundary Validator (`src/schemas/index.ts`)
 To maintain **zero runtime dependencies** while ensuring input type safety:
 - Implements `validateCliArgs` and `validateVerifyWebhookOptions` for validating CLI flags and verification options.
-- Validates payload size thresholds, algorithm enums (`'sha256' | 'sha1' | 'sha512'`), encoding strings (`'hex' | 'base64' | 'prefix-hex'`), and URL syntax without external packages.
+- Validates payload size thresholds, algorithm enums (`'sha256' | 'sha1' | 'sha512'`), encoding strings (`'hex' | 'base64' | 'prefix-hex'`), CLI commands (`'simulate' | 'listen'`), port ranges (1–65535), and URL syntax without external packages.
 
 ---
 
@@ -192,10 +195,23 @@ All verifiers assign an explicit code from `WebhookErrorCode` to the `Verificati
 
 ---
 
-## 4. SSRF Origin Protection Engine (`src/cli/index.ts`)
+## 4. SSRF Origin Protection Engine & CLI Toolchain (`src/cli/index.ts`)
 
-The CLI webhook simulator (`npx verihook simulate`) includes multi-layered SSRF origin validation:
+The `verihook` CLI binary provides two core modes:
 
+### A. Webhook Simulator (`npx verihook simulate <provider>`)
+Synthesizes cryptographically valid payloads and headers for testing:
+- Generates reproducible cURL commands (`--curl`).
+- Sends signed test HTTP POST requests directly to target endpoints.
+
+### B. Live Local Relay Proxy (`npx verihook listen <provider>`)
+Zero-dependency HTTP proxy (`runListenServer`) for local development:
+- Starts a local Node.js HTTP server (`http.createServer`) listening on `--port` (default 8080).
+- Intercepts incoming webhooks, verifies signatures in real time (`verifyWebhook`), and formats terminal logs (Method, Path, Provider, Verification status, Redacted Secret Headers, Payload snippet).
+- Forwards requests to local target applications (`--forward-to` / `http://localhost:3000/webhooks/<provider>`) and proxies HTTP response status, headers, and body back to the client. Returns HTTP 502 Bad Gateway if target application is unreachable.
+
+### C. Multi-Layered SSRF Origin Guardrails
+Both CLI commands enforce strict origin validation:
 1. **Unconditional Cloud Metadata Blocking**:
    Blocks known cloud Instance Metadata Services (IMDS) and internal control plane hosts:
    - `169.254.169.254` (AWS, GCP, Azure, OpenStack, DigitalOcean, Alibaba)
@@ -246,7 +262,7 @@ The CLI webhook simulator (`npx verihook simulate`) includes multi-layered SSRF 
 
 ## 6. Security & Build Hygiene
 
-- **Automated Verification Pipeline**: `"verify": "npm run format:check && npm run typecheck && npm run test:coverage && npm run build"` validates formatting, strict TypeScript types, V8 unit test coverage, and builds in sequence.
+- **Automated Verification Pipeline**: `"test:all": "bash scripts/test-all.sh"` validates Prettier code style, strict TypeScript types, V8 unit test coverage (96%+), end-to-end regression suite, CJS/ESM/DTS tsup bundle generation, CLI simulate/listen execution, and module exports in sequence.
 - **CI Security Auditing**: GitHub Actions workflow includes mandatory `npm audit --audit-level=high` step.
 - **Zero Runtime Overhead**: No third-party runtime npm dependencies (`"dependencies": {}`).
-- **Dual Bundle**: Ships CommonJS (`dist/index.js`) & ESM (`dist/index.mjs`) with TypeScript declaration maps (`dist/index.d.ts`).
+- **Dual Bundle**: Ships CommonJS (`dist/index.js`, `dist/cli.js`) & ESM (`dist/index.mjs`, `dist/cli.mjs`) with TypeScript declaration maps (`dist/index.d.ts`, `dist/cli.d.ts`).

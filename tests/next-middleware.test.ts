@@ -123,7 +123,39 @@ describe("Next.js Route Handler Factory (createWebhookHandler)", () => {
 
     const responseException = await routeHandlerException(req);
     expect(responseException.status).toBe(503);
-    const jsonException = await responseException.json();
-    expect(jsonException).toEqual({ customError: "Secret lookup failed" });
+    expect(await responseException.json()).toEqual({
+      customError: "Secret lookup failed",
+    });
+  });
+
+  it("should handle req.clone() text extraction exceptions gracefully and pass null payload", async () => {
+    const signature = await makeGitHubSignature();
+    const mockHandler = vi.fn().mockResolvedValue(undefined);
+    const routeHandler = createWebhookHandler("github", secret, mockHandler);
+
+    const req = new Request("https://example.com/api/webhooks/github", {
+      method: "POST",
+      headers: {
+        "x-hub-signature-256": signature,
+        "content-type": "application/json",
+      },
+      body: bodyStr,
+    });
+
+    // Override req.clone so 2nd clone call (inside createWebhookHandler) fails text extraction
+    let cloneCount = 0;
+    const originalClone = req.clone.bind(req);
+    req.clone = () => {
+      cloneCount++;
+      const cloned = originalClone();
+      if (cloneCount > 1) {
+        cloned.text = () => Promise.reject(new Error("Stream locked"));
+      }
+      return cloned;
+    };
+
+    const res = await routeHandler(req);
+    expect(res.status).toBe(200);
+    expect(mockHandler).toHaveBeenCalledWith(null, expect.anything(), req);
   });
 });

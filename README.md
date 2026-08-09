@@ -74,9 +74,13 @@ bun add verihook
 
 ---
 
-## ⚡ CLI Simulator (`npx verihook simulate`)
+## ⚡ CLI Toolchain (`npx verihook simulate` & `npx verihook listen`)
 
-Test your webhook endpoint locally **without needing real SaaS accounts or webhooks**! The CLI generates validly-signed HMAC payloads and POSTs them to your server:
+`verihook` includes a built-in zero-dependency CLI toolchain for simulating webhooks and proxying live events locally:
+
+### 1. Webhook Simulation (`npx verihook simulate`)
+
+Generate validly-signed HMAC payloads and POST them to your local server **without needing real SaaS accounts or webhooks**:
 
 ```bash
 # Simulate a Stripe webhook
@@ -93,6 +97,18 @@ npx verihook simulate stripe --url https://staging.example.com/webhooks/stripe -
 
 # Output cURL command instead of sending POST
 npx verihook simulate stripe --curl
+```
+
+### 2. Live Local Relay Proxy (`npx verihook listen`)
+
+Run a live local relay proxy to intercept incoming webhooks, verify signatures in real-time, inspect formatted headers & payloads, and forward webhooks to your local server:
+
+```bash
+# Listen & forward Stripe webhooks with real-time signature verification
+npx verihook listen stripe --forward-to http://localhost:3000/webhooks/stripe --secret whsec_test_secret_123
+
+# Listen on custom port 8080 and forward GitHub webhooks
+npx verihook listen github -p 8080 --forward-to http://localhost:4000/api/github
 ```
 
 > 🛡️ **Security Features**:

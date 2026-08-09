@@ -192,4 +192,42 @@ describe("Express Middleware (verihookExpress)", () => {
     await middleware(reqRaw, resRaw, nextRaw);
     expect(reqRaw.verihook.payload).toBe(textBody);
   });
+
+  it("should stream buffer unparsed stream body and reject oversized payloads", async () => {
+    const header = await makeSignedHeader();
+    const middleware = verihookExpress("stripe", secret, { now: timestamp });
+
+    const reqStream: any = {
+      headers: { "stripe-signature": header },
+      body: undefined,
+      on: vi.fn(),
+      [Symbol.asyncIterator]: async function* () {
+        yield bodyStr;
+      },
+    };
+    const resStream = mockRes();
+    const nextStream = vi.fn();
+
+    await middleware(reqStream, resStream, nextStream);
+    expect(nextStream).toHaveBeenCalledTimes(1);
+    expect(reqStream.verihook.valid).toBe(true);
+
+    const oversizedMiddleware = verihookExpress("stripe", secret, {
+      maxBodySize: 5,
+    });
+    const reqOversized: any = {
+      headers: { "stripe-signature": header },
+      body: undefined,
+      on: vi.fn(),
+      [Symbol.asyncIterator]: async function* () {
+        yield "long string payload";
+      },
+    };
+    const resOversized = mockRes();
+    const nextOversized = vi.fn();
+
+    await oversizedMiddleware(reqOversized, resOversized, nextOversized);
+    expect(resOversized.status).toHaveBeenCalledWith(413);
+    expect(resOversized.body.code).toBe("PAYLOAD_TOO_LARGE");
+  });
 });

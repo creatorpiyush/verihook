@@ -5,6 +5,20 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-08-09
+
+### Added
+- 📡 **Live Local Relay Proxy (`npx verihook listen`)**:
+  - Live local HTTP relay proxy subcommand `npx verihook listen <provider> --forward-to <url> [options]`.
+  - Zero-dependency real-time signature verification, colorized terminal log output (request method, path, timestamp, provider, header redaction, and payload snippet), and HTTP forwarding to local application servers.
+  - Proxy configuration options `--forward-to`, `--port` / `-p`, `--secret`, `--path`, and `--allow-remote`.
+- ⚙️ **CLI Subcommand Parser & Schema Validation**:
+  - Extended `ParsedCliArgs` interface and `validateCliArgs` schema validator in `src/schemas/index.ts` to support `command` (`simulate` | `listen`), `forwardTo`, `port`, and `path`.
+- 🧪 **Live Relay Test Suite (`tests/cli-listen.test.ts`)**:
+  - Added full test suite validating proxy server initialization, real-time signature verification, HTTP request forwarding, Bad Gateway (502) error handling, and SSRF prevention.
+
+---
+
 ## [1.6.0] - 2026-08-09
 
 ### Added
