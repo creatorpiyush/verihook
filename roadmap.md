@@ -50,7 +50,7 @@ export const POST = createWebhookHandler('github', process.env.GITHUB_SECRET!, a
 
 ---
 
-## 3. Verification Logging & Telemetry Hooks (v1.4.0)
+## 3. Verification Logging & Telemetry Hooks (v1.4.0) — ✅ Completed
 
 Provide global and per-call verification event callbacks for logging every verification attempt (pass/fail/expired/invalid signature), designed for production observability (Datadog, Winston, Pino, Axiom, Console, Sentry, OpenTelemetry).
 
@@ -76,30 +76,25 @@ const result = await verifyWebhook('stripe', req, secret, {
 
 ---
 
-## 4. CLI Enhancements — `npx verihook listen` & Webhook Inspector (v1.5.0)
+## 4. CLI Event Simulator & E2E Verification Suite (v1.5.0 / v1.5.1) — ✅ Completed
 
-Expand the CLI simulator into a full local developer toolchain:
+Expand the CLI simulator and verification ecosystem:
 
-### A. Live Local Relay Proxy (`npx verihook listen`)
-- **Command**:
+### A. CLI Event Simulator & cURL Generator (`npx verihook simulate`)
+- Support event simulator and cURL generation across all 20+ supported webhook providers:
   ```bash
-  npx verihook listen stripe --forward-to http://localhost:3000/webhooks/stripe
+  npx verihook simulate stripe --curl
+  npx verihook simulate github --event push --curl
+  npx verihook simulate slack --curl
   ```
-- **Functionality**:
-  - Acts as a local inspector.
-  - Intercepts incoming webhooks, validates signatures in real time, and prints colorized output (Header, Timestamp, Payload Diff, Signature Match Status) in terminal before forwarding to your local server.
 
-### B. Event Payload Presets (`npx verihook simulate`)
-- Support event preset templates:
-  ```bash
-  npx verihook simulate stripe --event payment_intent.succeeded
-  npx verihook simulate github --event pull_request
-  npx verihook simulate whatsapp --event text_message
-  ```
+### B. Master E2E Test Suite & Strict Express Typings
+- Master E2E test runner (`scripts/test-all.sh`) validating linting, formatting, coverage (>95%), CJS/ESM module loading, and CLI execution.
+- Express middleware strict TypeScript typing fix (`verihookExpress`) for seamless integration with Express `app.use()` and `app.post()`.
 
 ---
 
-## 5. Replay Protection & Deduplication Store (v1.6.0)
+## 5. Replay Protection & Deduplication Store (v1.6.0) — ✅ Completed
 
 Provide optional event deduplication state store to prevent duplicate event execution within tolerance windows:
 
@@ -115,11 +110,26 @@ const result = await verifyWebhook('stripe', req, secret, {
 
 ---
 
+## 6. Live Local Relay Proxy — `npx verihook listen` (v1.7.0) 🎯
+
+Expand the CLI toolchain into a live local developer relay proxy:
+
+- **Command**:
+  ```bash
+  npx verihook listen stripe --forward-to http://localhost:3000/webhooks/stripe
+  ```
+- **Functionality**:
+  - Intercepts incoming webhooks, validates signatures in real time, and prints colorized output (Headers, Timestamp, Payload Diff, Signature Match Status) in terminal before forwarding to your local server.
+  - Supports forwarding specific event preset templates (e.g. `--event payment_intent.succeeded`).
+
+---
+
 ## Priority & Phasing Summary
 
 - **Phase 1 (v1.2.0)**: Add **PayPal, LemonSqueezy, Paddle, X/Twitter, PagerDuty, Webflow**. ✅
 - **Phase 2 (v1.3.0)**: Add **Express & Next.js middleware helpers**. ✅
-- **Phase 3 (v1.4.0)**: Add **Verification Logging & Telemetry Hooks (`setGlobalLogger`, `onVerify`)**. 🎯
-- **Phase 4 (v1.5.0)**: Add **`npx verihook listen` CLI inspector**.
-- **Phase 5 (v1.6.0)**: Add **Replay protection / deduplication store**.
+- **Phase 3 (v1.4.0)**: Add **Verification Logging & Telemetry Hooks (`setGlobalLogger`, `onVerify`)**. ✅
+- **Phase 4 (v1.5.0 / v1.5.1)**: Add **CLI Simulator, E2E Test Suite & Express TS Typing fix**. ✅
+- **Phase 5 (v1.6.0)**: Add **Replay protection / deduplication store (`MemoryDedupeStore`)**. ✅
+- **Phase 6 (v1.7.0)**: Add **`npx verihook listen` live local relay proxy**. 🎯
 

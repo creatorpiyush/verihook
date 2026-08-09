@@ -25,8 +25,8 @@ No more hunting down bespoke HMAC code snippets for every service or installing 
 - 🛡️ **Hardened & Secure**: Built-in SSRF origin protection, unparsed payload stream byte limits (`maxBodySize`), and standard HTTP security headers (`nosniff`, `DENY`).
 - 🌐 **Edge Ready**: Runs anywhere — Node.js, Vercel Edge, Cloudflare Workers, Deno, Bun, Next.js, Hono, Express, Fastify.
 - 🔐 **Timing-Safe**: Protects against side-channel timing attacks out of the box.
-- 🎯 **Unified Typed API**: Simple `verifyWebhook(provider, req, secret)` interface across all providers with zero `any` types.
-- ⏳ **Replay Attack Protection**: Built-in configurable timestamp tolerance checks (Stripe, Slack, Svix, Zoom).
+- ⏳ **Replay Attack Protection**: Built-in timestamp tolerance checks (Stripe, Slack, Svix, Zoom) and stateful deduplication (`MemoryDedupeStore`).
+- 🛡️ **Event Deduplication Store**: Pluggable `dedupeStore` interface with provider-aware event ID extraction to prevent duplicate event execution.
 - 🔌 **Extensible Plugin System**: Register custom provider verifiers with `registerProvider()`.
 
 ---
@@ -173,6 +173,28 @@ app.get('/webhooks/whatsapp', (req, res) => {
 });
 ```
 
+### Replay Protection & Event Deduplication (`MemoryDedupeStore`)
+
+Prevent duplicate event execution within tolerance windows (e.g. Stripe `evt_...`, Svix `msg_...`, GitHub delivery ID, or SHA-256 fallback):
+
+```ts
+import { verifyWebhook, MemoryDedupeStore, WebhookErrorCode } from 'verihook';
+
+// Global or module-level deduplication store
+const dedupeStore = new MemoryDedupeStore({
+  ttlMs: 300_000, // 5 minutes TTL window
+  maxSize: 10_000, // Capacity cap to bound memory usage
+});
+
+const result = await verifyWebhook('stripe', req, secret, {
+  dedupeStore, // Automatically extracts event ID and rejects duplicate webhooks!
+});
+
+if (!result.valid && result.code === WebhookErrorCode.DUPLICATE_EVENT) {
+  console.warn('Duplicate webhook event ignored (replay protection)');
+}
+```
+
 ### Error Handling & Error Codes
 
 `verihook` provides structured, type-safe error codes via the exported `WebhookErrorCode` enum:
@@ -211,6 +233,7 @@ if (!result.valid) {
 | `WebhookErrorCode.INVALID_SECRET` | Webhook secret was empty or not provided. |
 | `WebhookErrorCode.INVALID_BODY` | Plain JS object passed without `rawBody`. |
 | `WebhookErrorCode.UNSUPPORTED_PROVIDER` | Unrecognized provider identifier. |
+| `WebhookErrorCode.DUPLICATE_EVENT` | Duplicate webhook event detected within deduplication TTL window. |
 | `WebhookErrorCode.UNKNOWN_ERROR` | Unexpected error during processing (original error attached to `result.error`). |
 
 ---
@@ -282,6 +305,9 @@ await verifyWebhook('stripe', req, secret, {
   now: Math.floor(Date.now() / 1000), // Override current timestamp for testing
   url: 'https://example.com/api/twilio', // Override URL for Twilio / Square
   maxBodySize: 5 * 1024 * 1024, // Configure maximum unparsed payload streaming limit in bytes
+  dedupeStore, // Pass DedupeStore instance (e.g. MemoryDedupeStore or Redis)
+  dedupeTtlMs: 600_000, // Custom TTL for deduplication entries in milliseconds
+  eventId: 'evt_custom_override', // Explicitly override provider event ID
 });
 ```
 

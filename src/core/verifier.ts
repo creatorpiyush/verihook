@@ -1,5 +1,6 @@
 import { getProviderVerifier } from "../providers/index.js";
 import { normalizeRequest } from "../utils/normalize-request.js";
+import { extractEventId } from "./dedupe.js";
 import { WebhookVerificationError } from "./errors.js";
 import { getGlobalLogger } from "./logger.js";
 import {
@@ -94,6 +95,23 @@ export async function verifyWebhook(
     const verifier = getProviderVerifier(provider);
     const normalizedReq = await normalizeRequest(req);
     result = await verifier.verify(normalizedReq, secret || "", options);
+
+    if (result.valid && options?.dedupeStore) {
+      const eventId =
+        options.eventId || (await extractEventId(provider, normalizedReq));
+      const dedupeKey = `${provider}:${eventId}`;
+      const ttlMs = options.dedupeTtlMs ?? 300_000;
+      const isDuplicate = await options.dedupeStore.hasOrSet(dedupeKey, ttlMs);
+      if (isDuplicate) {
+        result = {
+          valid: false,
+          provider,
+          code: WebhookErrorCode.DUPLICATE_EVENT,
+          reason: "Duplicate webhook event detected (replay protection)",
+          timestamp: result.timestamp,
+        };
+      }
+    }
   } catch (err: unknown) {
     const errObj = err as Record<string, unknown> | null;
     const code: VerificationErrorCode =

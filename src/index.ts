@@ -78,6 +78,8 @@ export {
   clearGlobalLogger,
 } from "./core/logger.js";
 
+export { MemoryDedupeStore, extractEventId } from "./core/dedupe.js";
+
 export type {
   ProviderName,
   ProviderVerifier,
@@ -89,4 +91,6 @@ export type {
   NormalizedWebhookRequest,
   WebhookVerificationEvent,
   WebhookLoggerFn,
+  DedupeStore,
+  MemoryDedupeStoreOptions,
 } from "./core/types.js";

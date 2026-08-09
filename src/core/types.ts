@@ -48,6 +48,33 @@ export interface NormalizedWebhookRequest {
   method?: string;
 }
 
+export interface DedupeStore {
+  /**
+   * Checks if an event ID is already present in the store.
+   * If not present, records the ID with the given TTL in milliseconds.
+   * @returns `true` if the event is a duplicate (already seen), `false` if it is new.
+   */
+  hasOrSet(key: string, ttlMs: number): Promise<boolean> | boolean;
+
+  /**
+   * Clears all stored event IDs (optional, useful for testing or flushing).
+   */
+  clear?(): Promise<void> | void;
+}
+
+export interface MemoryDedupeStoreOptions {
+  /**
+   * Default time-to-live in milliseconds for stored event IDs.
+   * @default 300000 (5 minutes)
+   */
+  ttlMs?: number;
+
+  /**
+   * Maximum number of keys allowed in the store before LRU eviction.
+   */
+  maxSize?: number;
+}
+
 export interface VerifyWebhookOptions {
   /**
    * Maximum allowed age of the webhook signature in seconds.
@@ -102,6 +129,24 @@ export interface VerifyWebhookOptions {
    * Maximum allowed body size in bytes for unparsed streaming requests (defaults to 2MB = 2,097,152 bytes).
    */
   maxBodySize?: number;
+
+  /**
+   * Optional deduplication store instance (e.g. MemoryDedupeStore or custom Redis store).
+   * Automatically rejects duplicate events within the TTL window.
+   */
+  dedupeStore?: DedupeStore;
+
+  /**
+   * Time-to-live in milliseconds for deduplication records when `dedupeStore` is specified.
+   * @default 300000 (5 minutes)
+   */
+  dedupeTtlMs?: number;
+
+  /**
+   * Explicit event ID override for deduplication tracking.
+   * If omitted, `verihook` automatically extracts provider event ID or computes a hash fallback.
+   */
+  eventId?: string;
 }
 
 export interface WebhookVerificationEvent {
@@ -158,6 +203,7 @@ export enum WebhookErrorCode {
   INVALID_SECRET = "INVALID_SECRET",
   INVALID_BODY = "INVALID_BODY",
   UNSUPPORTED_PROVIDER = "UNSUPPORTED_PROVIDER",
+  DUPLICATE_EVENT = "DUPLICATE_EVENT",
   UNKNOWN_ERROR = "UNKNOWN_ERROR",
 }
 
