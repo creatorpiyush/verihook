@@ -65,4 +65,50 @@ describe("Schema Boundary Validation", () => {
     );
     expect(res.errors).toContain("maxBodySize must be a positive number");
   });
+
+  it("should validate command, forwardTo, port, and path options", () => {
+    const validRes = validateCliArgs({
+      command: "listen",
+      forwardTo: "http://localhost:3000/webhooks/stripe",
+      port: "8080",
+      path: "/webhooks/stripe",
+    });
+    expect(validRes.success).toBe(true);
+    expect(validRes.data.command).toBe("listen");
+    expect(validRes.data.forwardTo).toBe(
+      "http://localhost:3000/webhooks/stripe",
+    );
+    expect(validRes.data.port).toBe(8080);
+    expect(validRes.data.path).toBe("/webhooks/stripe");
+
+    const invalidRes = validateCliArgs({
+      command: "unknown" as any,
+      forwardTo: 123 as any,
+      port: 70000,
+      path: 456 as any,
+    });
+    expect(invalidRes.success).toBe(false);
+    expect(invalidRes.errors).toContain(
+      'command must be either "simulate" or "listen"',
+    );
+    expect(invalidRes.errors).toContain("forwardTo must be a string");
+    expect(invalidRes.errors).toContain(
+      "port must be an integer between 1 and 65535",
+    );
+    expect(invalidRes.errors).toContain("path must be a string");
+
+    const invalidForwardToUrl = validateCliArgs({
+      forwardTo: "invalid-url-string",
+    });
+    expect(invalidForwardToUrl.success).toBe(false);
+    expect(invalidForwardToUrl.errors).toContain(
+      'Invalid forwardTo URL format: "invalid-url-string"',
+    );
+
+    const invalidPortNan = validateCliArgs({ port: "abc" as any });
+    expect(invalidPortNan.success).toBe(false);
+    expect(invalidPortNan.errors).toContain(
+      "port must be an integer between 1 and 65535",
+    );
+  });
 });

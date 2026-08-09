@@ -15,6 +15,7 @@ import {
 } from "../src/index.js";
 import { runCli } from "../src/cli/index.js";
 import { createWebhookHandler } from "../src/next.js";
+import { verihookExpress } from "../src/express.js";
 import { normalizeBody } from "../src/utils/normalize-request.js";
 import { validateCliArgs } from "../src/schemas/index.js";
 import { bytesToBase64, bytesToHex } from "../src/utils/encoding.js";
@@ -259,5 +260,106 @@ describe("Ultimate Coverage Boost for >97%+ Test Suite", () => {
 
     const bodyStr = normalizeBody(Buffer.from("hello buffer"));
     expect(bodyStr).toBe("hello buffer");
+  });
+
+  it("should test SSRF helper protocols, octal/hex/decimal representations, and private IP subnets", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await runCli([
+      "simulate",
+      "stripe",
+      "--url",
+      "http://example.com/webhook",
+      "--curl",
+    ]);
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Targeting non-local host"),
+    );
+    warnSpy.mockRestore();
+
+    await expect(
+      runCli([
+        "simulate",
+        "stripe",
+        "--url",
+        "ftp://localhost/webhook",
+        "--curl",
+      ]),
+    ).rejects.toThrow("Forbidden URL protocol");
+
+    await expect(
+      runCli([
+        "simulate",
+        "stripe",
+        "--url",
+        "http://0251.0376.0251.0376/webhook",
+        "--curl",
+      ]),
+    ).rejects.toThrow("SSRF Prevention");
+
+    await expect(
+      runCli([
+        "simulate",
+        "stripe",
+        "--url",
+        "http://2852039166/webhook",
+        "--curl",
+      ]),
+    ).rejects.toThrow("SSRF Prevention");
+
+    await expect(
+      runCli([
+        "simulate",
+        "stripe",
+        "--url",
+        "http://[fe80::1]/webhook",
+        "--curl",
+      ]),
+    ).rejects.toThrow("SSRF Prevention");
+
+    await expect(
+      runCli([
+        "simulate",
+        "stripe",
+        "--url",
+        "http://[::ffff:169.254.1.1]/webhook",
+        "--curl",
+      ]),
+    ).rejects.toThrow("SSRF Prevention");
+  });
+
+  it("should test generic SHA-512 prefix-hex, GitHub malformed header, and Express onError callback", async () => {
+    const genericRes = await verifyWebhook(
+      "generic",
+      {
+        headers: { "x-sig": "invalid" },
+        body: "raw",
+      },
+      "sec",
+      { algorithm: "sha512", encoding: "prefix-hex", headerName: "x-sig" },
+    );
+    expect(genericRes.valid).toBe(false);
+
+    const githubRes = await verifyGitHub(
+      {
+        headers: { "x-hub-signature-256": "invalid_no_sha256_prefix" },
+        body: "raw",
+      },
+      "sec",
+    );
+    expect(githubRes.valid).toBe(false);
+    expect(githubRes.reason).toBe("SHA-256 signature mismatch");
+
+    const onErrorSpy = vi.fn();
+    const expressMiddleware = verihookExpress("stripe", "sec", {
+      onError: onErrorSpy,
+    });
+    const req: any = { headers: {} };
+    const res: any = {};
+    const next = vi.fn();
+
+    await expressMiddleware(req, res, next);
+    expect(onErrorSpy).toHaveBeenCalledTimes(1);
   });
 });

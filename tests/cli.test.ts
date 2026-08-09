@@ -155,4 +155,22 @@ describe("verihook CLI Simulator", () => {
       expect.anything(),
     );
   });
+
+  it("should exit with code 1 on invalid CLI parameters", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const exitSpy = vi
+      .spyOn(process, "exit")
+      .mockImplementation((() => {}) as any);
+
+    await runCli(["simulate", "stripe", "--url", "invalid-url"]);
+
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid CLI parameters:"),
+      expect.anything(),
+    );
+    expect(exitSpy).toHaveBeenCalledWith(1);
+
+    errSpy.mockRestore();
+    exitSpy.mockRestore();
+  });
 });

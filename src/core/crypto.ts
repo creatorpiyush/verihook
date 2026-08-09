@@ -240,13 +240,13 @@ export async function verifyRsaSha256(
       const cryptoKey = await cryptoSubtle.importKey(
         "spki",
         keyDer as unknown as BufferSource,
-        { name: "RSASSSA-PKCS1-v1_5", hash: { name: "SHA-256" } },
+        { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
         false,
         ["verify"],
       );
 
       return await cryptoSubtle.verify(
-        "RSASSSA-PKCS1-v1_5",
+        "RSASSA-PKCS1-v1_5",
         cryptoKey,
         sigBytes as unknown as BufferSource,
         dataBytes as unknown as BufferSource,

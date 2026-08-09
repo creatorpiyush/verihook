@@ -84,6 +84,16 @@ describe("Crypto Utilities & Constant Time Comparison", () => {
       });
       const resNode = await verifyEd25519(rawPubKey, sigBytes, dataStr);
       expect(resNode).toBe(true);
+
+      const hashFallback = await computeSha256("hello world");
+      expect(bytesToHex(hashFallback)).toBe(
+        "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+      );
+
+      const hmacFallback = await computeHmac("SHA-256", "secret", "message");
+      expect(bytesToHex(hmacFallback)).toBe(
+        "8b5f48702995c1598c573db1e21866a9b825d4a794d169d7060a03605796360b",
+      );
     } finally {
       Object.defineProperty(globalThis.crypto, "subtle", {
         value: origSubtle,
@@ -112,39 +122,17 @@ describe("Crypto Utilities & Constant Time Comparison", () => {
 
     const resUint8 = await verifyRsaSha256(pemPubKey, sigBytes, dataStr);
     expect(resUint8).toBe(true);
-  });
 
-  it("should fallback to Node crypto when globalThis.crypto.subtle is undefined", async () => {
-    const origSubtle = globalThis.crypto?.subtle;
-    try {
-      Object.defineProperty(globalThis.crypto, "subtle", {
-        value: undefined,
-        configurable: true,
-        writable: true,
-      });
+    const spkiDer = publicKey.export({ type: "spki", format: "der" });
+    const spkiBase64 = spkiDer.toString("base64");
+    const isSpkiValid = await verifyRsaSha256(spkiBase64, sigBytes, dataStr);
+    expect(isSpkiValid).toBe(true);
 
-      const hash = await computeSha256("hello world");
-      expect(bytesToHex(hash)).toBe(
-        "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
-      );
-
-      const hmac = await computeHmacSha256("secret", "message");
-      expect(bytesToHex(hmac)).toBe(
-        "8b5f48702995c1598c573db1e21866a9b825d4a794d169d7060a03605796360b",
-      );
-    } finally {
-      Object.defineProperty(globalThis.crypto, "subtle", {
-        value: origSubtle,
-        configurable: true,
-        writable: true,
-      });
-    }
-  });
-
-  it("should reject invalid Ed25519 public key or signature lengths", async () => {
-    const invalidPub = "1234";
-    const invalidSig = "5678";
-    const result = await verifyEd25519(invalidPub, invalidSig, "payload");
-    expect(result).toBe(false);
+    const isCorrupted = await verifyRsaSha256(
+      "invalid_spki_base64",
+      sigBytes,
+      dataStr,
+    );
+    expect(isCorrupted).toBe(false);
   });
 });

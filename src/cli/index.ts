@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from "node:fs";
+import * as http from "node:http";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import {
@@ -7,19 +8,40 @@ import {
   computeHmacSha256,
   computeSha256,
 } from "../core/crypto.js";
+import { ProviderName } from "../core/types.js";
+import { verifyWebhook } from "../core/verifier.js";
 import { ParsedCliArgs, validateCliArgs } from "../schemas/index.js";
 import { base64ToBytes, bytesToBase64, bytesToHex } from "../utils/encoding.js";
 
 function parseArgs(args: string[]): ParsedCliArgs {
   const rawResult: Record<string, unknown> = {};
+  let commandDetected = false;
+
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (
-      arg === "simulate" &&
+      (arg === "simulate" || arg === "listen") &&
       i + 1 < args.length &&
       !args[i + 1].startsWith("-")
     ) {
+      rawResult.command = arg;
       rawResult.provider = args[i + 1].toLowerCase();
+      commandDetected = true;
+      i++;
+    } else if (arg.startsWith("--forward-to=")) {
+      rawResult.forwardTo = arg.split("=")[1];
+    } else if (arg === "--forward-to" && i + 1 < args.length) {
+      rawResult.forwardTo = args[i + 1];
+      i++;
+    } else if (arg.startsWith("--port=")) {
+      rawResult.port = arg.split("=")[1];
+    } else if ((arg === "--port" || arg === "-p") && i + 1 < args.length) {
+      rawResult.port = args[i + 1];
+      i++;
+    } else if (arg.startsWith("--path=")) {
+      rawResult.path = arg.split("=")[1];
+    } else if (arg === "--path" && i + 1 < args.length) {
+      rawResult.path = args[i + 1];
       i++;
     } else if (arg.startsWith("--url=")) {
       rawResult.url = arg.split("=")[1];
@@ -40,8 +62,20 @@ function parseArgs(args: string[]): ParsedCliArgs {
       rawResult.printCurl = true;
     } else if (arg === "--allow-remote") {
       rawResult.allowRemote = true;
+    } else if (
+      !commandDetected &&
+      !arg.startsWith("-") &&
+      !rawResult.provider
+    ) {
+      rawResult.command = "simulate";
+      rawResult.provider = arg.toLowerCase();
     }
   }
+
+  if (!rawResult.command && rawResult.provider) {
+    rawResult.command = "simulate";
+  }
+
   const validation = validateCliArgs(rawResult);
   if (!validation.success) {
     console.error("❌ Invalid CLI parameters:", validation.errors.join(", "));
@@ -193,6 +227,149 @@ function redactHeaders(
   return redacted;
 }
 
+export async function runListenServer(
+  args: ParsedCliArgs,
+  onListening?: (server: http.Server) => void,
+): Promise<http.Server> {
+  const provider = (args.provider || "generic") as ProviderName;
+  const port = args.port || 8080;
+  const rawTargetUrl =
+    args.forwardTo || args.url || `http://localhost:3000/webhooks/${provider}`;
+
+  const targetUrlObj = validateUrlForSsrf(rawTargetUrl, !!args.allowRemote);
+  const targetUrl = targetUrlObj.toString();
+  const secret = args.secret;
+
+  const server = http.createServer(async (req, res) => {
+    const startTime = performance.now();
+    const reqMethod = req.method || "POST";
+    const reqUrl = req.url || "/";
+    const timestampStr = new Date().toISOString();
+
+    const bodyChunks: Buffer[] = [];
+    for await (const chunk of req) {
+      bodyChunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+    }
+    const rawBody = Buffer.concat(bodyChunks).toString("utf-8");
+
+    const headers: Record<string, string> = {};
+    for (const [key, value] of Object.entries(req.headers)) {
+      if (typeof value === "string") {
+        headers[key.toLowerCase()] = value;
+      } else if (Array.isArray(value)) {
+        headers[key.toLowerCase()] = value.join(", ");
+      }
+    }
+
+    console.log(
+      `\n📥 [${timestampStr}] Incoming ${reqMethod} ${reqUrl} (${provider.toUpperCase()})`,
+    );
+
+    let verificationDetail = "";
+
+    if (secret) {
+      try {
+        const verifyStart = performance.now();
+        const result = await verifyWebhook(
+          provider,
+          { headers, body: rawBody, url: targetUrl },
+          secret,
+        );
+        const durationMs = Math.round(performance.now() - verifyStart);
+        if (result.valid) {
+          verificationDetail = `✅ SIGNATURE MATCH (${durationMs}ms)`;
+        } else {
+          verificationDetail = `❌ INVALID SIGNATURE (${result.code}: ${result.reason})`;
+        }
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        verificationDetail = `❌ VERIFICATION ERROR (${errorMsg})`;
+      }
+    } else {
+      verificationDetail = `ℹ️ UNVERIFIED (No --secret provided)`;
+    }
+
+    console.log(`  🛡️  Verification: ${verificationDetail}`);
+    console.log(`  📋 Headers:`, redactHeaders(headers));
+    if (rawBody) {
+      const bodySnippet =
+        rawBody.length > 300
+          ? rawBody.slice(0, 300) + "... [truncated]"
+          : rawBody;
+      console.log(`  📦 Body:`, bodySnippet);
+    }
+
+    try {
+      const forwardHeaders = { ...headers };
+      delete forwardHeaders["host"];
+      delete forwardHeaders["content-length"];
+
+      const targetRes = await fetch(targetUrl, {
+        method: reqMethod,
+        headers: forwardHeaders,
+        body: reqMethod !== "GET" && reqMethod !== "HEAD" ? rawBody : undefined,
+      });
+
+      const durationMs = Math.round(performance.now() - startTime);
+      const statusIcon = targetRes.ok ? "✅ SUCCESS" : "⚠️ RESPONDED";
+      console.log(
+        `  ➡️  Forwarded to ${targetUrl} -> ${statusIcon} [HTTP ${targetRes.status}] (${durationMs}ms)`,
+      );
+
+      const targetResponseBody = await targetRes.text();
+      const resHeaders: Record<string, string> = {};
+      targetRes.headers.forEach((val, key) => {
+        const lowerKey = key.toLowerCase();
+        if (
+          lowerKey !== "content-encoding" &&
+          lowerKey !== "content-length" &&
+          lowerKey !== "transfer-encoding"
+        ) {
+          resHeaders[key] = val;
+        }
+      });
+
+      res.writeHead(targetRes.status, resHeaders);
+      res.end(targetResponseBody);
+    } catch (err: unknown) {
+      const durationMs = Math.round(performance.now() - startTime);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error(
+        `  ❌ Forwarding Failed to ${targetUrl} (${durationMs}ms): ${errorMsg}`,
+      );
+
+      res.writeHead(502, { "content-type": "application/json" });
+      res.end(
+        JSON.stringify({
+          error: "Bad Gateway",
+          message: `Forwarding failed: ${errorMsg}`,
+        }),
+      );
+    }
+  });
+
+  return new Promise((resolve, reject) => {
+    server.listen(port, () => {
+      console.log(`
+🪝 verihook Live Local Relay Proxy (v1.7.0)
+
+📡 Provider:     ${provider.toUpperCase()}
+👂 Listening on: http://localhost:${port}
+➡️  Forwarding to: ${targetUrl}
+🔐 Verification: ${secret ? "ENABLED (Secret configured)" : "DISABLED (Pass --secret to verify incoming webhooks)"}
+
+Press Ctrl+C to stop listening.
+`);
+      if (onListening) onListening(server);
+      resolve(server);
+    });
+
+    server.on("error", (err) => {
+      reject(err);
+    });
+  });
+}
+
 export async function runCli(
   argv: string[] = process.argv.slice(2),
 ): Promise<void> {
@@ -200,27 +377,38 @@ export async function runCli(
 
   if (!args.provider) {
     console.log(`
-🪝 verihook CLI Simulator
+🪝 verihook CLI Toolchain (v1.7.0)
 
 Usage:
   npx verihook simulate <provider> [options]
+  npx verihook listen <provider> [options]
+
+Commands:
+  simulate <provider>  Generate and send a signed webhook simulation
+  listen <provider>    Run a live local relay proxy intercepting & forwarding webhooks
 
 Supported Providers:
   stripe, github, shopify, slack, twilio, svix, resend, clerk, meta, whatsapp, discord, twitter, x, paypal, lemonsqueezy, paddle, pagerduty, webflow, workos, linear, razorpay, square, zoom
 
 Options:
-  --url <url>          Target webhook server endpoint (default: http://localhost:3000/webhooks/<provider>)
+  --forward-to <url>   Target webhook server endpoint to forward webhooks to (listen mode)
+  -p, --port <port>    Local port for relay proxy server (default: 8080)
+  --url <url>          Target webhook server endpoint (simulate mode)
   --secret <key>       Webhook signing secret
   --event <type>       Event type payload name
-  --curl               Print cURL command instead of sending POST request
-  --allow-remote       Allow sending simulation requests to non-local remote servers
+  --curl               Print cURL command instead of sending POST request (simulate mode)
+  --allow-remote       Allow sending simulation or forwarding requests to non-local remote servers
 
 Examples:
   npx verihook simulate stripe --url http://localhost:3000/webhooks/stripe
-  npx verihook simulate github --event issues
-  npx verihook simulate whatsapp --secret meta_app_secret_123
-  npx verihook simulate lemonsqueezy --secret lemon_secret_777
+  npx verihook listen stripe --forward-to http://localhost:3000/webhooks/stripe --secret whsec_123
+  npx verihook listen github -p 8080 --forward-to http://localhost:4000/api/github
 `);
+    return;
+  }
+
+  if (args.command === "listen") {
+    await runListenServer(args);
     return;
   }
 
