@@ -14,7 +14,7 @@
 
 No more hunting down bespoke HMAC code snippets for every service or installing 10 heavy SDK dependencies just to verify incoming webhooks!
 
-📖 Read the full [Architecture & Technical Specification](./ARCHITECTURE.md).
+📖 Read the full [Architecture & Technical Specification](./ARCHITECTURE.md) and [Security Policy](./SECURITY.md).
 
 ---
 

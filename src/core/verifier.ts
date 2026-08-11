@@ -79,37 +79,39 @@ export async function verifyWebhook(
   const attemptedAt = Date.now();
   const startTime = performance.now();
 
-  if (!secret && provider !== "paypal") {
-    const result: VerificationResult = {
-      valid: false,
-      provider,
-      code: WebhookErrorCode.INVALID_SECRET,
-      reason: "Webhook secret is required",
-    };
-    dispatchTelemetry(result, startTime, attemptedAt, options);
-    return result;
-  }
-
   let result: VerificationResult;
   try {
     const verifier = getProviderVerifier(provider);
-    const normalizedReq = await normalizeRequest(req);
-    result = await verifier.verify(normalizedReq, secret || "", options);
 
-    if (result.valid && options?.dedupeStore) {
-      const eventId =
-        options.eventId || (await extractEventId(provider, normalizedReq));
-      const dedupeKey = `${provider}:${eventId}`;
-      const ttlMs = options.dedupeTtlMs ?? 300_000;
-      const isDuplicate = await options.dedupeStore.hasOrSet(dedupeKey, ttlMs);
-      if (isDuplicate) {
-        result = {
-          valid: false,
-          provider,
-          code: WebhookErrorCode.DUPLICATE_EVENT,
-          reason: "Duplicate webhook event detected (replay protection)",
-          timestamp: result.timestamp,
-        };
+    if (!secret && verifier.requiresSecret !== false) {
+      result = {
+        valid: false,
+        provider,
+        code: WebhookErrorCode.INVALID_SECRET,
+        reason: "Webhook secret is required",
+      };
+    } else {
+      const normalizedReq = await normalizeRequest(req);
+      result = await verifier.verify(normalizedReq, secret || "", options);
+
+      if (result.valid && options?.dedupeStore) {
+        const eventId =
+          options.eventId || (await extractEventId(provider, normalizedReq));
+        const dedupeKey = `${provider}:${eventId}`;
+        const ttlMs = options.dedupeTtlMs ?? 300_000;
+        const isDuplicate = await options.dedupeStore.hasOrSet(
+          dedupeKey,
+          ttlMs,
+        );
+        if (isDuplicate) {
+          result = {
+            valid: false,
+            provider,
+            code: WebhookErrorCode.DUPLICATE_EVENT,
+            reason: "Duplicate webhook event detected (replay protection)",
+            timestamp: result.timestamp,
+          };
+        }
       }
     }
   } catch (err: unknown) {

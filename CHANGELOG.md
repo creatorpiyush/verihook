@@ -5,6 +5,25 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-08-11
+
+### Added
+- 🛡️ **Security Policy & Vulnerability Disclosure (`SECURITY.md`)**:
+  - Added formal `SECURITY.md` defining supported versions, private disclosure channels (GitHub Security Advisories & security email), response SLA commitments, core security architectural guarantees (constant-time verification, SSRF origin hardening, stream body limits), and integration best practices.
+
+### Changed
+- 🔌 **Provider-Declared Secret Requirement (`requiresSecret`)**:
+  - Added optional `requiresSecret?: boolean` field to `ProviderVerifier` interface (defaults to `true`).
+  - Explicitly set `requiresSecret: false` on `paypalVerifier` to document certificate/RSA-based authentication.
+  - Removed hardcoded `provider !== "paypal"` string check from core verifier dispatcher in `src/core/verifier.ts`.
+
+### Fixed
+- 🐛 **Unknown Provider Verification Error Precedence**:
+  - Reordered core `verifyWebhook` flow to resolve `getProviderVerifier(provider)` before checking secret presence.
+  - Calling `verifyWebhook` with an unsupported provider and no secret now correctly returns `UNSUPPORTED_PROVIDER` instead of `INVALID_SECRET`.
+
+---
+
 ## [1.7.0] - 2026-08-09
 
 ### Added

@@ -15,6 +15,7 @@ import { bytesToHex } from "../utils/encoding.js";
 
 export const paypalVerifier: ProviderVerifier = {
   name: "paypal",
+  requiresSecret: false, // Auth via RSA cert chain / webhookId, not a shared HMAC secret
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,
