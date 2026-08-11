@@ -121,6 +121,14 @@ function isPrivateNetworkHost(hostname: string): boolean {
   return false;
 }
 
+/**
+ * Denylist-based SSRF host origin validation.
+ *
+ * Provides best-effort defense-in-depth hardening against known cloud metadata
+ * endpoints (e.g., 169.254.169.254) and common encoding bypasses.
+ * Note: Denylist-based validation is inherently incomplete and is not a substitute
+ * for network-level isolation (such as VPC security groups, firewalls, or egress proxies).
+ */
 function isBlockedSsrfHost(hostname: string): boolean {
   const cleanHost = hostname.toLowerCase().replace(/^\[|\]$/g, "");
 

@@ -44,7 +44,7 @@ If you discover a potential vulnerability, security bug, or flaw in `verihook`:
 
 - 🔐 **Constant-Time Comparison**: All HMAC signature header checks utilize timing-safe byte array comparisons (`crypto.timingSafeEqual` / `timingSafeEqual`) to prevent side-channel timing attacks.
 - 📦 **Zero External Runtime Dependencies**: Eliminates supply chain risks, transitive dependency vulnerabilities, and unverified package dependencies.
-- 🌐 **SSRF Origin Hardening**: Local relay proxy listeners (`npx verihook listen`) validate target origins and block loopback, octal/hex IP tricks, link-local, and cloud metadata endpoints (`169.254.169.254`).
+- 🌐 **SSRF Origin Hardening**: Local relay proxy listeners (`npx verihook listen`) validate target origins and block loopback, octal/hex IP tricks, link-local, and cloud metadata endpoints (`169.254.169.254`). *Note: Denylist host/IP enumeration provides best-effort defense-in-depth hardening and is not a substitute for network-level egress isolation.*
 - ⚡ **Bounded Stream Allocation**: Input request body processing enforces configurable byte limits (`maxBodySize`, default 2MB) to protect against memory exhaustion Denial of Service (DoS) attacks.
 - ⏳ **Replay Attack Protection**: Built-in header timestamp tolerance verification (`tolerance` option) and stateful deduplication stores (`MemoryDedupeStore`).
 
@@ -58,3 +58,4 @@ To ensure your application remains secure when processing webhooks:
 2. **Use Secret Managers**: Store webhook secrets in environment variables or secret vaults. Never hardcode secrets in source code.
 3. **Enable Timestamp Tolerance**: Keep `tolerance` enabled (default: 300 seconds) for providers with timestamped headers to reject replayed requests.
 4. **Use Event Deduplication**: For idempotent handling, pass a `dedupeStore` option (`MemoryDedupeStore` or Redis adapter) to prevent duplicate webhook processing.
+5. **Network Isolation for Outbound Requests**: Rely on network-level egress controls (VPC security groups, firewall rules, or egress proxies) rather than application-level IP denylists for primary SSRF prevention.

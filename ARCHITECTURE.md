@@ -211,7 +211,7 @@ Zero-dependency HTTP proxy (`runListenServer`) for local development:
 - Forwards requests to local target applications (`--forward-to` / `http://localhost:3000/webhooks/<provider>`) and proxies HTTP response status, headers, and body back to the client. Returns HTTP 502 Bad Gateway if target application is unreachable.
 
 ### C. Multi-Layered SSRF Origin Guardrails
-Both CLI commands enforce strict origin validation:
+Both CLI commands enforce origin validation as a best-effort defense-in-depth measure (*not a substitute for network-level isolation*):
 1. **Unconditional Cloud Metadata Blocking**:
    Blocks known cloud Instance Metadata Services (IMDS) and internal control plane hosts:
    - `169.254.169.254` (AWS, GCP, Azure, OpenStack, DigitalOcean, Alibaba)
@@ -230,6 +230,8 @@ Both CLI commands enforce strict origin validation:
 4. **Remote Host Guardrails**:
    - Disallows non-HTTP protocols (`file://`, `ftp://`, `gopher://`).
    - Requires `--allow-remote` or `VERIHOOK_ALLOW_REMOTE=true` when targeting non-local destinations.
+
+> ⚠️ **Security Boundary Disclaimer**: Application-level denylist enumeration is a best-effort hardening layer against known cloud metadata endpoints and encoding tricks. Denylists do not replace network-level isolation (such as VPC egress controls, firewall rules, or DNS rebinding prevention) in production environments.
 
 ---
 
