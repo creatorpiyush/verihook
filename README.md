@@ -112,7 +112,7 @@ npx verihook listen github -p 8080 --forward-to http://localhost:4000/api/github
 ```
 
 > 🛡️ **Security Features**:
-> - **SSRF Protection**: Strictly blocks requests targeting cloud metadata endpoints and link-local IP addresses:
+> - **SSRF Protection**: Best-effort defense-in-depth origin validation blocking known cloud metadata endpoints and link-local IP addresses (*not a substitute for network-level isolation*):
 >   - **AWS / GCP / Azure / DigitalOcean / Alibaba IMDS**: `169.254.169.254`, `169.254.170.2` (AWS ECS), `168.63.129.16` (Azure Wire Server), `100.100.100.200` (Alibaba IMDS), `metadata.google.internal`, `metadata.tencentyun.com`.
 >   - **Link-Local Ranges & Alternative Encodings**: `169.254.0.0/16` subnet, IPv4-mapped IPv6 (`::ffff:169.254.x.x`), IPv6 Link-Local (`fe80::`), decimal (`2852039166`), hex (`0xa9fea9fe`), and octal IP representations.
 >   - **Non-HTTP Protocols**: Rejects `file://`, `ftp://`, `gopher://`, etc.
@@ -210,6 +210,13 @@ if (!result.valid && result.code === WebhookErrorCode.DUPLICATE_EVENT) {
   console.warn('Duplicate webhook event ignored (replay protection)');
 }
 ```
+
+> [!NOTE]
+> **Serverless & Multi-Instance Edge Deployments**: `MemoryDedupeStore` operates in-process per instance. For serverless (AWS Lambda, Vercel Edge, Cloudflare Workers) or multi-replica deployments, implement a shared distributed store using the `DedupeStore` interface.
+> 
+> See copy-pasteable reference implementations in [`examples/dedupe-stores/`](./examples/dedupe-stores/):
+> - ⚡ **[Upstash Redis (REST/Fetch-based)](./examples/dedupe-stores/upstash-redis.ts)**: Recommended for zero-TCP HTTP edge runtimes (Cloudflare Workers, Vercel Edge).
+> - ☁️ **[Cloudflare Workers KV](./examples/dedupe-stores/cloudflare-kv.ts)**: Native KV store for Cloudflare Workers (eventually consistent).
 
 ### Error Handling & Error Codes
 

@@ -5,6 +5,23 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2] - 2026-08-11
+
+### Added
+- 🌐 **Distributed Deduplication Examples & Serverless Edge Callouts**:
+  - Added copy-pasteable reference implementations in `examples/dedupe-stores/`:
+    - `examples/dedupe-stores/upstash-redis.ts`: REST/Fetch-based Upstash Redis `DedupeStore` for zero-TCP edge runtimes (Cloudflare Workers, Vercel Edge).
+    - `examples/dedupe-stores/cloudflare-kv.ts`: Cloudflare Workers KV-backed `DedupeStore` for edge deployments.
+  - Configured `examples/dedupe-stores/` as a standalone Node.js ES module project (`package.json`, `tsconfig.json`, `index.ts`).
+  - Added multi-instance & serverless callout documentation in `README.md` clarifying `MemoryDedupeStore` single-process boundaries.
+
+### Documentation
+- 🛡️ **SSRF Defense-in-Depth Framing & Best-Effort Disclaimers**:
+  - Updated `SECURITY.md`, `README.md`, `ARCHITECTURE.md`, and `src/cli/index.ts` JSDoc comments to clarify that application-level IP/host denylisting is a best-effort defense-in-depth measure against known cloud metadata IPs and encoding bypasses.
+  - Explicitly documented that host denylists are inherently incomplete and are not a substitute for network-level egress isolation (e.g., VPC security groups, egress proxies, or firewall rules).
+
+---
+
 ## [1.7.1] - 2026-08-11
 
 ### Added

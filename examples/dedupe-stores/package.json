@@ -1,0 +1,18 @@
+{
+  "name": "verihook-dedupe-stores-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^5.20260811.1",
+    "@upstash/redis": "1.34.3",
+    "verihook": "file:../.."
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "typescript": "5.9.3"
+  }
+}
