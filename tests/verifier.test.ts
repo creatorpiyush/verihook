@@ -22,15 +22,26 @@ describe("Verifier Engine & Errors", () => {
     expect(result.reason).toContain("secret is required");
   });
 
-  it("should return UNSUPPORTED_PROVIDER code for unsupported provider name", async () => {
-    const result = await verifyWebhook(
+  it("should return UNSUPPORTED_PROVIDER code for unsupported provider name even with empty secret", async () => {
+    const resultWithSecret = await verifyWebhook(
       "unknown_provider" as any,
       { headers: {}, body: "raw" },
       "secret",
     );
-    expect(result.valid).toBe(false);
-    expect(result.code).toBe(WebhookErrorCode.UNSUPPORTED_PROVIDER);
-    expect(result.reason).toContain("Unsupported provider");
+    expect(resultWithSecret.valid).toBe(false);
+    expect(resultWithSecret.code).toBe(WebhookErrorCode.UNSUPPORTED_PROVIDER);
+    expect(resultWithSecret.reason).toContain("Unsupported provider");
+
+    const resultWithoutSecret = await verifyWebhook(
+      "unknown_provider" as any,
+      { headers: {}, body: "raw" },
+      "",
+    );
+    expect(resultWithoutSecret.valid).toBe(false);
+    expect(resultWithoutSecret.code).toBe(
+      WebhookErrorCode.UNSUPPORTED_PROVIDER,
+    );
+    expect(resultWithoutSecret.reason).toContain("Unsupported provider");
   });
 
   it("should throw WebhookVerificationError with accurate code on signature failure", async () => {
@@ -102,6 +113,26 @@ describe("Verifier Engine & Errors", () => {
       "my-plugin" as any,
       { headers: { "x-plugin-sig": "secret123" }, body: "raw" },
       "secret123",
+    );
+    expect(result.valid).toBe(true);
+  });
+
+  it("should allow registering a custom provider plugin with requiresSecret set to false", async () => {
+    registerProvider({
+      name: "no-secret-plugin",
+      requiresSecret: false,
+      async verify(req) {
+        return {
+          valid: req.headers["x-cert-auth"] === "valid",
+          provider: "no-secret-plugin",
+        };
+      },
+    });
+
+    const result = await verifyWebhook(
+      "no-secret-plugin" as any,
+      { headers: { "x-cert-auth": "valid" }, body: "raw" },
+      "",
     );
     expect(result.valid).toBe(true);
   });

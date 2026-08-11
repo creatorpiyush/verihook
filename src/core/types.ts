@@ -245,6 +245,14 @@ export interface ProviderVerifier {
   name: ProviderName;
 
   /**
+   * Whether this provider requires a `secret` argument to verify.
+   * Set to `false` for providers that authenticate via certificate/public-key
+   * verification instead of a shared HMAC secret (e.g. PayPal's RSA cert chain).
+   * @default true
+   */
+  requiresSecret?: boolean;
+
+  /**
    * Verifies the request signature against the given secret.
    */
   verify(
