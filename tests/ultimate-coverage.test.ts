@@ -362,4 +362,53 @@ describe("Ultimate Coverage Boost for >97%+ Test Suite", () => {
     await expressMiddleware(req, res, next);
     expect(onErrorSpy).toHaveBeenCalledTimes(1);
   });
+
+  it("should test toEpochSeconds NaN and Infinity edge cases", async () => {
+    const { toEpochSeconds } = await import("../src/utils/timestamp.js");
+    expect(toEpochSeconds(NaN)).toBeNaN();
+    expect(toEpochSeconds(Infinity)).toBe(Infinity);
+  });
+
+  it("should test PayPal certUrl fetch branch when valid cert URL is provided", async () => {
+    const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
+      modulusLength: 2048,
+    });
+    const pemPubKey = publicKey
+      .export({ type: "pkcs1", format: "pem" })
+      .toString();
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      text: async () => pemPubKey,
+    } as any);
+
+    const transmissionId = "tx_paypal_fetch_100";
+    const transmissionTime = "2026-08-08T12:00:00Z";
+    const body = JSON.stringify({ event: "PAYMENT.CAPTURE.COMPLETED" });
+    const crc = (await import("../src/core/crypto.js")).computeCrc32(body);
+    const expectedPayload = `${transmissionId}|${transmissionTime}|my_webhook_id|${crc}`;
+
+    const signer = crypto.createSign("RSA-SHA256");
+    signer.update(expectedPayload);
+    const sigBytes = signer.sign(privateKey);
+    const sigBase64 = bytesToBase64(sigBytes);
+
+    const paypalRes = await verifyPayPal(
+      {
+        headers: {
+          "paypal-transmission-id": transmissionId,
+          "paypal-transmission-time": transmissionTime,
+          "paypal-transmission-sig": sigBase64,
+          "paypal-cert-url":
+            "https://api.paypal.com/v1/notifications/certs/CERT-1",
+        },
+        body,
+      },
+      "", // empty secret to force certUrl fetch
+      { webhookId: "my_webhook_id" },
+    );
+
+    expect(paypalRes.valid).toBe(true);
+    fetchSpy.mockRestore();
+  });
 });

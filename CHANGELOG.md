@@ -5,6 +5,32 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.3] - 2026-08-16
+
+### Fixed
+- 💳 **PayPal RSA Certificate & HMAC Fallback**:
+  - Prioritized user-supplied PEM public keys in `secret` over raw header URL strings.
+  - Added strict origin domain validation (`*.paypal.com` / `*.paypal.cn`) for `paypal-cert-url` before certificate fetching.
+  - Ensured non-PEM HMAC secret keys correctly fall back to HMAC signature verification even when `paypal-cert-url` is present in headers.
+- ⏱️ **Millisecond Timestamp Normalization (Webflow, Zoom, and `options.now`)**:
+  - Added `toEpochSeconds` timestamp utility to normalize 13-digit millisecond timestamps (> `1e10`) to seconds.
+  - Applied `toEpochSeconds` across Webflow (`x-webflow-timestamp`), Zoom (`x-zm-request-timestamp`), Stripe, Slack, Svix, Discord, Paddle, and WorkOS verifiers.
+  - Ensured `options.now` supports timestamps passed in either seconds or milliseconds (`Date.now()`).
+- 🛡️ **Safe Key-Value Header Parameter Splitting**:
+  - Refactored header parsing in Stripe, WorkOS, Paddle, and Svix verifiers using `indexOf("=")` to safely handle parameters without `=` or values containing internal `=` characters.
+- 🔐 **Cryptographic Guard & Encoding Format Validation**:
+  - Added null, undefined, and type safety checks to `timingSafeEqual` to prevent runtime `TypeError` on malformed inputs.
+  - Added regex `/^[0-9a-fA-F]*$/` format validation to `hexToBytes` to throw format errors for non-hex characters instead of coercing `NaN` to `0x00`.
+- 🧠 **MemoryDedupeStore LRU Access Order Refresh**:
+  - Updated `MemoryDedupeStore.hasOrSet` to refresh key access order in the internal `Map` on duplicate hits, preserving true LRU eviction order under load.
+- 🌐 **CLI SSRF Validation & Security Standards**:
+  - Expanded `isPrivateNetworkHost` in `src/cli/index.ts` to cover `0.0.0.0`, `0`, IPv6 loopback `::1` (`[::1]`), octal `0177.0.0.1`, hex `0x7f000001`, and decimal `2130706433`.
+  - Replaced dynamic `new Function` usage in `isDirectRun()` with static module checks to comply with strict security standards.
+- 🌐 **Non-Node Runtime Process Safety**:
+  - Added safe `typeof process !== "undefined"` guards in `dispatchTelemetry` to prevent `ReferenceError` when executed in browser or edge worker runtimes.
+
+---
+
 ## [1.7.2] - 2026-08-11
 
 ### Added

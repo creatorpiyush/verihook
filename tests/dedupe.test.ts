@@ -54,6 +54,20 @@ describe("Replay Protection & Deduplication Store", () => {
       expect(store.hasOrSet("key_1")).toBe(false);
       expect(store.hasOrSet("key_3")).toBe(true);
     });
+
+    it("should refresh LRU position on duplicate access hit so active duplicate keys avoid early eviction", () => {
+      const store = new MemoryDedupeStore({ maxSize: 2, ttlMs: 10000 });
+      store.hasOrSet("key_1"); // key_1 inserted
+      store.hasOrSet("key_2"); // key_2 inserted
+
+      // Duplicate hit on key_1 refreshes its LRU order position
+      expect(store.hasOrSet("key_1")).toBe(true);
+
+      // Insert key_3 -> should evict key_2 (oldest), preserving key_1
+      store.hasOrSet("key_3");
+      expect(store.hasOrSet("key_1")).toBe(true); // key_1 retained
+      expect(store.hasOrSet("key_2")).toBe(false); // key_2 evicted
+    });
   });
 
   describe("extractEventId", () => {

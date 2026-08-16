@@ -8,6 +8,8 @@ import {
 } from "../core/types.js";
 import { bytesToHex } from "../utils/encoding.js";
 
+import { toEpochSeconds } from "../utils/timestamp.js";
+
 export const stripeVerifier: ProviderVerifier = {
   name: "stripe",
   async verify(
@@ -26,19 +28,24 @@ export const stripeVerifier: ProviderVerifier = {
     }
 
     const parts = signatureHeader.split(",");
-    let timestamp: number | undefined;
+    let rawTimestamp: number | undefined;
     const signatures: string[] = [];
 
     for (const part of parts) {
-      const [key, value] = part.trim().split("=");
-      if (key === "t") {
-        timestamp = parseInt(value, 10);
-      } else if (key === "v1") {
-        signatures.push(value);
+      const trimmed = part.trim();
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx !== -1) {
+        const key = trimmed.slice(0, eqIdx);
+        const value = trimmed.slice(eqIdx + 1);
+        if (key === "t") {
+          rawTimestamp = parseInt(value, 10);
+        } else if (key === "v1" && value) {
+          signatures.push(value);
+        }
       }
     }
 
-    if (!timestamp || isNaN(timestamp)) {
+    if (rawTimestamp === undefined || isNaN(rawTimestamp)) {
       return {
         valid: false,
         provider: "stripe",
@@ -57,9 +64,10 @@ export const stripeVerifier: ProviderVerifier = {
       };
     }
 
+    const timestamp = toEpochSeconds(rawTimestamp);
     const tolerance = options?.tolerance ?? 300;
     if (tolerance > 0) {
-      const now = options?.now ?? Math.floor(Date.now() / 1000);
+      const now = toEpochSeconds(options?.now ?? Math.floor(Date.now() / 1000));
       if (Math.abs(now - timestamp) > tolerance) {
         return {
           valid: false,
@@ -71,7 +79,7 @@ export const stripeVerifier: ProviderVerifier = {
       }
     }
 
-    const payloadToSign = `${timestamp}.${req.rawBody}`;
+    const payloadToSign = `${rawTimestamp}.${req.rawBody}`;
     const hmacBytes = await computeHmacSha256(secret, payloadToSign);
     const expectedHex = bytesToHex(hmacBytes);
 

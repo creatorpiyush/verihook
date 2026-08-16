@@ -76,7 +76,6 @@ describe("Stripe Webhook Verifier", () => {
     const hmac = await computeHmacSha256(secret, payloadToSign);
     const signature = bytesToHex(hmac);
     const header = `t=${timestamp},v1=${signature}`;
-
     const req = { headers: { "stripe-signature": header }, body };
     const result = await verifyStripe(req, secret, {
       now: timestamp + 500,
@@ -86,5 +85,20 @@ describe("Stripe Webhook Verifier", () => {
     expect(result.valid).toBe(false);
     expect(result.code).toBe("EXPIRED_TIMESTAMP");
     expect(result.reason).toContain("Timestamp outside tolerance window");
+  });
+
+  it("should handle malformed signature header parameters without equals sign gracefully", async () => {
+    const payloadToSign = `${timestamp}.${body}`;
+    const hmac = await computeHmacSha256(secret, payloadToSign);
+    const validSig = bytesToHex(hmac);
+    const header = `t=${timestamp},malformed_part,v1=,v1=${validSig}`;
+
+    const req = {
+      headers: { "stripe-signature": header },
+      body,
+    };
+
+    const result = await verifyStripe(req, secret, { now: timestamp });
+    expect(result.valid).toBe(true);
   });
 });

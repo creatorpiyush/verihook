@@ -34,15 +34,18 @@ function dispatchTelemetry(
   const perCallLogger = options?.onVerify || options?.log;
   const globalLogger = getGlobalLogger();
 
+  const isDev =
+    typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+
   if (perCallLogger) {
     try {
       Promise.resolve(perCallLogger(event)).catch((err) => {
-        if (process.env.NODE_ENV !== "production") {
+        if (isDev) {
           console.warn("[verihook] per-call telemetry logger failed:", err);
         }
       });
     } catch (err) {
-      if (process.env.NODE_ENV !== "production") {
+      if (isDev) {
         console.warn("[verihook] per-call telemetry logger exception:", err);
       }
     }
@@ -51,12 +54,12 @@ function dispatchTelemetry(
   if (globalLogger) {
     try {
       Promise.resolve(globalLogger(event)).catch((err) => {
-        if (process.env.NODE_ENV !== "production") {
+        if (isDev) {
           console.warn("[verihook] global telemetry logger failed:", err);
         }
       });
     } catch (err) {
-      if (process.env.NODE_ENV !== "production") {
+      if (isDev) {
         console.warn("[verihook] global telemetry logger exception:", err);
       }
     }

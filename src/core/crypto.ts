@@ -7,6 +7,17 @@ export function timingSafeEqual(
   a: string | Uint8Array,
   b: string | Uint8Array,
 ): boolean {
+  if (
+    a === undefined ||
+    a === null ||
+    b === undefined ||
+    b === null ||
+    (typeof a !== "string" && !(a instanceof Uint8Array)) ||
+    (typeof b !== "string" && !(b instanceof Uint8Array))
+  ) {
+    return false;
+  }
+
   const bytesA = typeof a === "string" ? stringToBytes(a) : a;
   const bytesB = typeof b === "string" ? stringToBytes(b) : b;
 

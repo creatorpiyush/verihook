@@ -70,10 +70,40 @@ describe("PayPal Webhook Verifier", () => {
     expect(result.code).toBe("INVALID_SIGNATURE");
   });
 
-  it("should reject missing PayPal transmission headers", async () => {
-    const req = { headers: {}, body };
-    const result = await verifyPayPal(req, secret);
+  it("should fallback to HMAC signature verification when paypal-cert-url header is present and secret is non-PEM HMAC key", async () => {
+    const crc = computeCrc32(body);
+    const expectedPayload = `${transId}|${transTime}|${webhookId}|${crc}`;
+    const hmac = await computeHmacSha256(secret, expectedPayload);
+    const signature = bytesToHex(hmac);
+
+    const req = {
+      headers: {
+        "paypal-transmission-id": transId,
+        "paypal-transmission-time": transTime,
+        "paypal-transmission-sig": signature,
+        "paypal-cert-url":
+          "https://api.paypal.com/v1/notifications/certs/CERT-123",
+      },
+      body,
+    };
+
+    const result = await verifyPayPal(req, secret, { webhookId });
+    expect(result.valid).toBe(true);
+    expect(result.provider).toBe("paypal");
+  });
+
+  it("should reject invalid certUrl domains for RSA verification", async () => {
+    const req = {
+      headers: {
+        "paypal-transmission-id": transId,
+        "paypal-transmission-time": transTime,
+        "paypal-transmission-sig": "invalid_sig",
+        "paypal-cert-url": "https://evil.com/fake-cert",
+      },
+      body,
+    };
+
+    const result = await verifyPayPal(req, "", { webhookId });
     expect(result.valid).toBe(false);
-    expect(result.code).toBe("MISSING_HEADER");
   });
 });

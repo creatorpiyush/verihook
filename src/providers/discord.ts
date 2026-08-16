@@ -7,6 +7,8 @@ import {
   WebhookErrorCode,
 } from "../core/types.js";
 
+import { toEpochSeconds } from "../utils/timestamp.js";
+
 export const discordVerifier: ProviderVerifier = {
   name: "discord",
   async verify(
@@ -35,8 +37,8 @@ export const discordVerifier: ProviderVerifier = {
       };
     }
 
-    const timestamp = parseInt(timestampStr, 10);
-    if (isNaN(timestamp)) {
+    const rawTimestamp = parseInt(timestampStr, 10);
+    if (isNaN(rawTimestamp)) {
       return {
         valid: false,
         provider: "discord",
@@ -45,9 +47,10 @@ export const discordVerifier: ProviderVerifier = {
       };
     }
 
+    const timestamp = toEpochSeconds(rawTimestamp);
     const tolerance = options?.tolerance ?? 300;
     if (tolerance > 0) {
-      const now = options?.now ?? Math.floor(Date.now() / 1000);
+      const now = toEpochSeconds(options?.now ?? Math.floor(Date.now() / 1000));
       if (Math.abs(now - timestamp) > tolerance) {
         return {
           valid: false,

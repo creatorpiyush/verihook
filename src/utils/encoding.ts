@@ -19,8 +19,8 @@ export function bytesToHex(bytes: Uint8Array): string {
 
 export function hexToBytes(hex: string): Uint8Array {
   const cleanHex = hex.replace(/^0x/i, "");
-  if (cleanHex.length % 2 !== 0) {
-    throw new Error("Invalid hex string length");
+  if (cleanHex.length % 2 !== 0 || !/^[0-9a-fA-F]*$/.test(cleanHex)) {
+    throw new Error("Invalid hex string format");
   }
   const bytes = new Uint8Array(cleanHex.length / 2);
   for (let i = 0; i < bytes.length; i++) {

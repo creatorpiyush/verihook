@@ -32,6 +32,9 @@ export class MemoryDedupeStore implements DedupeStore {
     const existingExpiry = this.cache.get(key);
     if (existingExpiry !== undefined) {
       if (existingExpiry > now) {
+        // Refresh key position in Map for accurate LRU ordering
+        this.cache.delete(key);
+        this.cache.set(key, existingExpiry);
         return true;
       }
       // Expired key, remove before re-adding
@@ -131,6 +134,6 @@ export async function extractEventId(
   }
 
   // 4. SHA-256 fallback digest over provider + raw body
-  const hashBytes = await computeSha256(`${provider}:${req.rawBody}`);
+  const hashBytes = await computeSha256(`${provider}:${req.rawBody || ""}`);
   return bytesToHex(hashBytes);
 }

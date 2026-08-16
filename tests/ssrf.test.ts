@@ -43,4 +43,16 @@ describe("SSRF Protection & URL Validation", () => {
       runCli(["simulate", "stripe", "--url", "file:///etc/passwd", "--curl"]),
     ).rejects.toThrow(/Forbidden URL protocol/);
   });
+
+  it("should allow local requests to 0.0.0.0 or [::1] in simulation mode", async () => {
+    await expect(
+      runCli([
+        "simulate",
+        "stripe",
+        "--url",
+        "http://0.0.0.0:3000/webhooks/stripe",
+        "--curl",
+      ]),
+    ).resolves.toBeUndefined();
+  });
 });

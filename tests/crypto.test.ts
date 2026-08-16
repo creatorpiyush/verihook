@@ -26,6 +26,8 @@ describe("Crypto Utilities & Constant Time Comparison", () => {
     expect(
       timingSafeEqual(stringToBytes("short"), stringToBytes("longer_string")),
     ).toBe(false);
+    expect(timingSafeEqual(undefined as unknown as string, "test")).toBe(false);
+    expect(timingSafeEqual("test", null as unknown as string)).toBe(false);
   });
 
   it("should compute accurate SHA-256 hash digest", async () => {
