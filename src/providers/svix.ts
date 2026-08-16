@@ -8,6 +8,8 @@ import {
 } from "../core/types.js";
 import { base64ToBytes, bytesToBase64 } from "../utils/encoding.js";
 
+import { toEpochSeconds } from "../utils/timestamp.js";
+
 export const svixVerifier: ProviderVerifier = {
   name: "svix",
   async verify(
@@ -29,8 +31,8 @@ export const svixVerifier: ProviderVerifier = {
       };
     }
 
-    const timestamp = parseInt(svixTimestamp, 10);
-    if (isNaN(timestamp)) {
+    const rawTimestamp = parseInt(svixTimestamp, 10);
+    if (isNaN(rawTimestamp)) {
       return {
         valid: false,
         provider: "svix",
@@ -39,9 +41,10 @@ export const svixVerifier: ProviderVerifier = {
       };
     }
 
+    const timestamp = toEpochSeconds(rawTimestamp);
     const tolerance = options?.tolerance ?? 300;
     if (tolerance > 0) {
-      const now = options?.now ?? Math.floor(Date.now() / 1000);
+      const now = toEpochSeconds(options?.now ?? Math.floor(Date.now() / 1000));
       if (Math.abs(now - timestamp) > tolerance) {
         return {
           valid: false,
@@ -70,9 +73,13 @@ export const svixVerifier: ProviderVerifier = {
 
     const signatures = svixSignature.split(" ").map((s) => s.trim());
     const valid = signatures.some((sig) => {
-      const [version, b64] = sig.split(",");
-      if (version === "v1" && b64) {
-        return timingSafeEqual(b64, expectedBase64);
+      const commaIdx = sig.indexOf(",");
+      if (commaIdx !== -1) {
+        const version = sig.slice(0, commaIdx);
+        const b64 = sig.slice(commaIdx + 1);
+        if (version === "v1" && b64) {
+          return timingSafeEqual(b64, expectedBase64);
+        }
       }
       return false;
     });

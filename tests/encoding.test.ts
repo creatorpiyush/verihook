@@ -24,8 +24,9 @@ describe("Encoding Utilities", () => {
     expect(decodedBytes).toEqual(bytes);
   });
 
-  it("should throw error on invalid odd-length hex string", () => {
-    expect(() => hexToBytes("abc")).toThrow("Invalid hex string length");
+  it("should throw error on invalid odd-length or non-hex string", () => {
+    expect(() => hexToBytes("abc")).toThrow("Invalid hex string format");
+    expect(() => hexToBytes("zzzz")).toThrow("Invalid hex string format");
   });
 
   it("should convert bytes to base64 and back in Buffer environment", () => {

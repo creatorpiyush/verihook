@@ -8,6 +8,8 @@ import {
 } from "../core/types.js";
 import { bytesToHex } from "../utils/encoding.js";
 
+import { toEpochSeconds } from "../utils/timestamp.js";
+
 export const webflowVerifier: ProviderVerifier = {
   name: "webflow",
   async verify(
@@ -29,18 +31,23 @@ export const webflowVerifier: ProviderVerifier = {
     let timestamp: number | undefined;
 
     if (timestampStr) {
-      timestamp = parseInt(timestampStr, 10);
-      const tolerance = options?.tolerance ?? 300;
-      if (!isNaN(timestamp) && tolerance > 0) {
-        const now = options?.now ?? Math.floor(Date.now() / 1000);
-        if (Math.abs(now - timestamp) > tolerance) {
-          return {
-            valid: false,
-            provider: "webflow",
-            code: WebhookErrorCode.EXPIRED_TIMESTAMP,
-            timestamp,
-            reason: `Timestamp outside tolerance window (timestamp: ${timestamp}, current: ${now}, tolerance: ${tolerance}s)`,
-          };
+      const rawTimestamp = parseInt(timestampStr, 10);
+      if (!isNaN(rawTimestamp)) {
+        timestamp = toEpochSeconds(rawTimestamp);
+        const tolerance = options?.tolerance ?? 300;
+        if (tolerance > 0) {
+          const now = toEpochSeconds(
+            options?.now ?? Math.floor(Date.now() / 1000),
+          );
+          if (Math.abs(now - timestamp) > tolerance) {
+            return {
+              valid: false,
+              provider: "webflow",
+              code: WebhookErrorCode.EXPIRED_TIMESTAMP,
+              timestamp,
+              reason: `Timestamp outside tolerance window (timestamp: ${timestamp}, current: ${now}, tolerance: ${tolerance}s)`,
+            };
+          }
         }
       }
     }

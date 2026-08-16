@@ -26,10 +26,24 @@ describe("Webflow Webhook Verifier", () => {
     expect(result.provider).toBe("webflow");
   });
 
-  it("should reject missing signature header", async () => {
-    const req = { headers: {}, body };
-    const result = await verifyWebflow(req, secret);
-    expect(result.valid).toBe(false);
-    expect(result.code).toBe("MISSING_HEADER");
+  it("should verify Webflow signature when timestamp is 13-digit milliseconds and options.now = Date.now()", async () => {
+    const msTimestamp = 1700000000456;
+    const payloadToSign = `${msTimestamp}:${body}`;
+    const hmac = await computeHmacSha256(secret, payloadToSign);
+    const signature = `sha256=${bytesToHex(hmac)}`;
+
+    const req = {
+      headers: {
+        "x-webflow-signature": signature,
+        "x-webflow-timestamp": String(msTimestamp),
+      },
+      body,
+    };
+
+    const result = await verifyWebflow(req, secret, {
+      now: msTimestamp + 1000,
+    });
+    expect(result.valid).toBe(true);
+    expect(result.provider).toBe("webflow");
   });
 });

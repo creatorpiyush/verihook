@@ -1,8 +1,8 @@
 #!/usr/bin/env node
+import type { Server } from "http";
 import fs from "node:fs";
 import * as http from "node:http";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
 import {
   computeHmacSha1,
   computeHmacSha256,
@@ -97,16 +97,32 @@ const BLOCKED_HOSTNAMES = new Set([
 
 function isPrivateNetworkHost(hostname: string): boolean {
   const cleanHost = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+
+  if (
+    cleanHost === "localhost" ||
+    cleanHost === "127.0.0.1" ||
+    cleanHost === "0.0.0.0" ||
+    cleanHost === "0" ||
+    cleanHost === "::1" ||
+    cleanHost === "0177.0.0.1" ||
+    cleanHost === "0x7f000001" ||
+    cleanHost === "2130706433"
+  ) {
+    return true;
+  }
+
   const ipMatch = cleanHost.match(
     /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/,
   );
 
   if (!ipMatch) {
-    return cleanHost === "localhost";
+    return false;
   }
 
   const [_, o1, o2] = ipMatch.map(Number);
 
+  // 0.0.0.0/8
+  if (o1 === 0) return true;
   // 10.0.0.0/8
   if (o1 === 10) return true;
   // 172.16.0.0/12 (172.16.0.0 - 172.31.255.255)
@@ -237,8 +253,8 @@ function redactHeaders(
 
 export async function runListenServer(
   args: ParsedCliArgs,
-  onListening?: (server: http.Server) => void,
-): Promise<http.Server> {
+  onListening?: (server: Server) => void,
+): Promise<Server> {
   const provider = (args.provider || "generic") as ProviderName;
   const port = args.port || 8080;
   const rawTargetUrl =
@@ -681,17 +697,6 @@ function isDirectRun(): boolean {
       return require.main.filename === mainPath;
     }
 
-    let metaUrl: string | undefined;
-    try {
-      metaUrl = new Function("return import.meta.url")();
-    } catch {
-      metaUrl = undefined;
-    }
-
-    if (metaUrl) {
-      return fs.realpathSync(fileURLToPath(metaUrl)) === mainPath;
-    }
-
     const scriptPath = process.argv[1];
     return (
       scriptPath.endsWith("/cli/index.js") ||
@@ -699,7 +704,10 @@ function isDirectRun(): boolean {
       scriptPath.endsWith("/cli.js") ||
       scriptPath.endsWith("/cli.mjs") ||
       scriptPath.endsWith("/verihook") ||
-      scriptPath.endsWith("/bin/verihook")
+      scriptPath.endsWith("/bin/verihook") ||
+      mainPath.endsWith("/cli/index.js") ||
+      mainPath.endsWith("/cli.js") ||
+      mainPath.endsWith("/cli.mjs")
     );
   } catch {
     return false;

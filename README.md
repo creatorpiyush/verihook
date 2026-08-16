@@ -114,7 +114,7 @@ npx verihook listen github -p 8080 --forward-to http://localhost:4000/api/github
 > 🛡️ **Security Features**:
 > - **SSRF Protection**: Best-effort defense-in-depth origin validation blocking known cloud metadata endpoints and link-local IP addresses (*not a substitute for network-level isolation*):
 >   - **AWS / GCP / Azure / DigitalOcean / Alibaba IMDS**: `169.254.169.254`, `169.254.170.2` (AWS ECS), `168.63.129.16` (Azure Wire Server), `100.100.100.200` (Alibaba IMDS), `metadata.google.internal`, `metadata.tencentyun.com`.
->   - **Link-Local Ranges & Alternative Encodings**: `169.254.0.0/16` subnet, IPv4-mapped IPv6 (`::ffff:169.254.x.x`), IPv6 Link-Local (`fe80::`), decimal (`2852039166`), hex (`0xa9fea9fe`), and octal IP representations.
+>   - **Link-Local Ranges & Alternative Encodings**: `169.254.0.0/16` subnet, `0.0.0.0/8`, IPv4-mapped IPv6 (`::ffff:169.254.x.x`), IPv6 Link-Local (`fe80::`), loopbacks (`127.0.0.1`, `0.0.0.0`, `::1`), decimal (`2852039166`), hex (`0xa9fea9fe`), and octal IP representations.
 >   - **Non-HTTP Protocols**: Rejects `file://`, `ftp://`, `gopher://`, etc.
 > - **Remote Server Notice**: Shows a warning notice when targeting non-local hosts unless `--allow-remote` is passed or `VERIHOOK_ALLOW_REMOTE=true` is set.
 > - **Header Redaction**: Redacts sensitive secret tokens and signature headers in terminal log outputs.

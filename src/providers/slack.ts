@@ -8,6 +8,8 @@ import {
 } from "../core/types.js";
 import { bytesToHex } from "../utils/encoding.js";
 
+import { toEpochSeconds } from "../utils/timestamp.js";
+
 export const slackVerifier: ProviderVerifier = {
   name: "slack",
   async verify(
@@ -36,8 +38,8 @@ export const slackVerifier: ProviderVerifier = {
       };
     }
 
-    const timestamp = parseInt(timestampStr, 10);
-    if (isNaN(timestamp)) {
+    const rawTimestamp = parseInt(timestampStr, 10);
+    if (isNaN(rawTimestamp)) {
       return {
         valid: false,
         provider: "slack",
@@ -46,9 +48,10 @@ export const slackVerifier: ProviderVerifier = {
       };
     }
 
+    const timestamp = toEpochSeconds(rawTimestamp);
     const tolerance = options?.tolerance ?? 300;
     if (tolerance > 0) {
-      const now = options?.now ?? Math.floor(Date.now() / 1000);
+      const now = toEpochSeconds(options?.now ?? Math.floor(Date.now() / 1000));
       if (Math.abs(now - timestamp) > tolerance) {
         return {
           valid: false,
@@ -60,7 +63,7 @@ export const slackVerifier: ProviderVerifier = {
       }
     }
 
-    const sigBasestring = `v0:${timestamp}:${req.rawBody}`;
+    const sigBasestring = `v0:${timestampStr}:${req.rawBody}`;
     const hmacBytes = await computeHmacSha256(secret, sigBasestring);
     const expectedSig = `v0=${bytesToHex(hmacBytes)}`;
 

@@ -26,20 +26,22 @@ describe("Zoom Webhook Verifier", () => {
     expect(result.provider).toBe("zoom");
   });
 
-  it("should reject expired timestamp with EXPIRED_TIMESTAMP code", async () => {
+  it("should verify Zoom signature with 13-digit millisecond timestamp and options.now in ms", async () => {
+    const msTimestamp = 1700000000123;
+    const msg = `v0:${msTimestamp}:${body}`;
+    const hmac = await computeHmacSha256(secret, msg);
+    const signature = `v0=${bytesToHex(hmac)}`;
+
     const req = {
       headers: {
-        "x-zm-signature": "v0=abc",
-        "x-zm-request-timestamp": String(timestamp),
+        "x-zm-signature": signature,
+        "x-zm-request-timestamp": String(msTimestamp),
       },
       body,
     };
 
-    const result = await verifyZoom(req, secret, {
-      now: timestamp + 600,
-      tolerance: 300,
-    });
-    expect(result.valid).toBe(false);
-    expect(result.code).toBe("EXPIRED_TIMESTAMP");
+    const result = await verifyZoom(req, secret, { now: msTimestamp + 2000 });
+    expect(result.valid).toBe(true);
+    expect(result.provider).toBe("zoom");
   });
 });

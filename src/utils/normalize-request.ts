@@ -71,16 +71,16 @@ export function normalizeBody(
     return bodyInput;
   }
 
+  if (typeof Buffer !== "undefined" && Buffer.isBuffer(bodyInput)) {
+    return bodyInput.toString("utf-8");
+  }
+
   if (bodyInput instanceof Uint8Array) {
     return bytesToString(bodyInput);
   }
 
   if (bodyInput instanceof ArrayBuffer) {
     return bytesToString(new Uint8Array(bodyInput));
-  }
-
-  if (typeof Buffer !== "undefined" && Buffer.isBuffer(bodyInput)) {
-    return bodyInput.toString("utf-8");
   }
 
   if (typeof bodyInput === "object") {

@@ -9,6 +9,8 @@ import {
 import { computeHmacSha256, timingSafeEqual } from "../core/crypto.js";
 import { bytesToHex } from "../utils/encoding.js";
 
+import { toEpochSeconds } from "../utils/timestamp.js";
+
 export const workosVerifier: ProviderVerifier = {
   name: "workos",
   async verify(
@@ -36,9 +38,14 @@ export const workosVerifier: ProviderVerifier = {
     let sigHex = "";
     const parts = signature.split(",");
     for (const part of parts) {
-      const [k, v] = part.split("=");
-      if (k && k.trim() === "t" && v) timestampStr = v.trim();
-      if (k && k.trim() === "v1" && v) sigHex = v.trim();
+      const trimmed = part.trim();
+      const eqIdx = trimmed.indexOf("=");
+      if (eqIdx !== -1) {
+        const k = trimmed.slice(0, eqIdx).trim();
+        const v = trimmed.slice(eqIdx + 1).trim();
+        if (k === "t" && v) timestampStr = v;
+        if (k === "v1" && v) sigHex = v;
+      }
     }
 
     if (!timestampStr || !sigHex) {
@@ -50,8 +57,8 @@ export const workosVerifier: ProviderVerifier = {
       };
     }
 
-    const timestamp = parseInt(timestampStr, 10);
-    if (isNaN(timestamp)) {
+    const rawTimestamp = parseInt(timestampStr, 10);
+    if (isNaN(rawTimestamp)) {
       return {
         valid: false,
         provider: "workos",
@@ -60,9 +67,10 @@ export const workosVerifier: ProviderVerifier = {
       };
     }
 
+    const timestamp = toEpochSeconds(rawTimestamp);
     const tolerance = options?.tolerance ?? 300;
     if (tolerance > 0) {
-      const now = options?.now ?? Math.floor(Date.now() / 1000);
+      const now = toEpochSeconds(options?.now ?? Math.floor(Date.now() / 1000));
       if (Math.abs(now - timestamp) > tolerance) {
         return {
           valid: false,

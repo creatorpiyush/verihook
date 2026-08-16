@@ -40,10 +40,41 @@ export const paypalVerifier: ProviderVerifier = {
     const bodyCrc = computeCrc32(req.rawBody);
     const expectedPayload = `${transmissionId}|${transmissionTime}|${webhookId}|${bodyCrc}`;
 
-    // If certUrl or RSA public key is present, verify via RSA-SHA256
-    if (certUrl || secret.includes("-----BEGIN")) {
+    // If secret contains a PEM public key/cert or certUrl is provided, verify via RSA-SHA256
+    let rsaPublicKeyOrCert: string | undefined;
+    if (secret && secret.includes("-----BEGIN")) {
+      rsaPublicKeyOrCert = secret;
+    } else if (certUrl) {
+      try {
+        const parsedCertUrl = new URL(certUrl);
+        const validHostnames = [
+          "api.paypal.com",
+          "api.sandbox.paypal.com",
+          "api.msmaster.qa.paypal.com",
+        ];
+        if (
+          parsedCertUrl.protocol === "https:" &&
+          validHostnames.some(
+            (host) =>
+              parsedCertUrl.hostname === host ||
+              parsedCertUrl.hostname.endsWith(".paypal.com"),
+          )
+        ) {
+          if (typeof fetch === "function") {
+            const res = await fetch(certUrl);
+            if (res.ok) {
+              rsaPublicKeyOrCert = await res.text();
+            }
+          }
+        }
+      } catch {
+        // Invalid certUrl format
+      }
+    }
+
+    if (rsaPublicKeyOrCert) {
       const isValid = await verifyRsaSha256(
-        certUrl || secret,
+        rsaPublicKeyOrCert,
         transmissionSig,
         expectedPayload,
       );
