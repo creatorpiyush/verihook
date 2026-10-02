@@ -36,10 +36,14 @@ describe("CLI simulate produces verifiable webhooks", () => {
     ["razorpay", "razorpay_key"],
     ["generic", "generic_key"],
     ["stripe", "whsec_stripe_key"],
+    ["shopify", "shopify_key"],
+    ["slack", "slack_key"],
+    ["twilio", "twilio_key"],
+    ["my-custom-hook", "custom_key"],
   ])("%s", async (provider, secret) => {
     const sent = await simulateAndCapture([provider, "--secret", secret]);
     const result = await verifyWebhook(
-      provider,
+      provider === "my-custom-hook" ? "generic" : provider,
       { headers: sent.headers, body: sent.body, url: sent.url },
       secret,
     );

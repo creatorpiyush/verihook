@@ -1,18 +1,16 @@
 #!/usr/bin/env node
 import type { Server } from "http";
-import crypto from "node:crypto";
 import fs from "node:fs";
 import * as http from "node:http";
 import process from "node:process";
-import {
-  computeHmacSha1,
-  computeHmacSha256,
-  computeSha256,
-} from "../core/crypto.js";
 import { ProviderName } from "../core/types.js";
 import { verifyWebhook } from "../core/verifier.js";
 import { ParsedCliArgs, validateCliArgs } from "../schemas/index.js";
-import { base64ToBytes, bytesToBase64, bytesToHex } from "../utils/encoding.js";
+import {
+  SIGNABLE_PROVIDERS,
+  SignWebhookOptions,
+  signWebhook,
+} from "../testing/sign.js";
 
 // Injected from package.json at build time (tsup/vitest `define`).
 declare const __VERIHOOK_VERSION__: string | undefined;
@@ -410,6 +408,196 @@ Press Ctrl+C to stop listening.
   });
 }
 
+// Default secrets and example payloads used by `simulate`.
+function simulationSample(
+  provider: string,
+  eventType: string | undefined,
+): Pick<SignWebhookOptions, "secret" | "payload" | "form" | "event"> {
+  const now = Date.now();
+  switch (provider) {
+    case "stripe":
+      return {
+        secret: "whsec_stripe_test_secret_123",
+        payload: {
+          id: `evt_${now}`,
+          object: "event",
+          type: eventType || "payment_intent.succeeded",
+          data: {
+            object: {
+              id: "pi_3MtwBwLkdIwHu7ix",
+              amount: 2000,
+              currency: "usd",
+              status: "succeeded",
+            },
+          },
+        },
+      };
+    case "github":
+      return {
+        secret: "github_secret_123",
+        event: eventType || "issues",
+        payload: {
+          action: "opened",
+          issue: { number: 42, title: "Simulated issue via verihook CLI" },
+          repository: { name: "verihook", owner: { login: "creatorpiyush" } },
+        },
+      };
+    case "shopify":
+      return {
+        secret: "shopify_secret_123",
+        payload: { id: now, topic: eventType || "orders/create" },
+      };
+    case "meta":
+    case "whatsapp":
+    case "facebook":
+    case "instagram":
+      return {
+        secret: "meta_app_secret_123",
+        payload: {
+          object: "whatsapp_business_account",
+          entry: [
+            {
+              id: "123456789",
+              changes: [
+                {
+                  value: {
+                    messaging_product: "whatsapp",
+                    messages: [
+                      {
+                        from: "15551234567",
+                        text: { body: "Hello verihook!" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      };
+    case "twitter":
+    case "x":
+      return {
+        secret: "twitter_consumer_secret_123",
+        payload: {
+          for_user_id: "12345678",
+          tweet_create_events: [
+            {
+              id_str: "999888777",
+              text: "Testing verihook CLI simulation for Twitter/X",
+            },
+          ],
+        },
+      };
+    case "lemonsqueezy":
+      return {
+        secret: "lemon_secret_123",
+        payload: {
+          meta: { event_name: eventType || "order_created" },
+          data: { id: "100", attributes: { total: 2900, status: "paid" } },
+        },
+      };
+    case "paddle":
+      return {
+        secret: "paddle_secret_123",
+        payload: {
+          event_type: eventType || "transaction.completed",
+          data: { id: "txn_100" },
+        },
+      };
+    case "pagerduty":
+      return {
+        secret: "pagerduty_secret_123",
+        payload: {
+          event: {
+            event_type: eventType || "incident.triggered",
+            id: "pd_100",
+          },
+        },
+      };
+    case "webflow":
+      return {
+        secret: "webflow_secret_123",
+        payload: {
+          triggerType: eventType || "form_submission",
+          site: "site_123",
+        },
+      };
+    case "workos":
+      return {
+        secret: "workos_secret_123",
+        payload: {
+          event: eventType || "user.created",
+          data: { id: "user_100" },
+        },
+      };
+    case "svix":
+    case "resend":
+    case "clerk":
+      return {
+        secret: "dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==",
+        payload: {
+          type: eventType || "user.created",
+          data: { id: "usr_simulated_100" },
+        },
+      };
+    case "slack":
+      return {
+        secret: "slack_signing_secret_123",
+        form: {
+          token: "slack_token_test_123",
+          team_id: "T0001",
+          command: "/verihook",
+        },
+      };
+    case "twilio":
+      return {
+        secret: "twilio_auth_token_123",
+        payload: { MessageSid: "SM12345", Body: "Simulated SMS" },
+      };
+    case "square":
+      return {
+        secret: "square_signature_key_123",
+        payload: {
+          type: eventType || "payment.created",
+          event_id: `sq_${now}`,
+        },
+      };
+    case "zoom":
+      return {
+        secret: "zoom_secret_token_123",
+        payload: {
+          event: eventType || "meeting.started",
+          payload: { object: { id: "123456789" } },
+        },
+      };
+    case "linear":
+      return {
+        secret: "linear_secret_123",
+        payload: {
+          action: "create",
+          type: eventType || "Issue",
+          data: { id: "lin_100" },
+        },
+      };
+    case "razorpay":
+      return {
+        secret: "razorpay_secret_123",
+        payload: {
+          event: eventType || "payment.captured",
+          payload: { payment: { entity: { id: "pay_100" } } },
+        },
+      };
+    case "discord":
+      return { payload: { type: 1, id: `interaction_${now}` } };
+    default:
+      return {
+        secret: "secret_123",
+        payload: { event: eventType || "simulated_event", timestamp: now },
+      };
+  }
+}
+
 export async function runCli(
   argv: string[] = process.argv.slice(2),
 ): Promise<void> {
@@ -459,297 +647,34 @@ Examples:
   const targetUrlObj = validateUrlForSsrf(rawTargetUrl, !!args.allowRemote);
   const targetUrl = targetUrlObj.toString();
 
-  let headers: Record<string, string> = { "content-type": "application/json" };
-  let rawBody = "";
-  let secret = args.secret;
+  if (provider === "paypal") {
+    console.error(
+      "❌ PayPal webhooks are signed with PayPal's private RSA key and cannot be simulated locally. Use the PayPal Developer Dashboard webhook simulator instead.",
+    );
+    process.exitCode = 1;
+    return;
+  }
 
-  switch (provider) {
-    case "stripe": {
-      secret = secret || "whsec_stripe_test_secret_123";
-      const eventName = eventType || "payment_intent.succeeded";
-      rawBody = JSON.stringify({
-        id: `evt_${Date.now()}`,
-        object: "event",
-        type: eventName,
-        data: {
-          object: {
-            id: "pi_3MtwBwLkdIwHu7ix",
-            amount: 2000,
-            currency: "usd",
-            status: "succeeded",
-          },
-        },
-      });
-      const timestamp = Math.floor(Date.now() / 1000);
-      const payloadToSign = `${timestamp}.${rawBody}`;
-      const hmac = await computeHmacSha256(secret, payloadToSign);
-      headers["stripe-signature"] = `t=${timestamp},v1=${bytesToHex(hmac)}`;
-      break;
-    }
+  if (provider === "discord" && args.secret) {
+    console.warn(
+      "⚠️ Ignoring --secret for discord: simulation signs with a generated Ed25519 key pair.",
+    );
+  }
 
-    case "github": {
-      secret = secret || "github_secret_123";
-      const eventName = eventType || "issues";
-      rawBody = JSON.stringify({
-        action: "opened",
-        issue: { number: 42, title: "Simulated issue via verihook CLI" },
-        repository: { name: "verihook", owner: { login: "creatorpiyush" } },
-      });
-      const hmac = await computeHmacSha256(secret, rawBody);
-      headers["x-hub-signature-256"] = `sha256=${bytesToHex(hmac)}`;
-      headers["x-github-event"] = eventName;
-      break;
-    }
+  const sample = simulationSample(provider, eventType);
+  // Unknown names fall back to the generic verifier's defaults (x-signature, hex HMAC-SHA256).
+  const signProvider = SIGNABLE_PROVIDERS.has(provider) ? provider : "generic";
+  const signed = await signWebhook(signProvider, {
+    ...sample,
+    secret: provider === "discord" ? undefined : args.secret || sample.secret,
+    url: targetUrl,
+  });
+  const { headers, body: rawBody } = signed;
+  // Twilio JSON webhooks carry the body hash in the signed URL.
+  const sendUrl = signed.url;
 
-    case "meta":
-    case "whatsapp":
-    case "facebook":
-    case "instagram": {
-      secret = secret || "meta_app_secret_123";
-      rawBody = JSON.stringify({
-        object: "whatsapp_business_account",
-        entry: [
-          {
-            id: "123456789",
-            changes: [
-              {
-                value: {
-                  messaging_product: "whatsapp",
-                  messages: [
-                    { from: "15551234567", text: { body: "Hello verihook!" } },
-                  ],
-                },
-              },
-            ],
-          },
-        ],
-      });
-      const hmac = await computeHmacSha256(secret, rawBody);
-      headers["x-hub-signature-256"] = `sha256=${bytesToHex(hmac)}`;
-      break;
-    }
-
-    case "twitter":
-    case "x": {
-      secret = secret || "twitter_consumer_secret_123";
-      rawBody = JSON.stringify({
-        for_user_id: "12345678",
-        tweet_create_events: [
-          {
-            id_str: "999888777",
-            text: "Testing verihook CLI simulation for Twitter/X",
-          },
-        ],
-      });
-      const hmac = await computeHmacSha256(secret, rawBody);
-      headers["x-twitter-webhooks-signature"] = `sha256=${bytesToBase64(hmac)}`;
-      break;
-    }
-
-    case "lemonsqueezy": {
-      secret = secret || "lemon_secret_123";
-      rawBody = JSON.stringify({
-        meta: { event_name: eventType || "order_created" },
-        data: { id: "100", attributes: { total: 2900, status: "paid" } },
-      });
-      const hmac = await computeHmacSha256(secret, rawBody);
-      headers["x-signature"] = bytesToHex(hmac);
-      break;
-    }
-
-    case "paddle": {
-      secret = secret || "paddle_secret_123";
-      const timestamp = Math.floor(Date.now() / 1000);
-      rawBody = JSON.stringify({
-        event_type: eventType || "transaction.completed",
-        data: { id: "txn_100" },
-      });
-      const payloadToSign = `${timestamp}:${rawBody}`;
-      const hmac = await computeHmacSha256(secret, payloadToSign);
-      headers["paddle-signature"] = `ts=${timestamp};h=${bytesToHex(hmac)}`;
-      break;
-    }
-
-    case "pagerduty": {
-      secret = secret || "pagerduty_secret_123";
-      rawBody = JSON.stringify({
-        event: { event_type: eventType || "incident.triggered", id: "pd_100" },
-      });
-      const hmac = await computeHmacSha256(secret, rawBody);
-      headers["x-pagerduty-signature"] = `v1=${bytesToHex(hmac)}`;
-      break;
-    }
-
-    case "webflow": {
-      secret = secret || "webflow_secret_123";
-      const timestamp = Math.floor(Date.now() / 1000);
-      rawBody = JSON.stringify({
-        triggerType: eventType || "form_submission",
-        site: "site_123",
-      });
-      headers["x-webflow-timestamp"] = String(timestamp);
-      const payloadToSign = `${timestamp}:${rawBody}`;
-      const hmac = await computeHmacSha256(secret, payloadToSign);
-      headers["x-webflow-signature"] = `sha256=${bytesToHex(hmac)}`;
-      break;
-    }
-
-    case "workos": {
-      secret = secret || "workos_secret_123";
-      const timestamp = Math.floor(Date.now() / 1000);
-      rawBody = JSON.stringify({
-        event: eventType || "user.created",
-        data: { id: "user_100" },
-      });
-      const payloadToSign = `${timestamp}.${rawBody}`;
-      const hmac = await computeHmacSha256(secret, payloadToSign);
-      headers["workos-signature"] = `t=${timestamp},v1=${bytesToHex(hmac)}`;
-      break;
-    }
-
-    case "svix":
-    case "resend":
-    case "clerk": {
-      const rawSecret =
-        secret && secret.startsWith("whsec_")
-          ? secret.slice(6)
-          : secret || "dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==";
-      const msgId = `msg_${Date.now()}`;
-      const timestamp = Math.floor(Date.now() / 1000);
-      rawBody = JSON.stringify({
-        type: eventType || "user.created",
-        data: { id: "usr_simulated_100" },
-      });
-      const payloadToSign = `${msgId}.${timestamp}.${rawBody}`;
-      const keyBytes = base64ToBytes(rawSecret);
-      const hmac = await computeHmacSha256(keyBytes, payloadToSign);
-      headers["svix-id"] = msgId;
-      headers["svix-timestamp"] = String(timestamp);
-      headers["svix-signature"] = `v1,${bytesToBase64(hmac)}`;
-      break;
-    }
-
-    case "slack": {
-      secret = secret || "slack_signing_secret_123";
-      const timestamp = Math.floor(Date.now() / 1000);
-      rawBody = "token=slack_token_test_123&team_id=T0001&command=%2Fverihook";
-      headers["content-type"] = "application/x-www-form-urlencoded";
-      headers["x-slack-request-timestamp"] = String(timestamp);
-      const sigBase = `v0:${timestamp}:${rawBody}`;
-      const hmac = await computeHmacSha256(secret, sigBase);
-      headers["x-slack-signature"] = `v0=${bytesToHex(hmac)}`;
-      break;
-    }
-
-    case "twilio": {
-      secret = secret || "twilio_auth_token_123";
-      rawBody = JSON.stringify({
-        MessageSid: "SM12345",
-        Body: "Simulated SMS",
-      });
-      const hashBytes = await computeSha256(rawBody);
-      const hashHex = bytesToHex(hashBytes).toLowerCase();
-      const delimiter = targetUrl.includes("?") ? "&" : "?";
-      const dataToSign = `${targetUrl}${delimiter}bodySHA256=${encodeURIComponent(hashHex)}`;
-      const hmac = await computeHmacSha1(secret, dataToSign);
-      headers["x-twilio-signature"] = bytesToBase64(hmac);
-      break;
-    }
-
-    case "square": {
-      secret = secret || "square_signature_key_123";
-      rawBody = JSON.stringify({
-        type: eventType || "payment.created",
-        event_id: `sq_${Date.now()}`,
-      });
-      const hmac = await computeHmacSha256(secret, targetUrl + rawBody);
-      headers["x-square-hmacsha256-signature"] = bytesToBase64(hmac);
-      break;
-    }
-
-    case "zoom": {
-      secret = secret || "zoom_secret_token_123";
-      const timestamp = Math.floor(Date.now() / 1000);
-      rawBody = JSON.stringify({
-        event: eventType || "meeting.started",
-        payload: { object: { id: "123456789" } },
-      });
-      const hmac = await computeHmacSha256(
-        secret,
-        `v0:${timestamp}:${rawBody}`,
-      );
-      headers["x-zm-request-timestamp"] = String(timestamp);
-      headers["x-zm-signature"] = `v0=${bytesToHex(hmac)}`;
-      break;
-    }
-
-    case "linear": {
-      secret = secret || "linear_secret_123";
-      rawBody = JSON.stringify({
-        action: "create",
-        type: eventType || "Issue",
-        data: { id: "lin_100" },
-      });
-      const hmac = await computeHmacSha256(secret, rawBody);
-      headers["linear-signature"] = bytesToHex(hmac);
-      break;
-    }
-
-    case "razorpay": {
-      secret = secret || "razorpay_secret_123";
-      rawBody = JSON.stringify({
-        event: eventType || "payment.captured",
-        payload: { payment: { entity: { id: "pay_100" } } },
-      });
-      const hmac = await computeHmacSha256(secret, rawBody);
-      headers["x-razorpay-signature"] = bytesToHex(hmac);
-      break;
-    }
-
-    case "discord": {
-      // Discord signs with its private key; generate a throwaway pair and print the public key.
-      if (secret) {
-        console.warn(
-          "⚠️ Ignoring --secret for discord: simulation signs with a generated Ed25519 key pair.",
-        );
-      }
-      const { publicKey, privateKey } = crypto.generateKeyPairSync("ed25519");
-      const rawPublicKey = publicKey
-        .export({ type: "spki", format: "der" })
-        .subarray(-32);
-      secret = rawPublicKey.toString("hex");
-      const timestamp = String(Math.floor(Date.now() / 1000));
-      rawBody = JSON.stringify({ type: 1, id: `interaction_${Date.now()}` });
-      const signature = crypto.sign(
-        null,
-        Buffer.from(timestamp + rawBody),
-        privateKey,
-      );
-      headers["x-signature-timestamp"] = timestamp;
-      headers["x-signature-ed25519"] = signature.toString("hex");
-      console.log(`🔑 Discord public key for verification: ${secret}`);
-      break;
-    }
-
-    case "paypal": {
-      console.error(
-        "❌ PayPal webhooks are signed with PayPal's private RSA key and cannot be simulated locally. Use the PayPal Developer Dashboard webhook simulator instead.",
-      );
-      process.exitCode = 1;
-      return;
-    }
-
-    default: {
-      // Matches the generic verifier defaults: "x-signature" header, hex HMAC-SHA256.
-      secret = secret || "secret_123";
-      rawBody = JSON.stringify({
-        event: eventType || "simulated_event",
-        timestamp: Date.now(),
-      });
-      const hmac = await computeHmacSha256(secret, rawBody);
-      headers["x-signature"] = bytesToHex(hmac);
-      break;
-    }
+  if (provider === "discord") {
+    console.log(`🔑 Discord public key for verification: ${signed.secret}`);
   }
 
   if (args.printCurl) {
@@ -757,18 +682,18 @@ Examples:
       .map(([k, v]) => `-H ${shellQuote(`${k}: ${v}`)}`)
       .join(" ");
     console.log(
-      `curl -X POST ${shellQuote(targetUrl)} ${headerFlags} -d ${shellQuote(rawBody)}`,
+      `curl -X POST ${shellQuote(sendUrl)} ${headerFlags} -d ${shellQuote(rawBody)}`,
     );
     return;
   }
 
   console.log(`\n📡 Simulating signed ${provider.toUpperCase()} webhook...`);
-  console.log(`🎯 URL: ${targetUrl}`);
+  console.log(`🎯 URL: ${sendUrl}`);
   console.log(`🔑 Headers:`, redactHeaders(headers));
   console.log(`📦 Body:`, rawBody);
 
   try {
-    const res = await fetch(targetUrl, {
+    const res = await fetch(sendUrl, {
       method: "POST",
       headers,
       body: rawBody,
@@ -786,7 +711,7 @@ Examples:
     }
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error(`\n❌ Could not connect to ${targetUrl}:`, errorMsg);
+    console.error(`\n❌ Could not connect to ${sendUrl}:`, errorMsg);
   }
 }
 
