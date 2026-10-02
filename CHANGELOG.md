@@ -5,7 +5,7 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.9.0] - 2026-10-03
 
 ### Added
 - 🧪 **`verihook/testing`**: `signWebhook(provider, options)` returns a correctly signed `{ url, headers, body, secret }` for every built-in provider except PayPal. `createSignedRequest()` returns the same as a Fetch `Request`. Supports JSON or form bodies, fixed timestamps, Svix message IDs, Discord Ed25519 seeds and generic header, algorithm and encoding options.

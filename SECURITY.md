@@ -10,9 +10,10 @@ We actively maintain and provide security patches for the following versions of 
 
 | Version | Supported | Security Notes |
 | :--- | :--- | :--- |
-| `1.8.x` | :white_check_mark: | Current release family. Actively maintained. |
-| `1.7.x` | :x: | Affected by PayPal signature forgery via HMAC fallback. Upgrade to `1.8.0`. |
-| `< 1.7.0` | :x: | Legacy release (also affected by the PayPal issue). Upgrade to latest `1.8.x`. |
+| `1.9.x` | :white_check_mark: | Current release family. Actively maintained. |
+| `1.8.x` | :x: | Superseded by `1.9.x` (drop-in upgrade, no breaking changes). |
+| `1.7.x` | :x: | Affected by PayPal signature forgery via HMAC fallback. Upgrade to latest `1.9.x`. |
+| `< 1.7.0` | :x: | Legacy release (also affected by the PayPal issue). Upgrade to latest `1.9.x`. |
 
 ---
 
