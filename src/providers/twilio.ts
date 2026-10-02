@@ -11,6 +11,7 @@ import {
   WebhookErrorCode,
 } from "../core/types.js";
 import { bytesToBase64, bytesToHex } from "../utils/encoding.js";
+import { resolveSignedUrl, toggleDefaultPort } from "../utils/request-url.js";
 
 export const twilioVerifier: ProviderVerifier = {
   name: "twilio",
@@ -29,7 +30,7 @@ export const twilioVerifier: ProviderVerifier = {
       };
     }
 
-    const url = options?.url || req.url;
+    const url = resolveSignedUrl(req, options?.url);
     if (!url) {
       return {
         valid: false,
@@ -40,9 +41,7 @@ export const twilioVerifier: ProviderVerifier = {
       };
     }
 
-    let dataToSign = url;
     const contentType = (req.headers["content-type"] || "").toLowerCase();
-
     const hasExplicitFormContentType = contentType.includes(
       "application/x-www-form-urlencoded",
     );
@@ -52,51 +51,58 @@ export const twilioVerifier: ProviderVerifier = {
       hasExplicitFormContentType ||
       (hasMissingContentType && looksLikeFormBody);
 
-    if (isFormUrlEncoded && req.rawBody) {
-      // Standard Twilio Form signature: URL + sorted key/value parameters
-      const params = new URLSearchParams(req.rawBody);
-      const sortedKeys = Array.from(new Set(params.keys())).sort();
+    let bodyHashHex: string | undefined;
+    if (!isFormUrlEncoded && req.rawBody) {
+      bodyHashHex = bytesToHex(await computeSha256(req.rawBody)).toLowerCase();
+    }
 
-      for (const key of sortedKeys) {
-        const values = params.getAll(key);
-        for (const val of values) {
-          dataToSign += key + val;
+    const buildDataToSign = (signedUrl: string): string => {
+      if (isFormUrlEncoded && req.rawBody) {
+        // Standard Twilio Form signature: URL + sorted key/value parameters
+        let data = signedUrl;
+        const params = new URLSearchParams(req.rawBody);
+        const sortedKeys = Array.from(new Set(params.keys())).sort();
+        for (const key of sortedKeys) {
+          for (const val of params.getAll(key)) {
+            data += key + val;
+          }
         }
+        return data;
       }
-    } else if (req.rawBody) {
-      // Twilio JSON / Non-form signature: URL + bodySHA256 parameter
-      const bodyHashBytes = await computeSha256(req.rawBody);
-      const bodyHashHex = bytesToHex(bodyHashBytes).toLowerCase();
-
-      // Replace existing bodySHA256 if present instead of appending duplicates.
-      try {
-        const parsedUrl = new URL(url);
-        parsedUrl.searchParams.set("bodySHA256", bodyHashHex);
-        dataToSign = parsedUrl.toString();
-      } catch {
-        const hasQuery = url.includes("?");
-        const bodyShaRegex = /([?&])bodySHA256=[^&]*/i;
-        if (bodyShaRegex.test(url)) {
-          dataToSign = url.replace(
-            bodyShaRegex,
-            `$1bodySHA256=${encodeURIComponent(bodyHashHex)}`,
-          );
-        } else {
-          const delimiter = hasQuery ? "&" : "?";
-          dataToSign = `${url}${delimiter}bodySHA256=${encodeURIComponent(bodyHashHex)}`;
+      if (bodyHashHex) {
+        // Twilio JSON / Non-form signature: exact URL with bodySHA256 parameter.
+        // Edited textually: re-serializing via URL() can alter the signed string.
+        const bodyShaRegex = /([?&])bodySHA256=[^&#]*/i;
+        if (bodyShaRegex.test(signedUrl)) {
+          return signedUrl.replace(bodyShaRegex, `$1bodySHA256=${bodyHashHex}`);
         }
+        const delimiter = signedUrl.includes("?") ? "&" : "?";
+        return `${signedUrl}${delimiter}bodySHA256=${bodyHashHex}`;
+      }
+      return signedUrl;
+    };
+
+    const candidateUrls = [url];
+    const portVariant = toggleDefaultPort(url);
+    if (portVariant) candidateUrls.push(portVariant);
+
+    let isValid = false;
+    for (const candidate of candidateUrls) {
+      const hmacBytes = await computeHmacSha1(
+        secret,
+        buildDataToSign(candidate),
+      );
+      if (timingSafeEqual(signature.trim(), bytesToBase64(hmacBytes))) {
+        isValid = true;
       }
     }
 
-    const hmacBytes = await computeHmacSha1(secret, dataToSign);
-    const expectedBase64 = bytesToBase64(hmacBytes);
-
-    if (!timingSafeEqual(signature.trim(), expectedBase64)) {
+    if (!isValid) {
       return {
         valid: false,
         provider: "twilio",
         code: WebhookErrorCode.INVALID_SIGNATURE,
-        reason: "Signature mismatch",
+        reason: `Signature mismatch (signed URL: ${url})`,
       };
     }
 

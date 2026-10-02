@@ -132,11 +132,14 @@ export async function normalizeRequest(
 
   const url = reqObj.originalUrl || reqObj.url;
   const method = reqObj.method;
+  const protocol =
+    typeof reqObj.protocol === "string" ? reqObj.protocol : undefined;
 
   return {
     headers,
     rawBody,
     url,
     method,
+    ...(protocol ? { protocol } : {}),
   };
 }

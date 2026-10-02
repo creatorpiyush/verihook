@@ -28,7 +28,7 @@ export const paddleVerifier: ProviderVerifier = {
     }
 
     let timestampStr = "";
-    let signature = "";
+    const signatures: string[] = [];
 
     const parts = signatureHeader.split(";");
     for (const part of parts) {
@@ -38,11 +38,12 @@ export const paddleVerifier: ProviderVerifier = {
         const k = trimmed.slice(0, eqIdx).trim();
         const v = trimmed.slice(eqIdx + 1).trim();
         if (k === "ts" && v) timestampStr = v;
-        if (k === "h" && v) signature = v;
+        // Multiple h= values are sent while a secret is being rotated.
+        if (k === "h" && v) signatures.push(v.toLowerCase());
       }
     }
 
-    if (!timestampStr || !signature) {
+    if (!timestampStr || signatures.length === 0) {
       return {
         valid: false,
         provider: "paddle",
@@ -80,12 +81,7 @@ export const paddleVerifier: ProviderVerifier = {
     const hmacBytes = await computeHmacSha256(secret, payloadToSign);
     const expectedHex = bytesToHex(hmacBytes);
 
-    if (
-      !timingSafeEqual(
-        signature.trim().toLowerCase(),
-        expectedHex.toLowerCase(),
-      )
-    ) {
+    if (!signatures.some((sig) => timingSafeEqual(sig, expectedHex))) {
       return {
         valid: false,
         provider: "paddle",

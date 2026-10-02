@@ -248,7 +248,7 @@ Both CLI commands enforce origin validation as a best-effort defense-in-depth me
 | **Meta / WhatsApp** | `x-hub-signature-256` | HMAC-SHA256 / Hex | `rawBody` (Supports GET handshake) | N/A |
 | **Discord** | `x-signature-ed25519` | Ed25519 / Hex | `${timestamp}${rawBody}` | ✅ Default 300s |
 | **Twitter / X** | `x-twitter-webhooks-signature` | HMAC-SHA256 / Base64 | `rawBody` (Supports GET CRC handshake) | N/A |
-| **PayPal** | `paypal-transmission-sig` | RSA-SHA256 / Base64 or HMAC | `${transmissionId}|${time}|${webhookId}|${crc32}` | N/A |
+| **PayPal** | `paypal-transmission-sig` | RSA-SHA256 / Base64 | `${transmissionId}|${time}|${webhookId}|${crc32}` | N/A |
 | **LemonSqueezy** | `x-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
 | **Paddle** | `paddle-signature` | HMAC-SHA256 / Hex | `${ts}:${rawBody}` | ✅ Default 300s |
 | **PagerDuty** | `x-pagerduty-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |

@@ -1,7 +1,9 @@
-import type {
-  ProviderName,
-  VerificationResult,
-  VerifyWebhookOptions,
+import { releaseDedupeKey } from "../core/dedupe.js";
+import {
+  WebhookErrorCode,
+  type ProviderName,
+  type VerificationResult,
+  type VerifyWebhookOptions,
 } from "../core/types.js";
 import { verifyWebhook } from "../core/verifier.js";
 
@@ -12,6 +14,7 @@ export interface ExpressRequestLike {
   url?: string;
   originalUrl?: string;
   method?: string;
+  protocol?: string;
   on?: (event: string, listener: (...args: unknown[]) => void) => void;
 }
 
@@ -19,6 +22,8 @@ export interface ExpressResponseLike {
   status(code: number): this;
   json(body: unknown): this;
   setHeader(name: string, value: string): this;
+  statusCode?: number;
+  on?(event: string, listener: () => void): unknown;
 }
 
 export type ExpressNextLike = (err?: unknown) => void;
@@ -125,6 +130,11 @@ export function verihookExpress(
 
         if (options?.respondOnError !== false) {
           setSecurityHeaders(res);
+          // Acknowledge duplicates with 2xx so the provider stops retrying them.
+          if (result.code === WebhookErrorCode.DUPLICATE_EVENT) {
+            res.status(200).json({ received: true, duplicate: true });
+            return;
+          }
           res.status(401).json({
             error: result.reason,
             code: result.code,
@@ -164,6 +174,15 @@ export function verihookExpress(
       };
       (req as unknown as VerihookRequestAdditions).verifiedPayload = payload;
 
+      // If downstream processing fails, forget the event so the provider's retry is handled.
+      if (result.dedupeKey && typeof res.on === "function") {
+        res.on("finish", () => {
+          if ((res.statusCode ?? 200) >= 500) {
+            void releaseDedupeKey(result, options);
+          }
+        });
+      }
+
       next();
     } catch (err: unknown) {
       const errorMsg =
@@ -181,7 +200,8 @@ export function verihookExpress(
       }
       if (options?.respondOnError !== false) {
         setSecurityHeaders(res);
-        res.status(500).json({ error: errorMsg });
+        // Details stay server-side (onError / telemetry); clients get a generic message.
+        res.status(500).json({ error: "Internal webhook verification error" });
         return;
       }
       next(err);

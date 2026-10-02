@@ -123,7 +123,9 @@ describe("Ultimate Coverage Boost for >97%+ Test Suite", () => {
 
     const res500 = await handlerException(req);
     expect(res500.status).toBe(500);
-    expect(await res500.json()).toEqual({ error: "Secret resolution error" });
+    expect(await res500.json()).toEqual({
+      error: "Internal webhook verification error",
+    });
   });
 
   it("should test GitHub SHA-1 signature mismatch branch", async () => {

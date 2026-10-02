@@ -128,34 +128,46 @@ describe("Next.js Route Handler Factory (createWebhookHandler)", () => {
     });
   });
 
-  it("should handle req.clone() text extraction exceptions gracefully and pass null payload", async () => {
-    const signature = await makeGitHubSignature();
-    const mockHandler = vi.fn().mockResolvedValue(undefined);
-    const routeHandler = createWebhookHandler("github", secret, mockHandler);
-
-    const req = new Request("https://example.com/api/webhooks/github", {
-      method: "POST",
-      headers: {
-        "x-hub-signature-256": signature,
-        "content-type": "application/json",
-      },
-      body: bodyStr,
+  it("should reject bodies over maxBodySize with 413 before verifying", async () => {
+    const mockHandler = vi.fn();
+    const routeHandler = createWebhookHandler("github", secret, mockHandler, {
+      maxBodySize: 10,
     });
 
-    // Override req.clone so 2nd clone call (inside createWebhookHandler) fails text extraction
-    let cloneCount = 0;
-    const originalClone = req.clone.bind(req);
-    req.clone = () => {
-      cloneCount++;
-      const cloned = originalClone();
-      if (cloneCount > 1) {
-        cloned.text = () => Promise.reject(new Error("Stream locked"));
-      }
-      return cloned;
-    };
+    const declared = await routeHandler(
+      new Request("https://example.com/api/webhooks/github", {
+        method: "POST",
+        headers: { "content-length": "999" },
+        body: bodyStr,
+      }),
+    );
+    expect(declared.status).toBe(413);
 
-    const res = await routeHandler(req);
-    expect(res.status).toBe(200);
-    expect(mockHandler).toHaveBeenCalledWith(null, expect.anything(), req);
+    const chunk = new TextEncoder().encode("x".repeat(8));
+    const streamed = await routeHandler(
+      new Request("https://example.com/api/webhooks/github", {
+        method: "POST",
+        body: new ReadableStream({
+          start(controller) {
+            controller.enqueue(chunk);
+            controller.enqueue(chunk);
+            controller.close();
+          },
+        }),
+        duplex: "half",
+      } as RequestInit),
+    );
+    expect(streamed.status).toBe(413);
+
+    // Plain string body without a Content-Length header must not hang.
+    const plain = await routeHandler(
+      new Request("https://example.com/api/webhooks/github", {
+        method: "POST",
+        body: bodyStr,
+      }),
+    );
+    expect(plain.status).toBe(413);
+    expect(await streamed.json()).toMatchObject({ code: "PAYLOAD_TOO_LARGE" });
+    expect(mockHandler).not.toHaveBeenCalled();
   });
 });

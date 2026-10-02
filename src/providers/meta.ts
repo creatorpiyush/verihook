@@ -115,7 +115,9 @@ export function verifyMetaChallenge(
 
   if (
     mode === "subscribe" &&
-    verifyToken === expectedVerifyToken &&
+    verifyToken !== undefined &&
+    !!expectedVerifyToken &&
+    timingSafeEqual(verifyToken, expectedVerifyToken) &&
     challenge
   ) {
     return {

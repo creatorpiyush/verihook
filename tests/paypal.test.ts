@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
+import crypto from "node:crypto";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { computeCrc32, computeHmacSha256 } from "../src/core/crypto.js";
-import { verifyPayPal } from "../src/index.js";
-import { bytesToHex } from "../src/utils/encoding.js";
+import { clearPayPalCertCache, verifyPayPal } from "../src/index.js";
+import { bytesToBase64, bytesToHex } from "../src/utils/encoding.js";
 
 describe("PayPal Webhook Verifier", () => {
-  const secret = "paypal_secret_key_123";
   const webhookId = "WH-1234567890";
   const body = JSON.stringify({
     event_type: "PAYMENT.CAPTURE.COMPLETED",
@@ -12,42 +12,54 @@ describe("PayPal Webhook Verifier", () => {
   });
   const transId = "trans_123";
   const transTime = "2026-07-26T12:00:00Z";
+  const expectedPayload = `${transId}|${transTime}|${webhookId}|${computeCrc32(body)}`;
 
-  it("should calculate accurate CRC32 and verify PayPal signature using fallback mode", async () => {
-    const crc = computeCrc32(body);
-    const expectedPayload = `${transId}|${transTime}|${webhookId}|${crc}`;
-    const hmac = await computeHmacSha256(secret, expectedPayload);
-    const signature = bytesToHex(hmac);
+  const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
+    modulusLength: 2048,
+  });
+  const pemPubKey = publicKey
+    .export({ type: "spki", format: "pem" })
+    .toString();
 
-    const req = {
+  function rsaSign(data: string): string {
+    const signer = crypto.createSign("RSA-SHA256");
+    signer.update(data);
+    return bytesToBase64(signer.sign(privateKey));
+  }
+
+  function makeReq(sig: string, certUrl?: string) {
+    return {
       headers: {
         "paypal-transmission-id": transId,
         "paypal-transmission-time": transTime,
-        "paypal-transmission-sig": signature,
+        "paypal-transmission-sig": sig,
+        ...(certUrl ? { "paypal-cert-url": certUrl } : {}),
       },
       body,
     };
+  }
 
-    const result = await verifyPayPal(req, secret, { webhookId });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    clearPayPalCertCache();
+  });
+
+  it("verifies an RSA signature against a pinned PEM public key", async () => {
+    const result = await verifyPayPal(
+      makeReq(rsaSign(expectedPayload)),
+      pemPubKey,
+      { webhookId },
+    );
     expect(result.valid).toBe(true);
     expect(result.provider).toBe("paypal");
   });
 
-  it("should attempt RSA verification when certUrl or RSA secret is provided", async () => {
-    const req = {
-      headers: {
-        "paypal-transmission-id": transId,
-        "paypal-transmission-time": transTime,
-        "paypal-transmission-sig": "invalid_rsa_sig",
-        "paypal-cert-url":
-          "https://api.paypal.com/v1/notifications/certs/CERT-123",
-      },
-      body,
-    };
-
-    const result = await verifyPayPal(req, "-----BEGIN PUBLIC KEY-----...", {
-      webhookId,
-    });
+  it("rejects an invalid RSA signature", async () => {
+    const result = await verifyPayPal(
+      makeReq("invalid_rsa_sig"),
+      "-----BEGIN PUBLIC KEY-----...",
+      { webhookId },
+    );
     expect(result.valid).toBe(false);
     expect(result.code).toBe("INVALID_SIGNATURE");
     expect(result.reason).toContain(
@@ -55,55 +67,81 @@ describe("PayPal Webhook Verifier", () => {
     );
   });
 
-  it("should reject signature mismatch in fallback mode", async () => {
-    const req = {
-      headers: {
-        "paypal-transmission-id": transId,
-        "paypal-transmission-time": transTime,
-        "paypal-transmission-sig": "invalid_sig",
-      },
-      body,
-    };
+  it("rejects HMAC signatures forged with the webhook ID (no HMAC fallback)", async () => {
+    const forged = bytesToHex(
+      await computeHmacSha256(webhookId, expectedPayload),
+    );
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
 
-    const result = await verifyPayPal(req, secret, { webhookId });
-    expect(result.valid).toBe(false);
-    expect(result.code).toBe("INVALID_SIGNATURE");
+    const withoutCert = await verifyPayPal(makeReq(forged), webhookId);
+    expect(withoutCert.valid).toBe(false);
+    expect(withoutCert.code).toBe("MISSING_HEADER");
+
+    const withSecret = await verifyPayPal(makeReq(forged), webhookId, {
+      webhookId,
+    });
+    expect(withSecret.valid).toBe(false);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("should fallback to HMAC signature verification when paypal-cert-url header is present and secret is non-PEM HMAC key", async () => {
-    const crc = computeCrc32(body);
-    const expectedPayload = `${transId}|${transTime}|${webhookId}|${crc}`;
-    const hmac = await computeHmacSha256(secret, expectedPayload);
-    const signature = bytesToHex(hmac);
-
-    const req = {
-      headers: {
-        "paypal-transmission-id": transId,
-        "paypal-transmission-time": transTime,
-        "paypal-transmission-sig": signature,
-        "paypal-cert-url":
-          "https://api.paypal.com/v1/notifications/certs/CERT-123",
-      },
-      body,
-    };
-
-    const result = await verifyPayPal(req, secret, { webhookId });
-    expect(result.valid).toBe(true);
-    expect(result.provider).toBe("paypal");
+  it("rejects cert URLs that are not exact PayPal certificate hosts", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    for (const certUrl of [
+      "https://evil.com/fake-cert",
+      "https://attacker.paypal.com/cert",
+      "https://api.paypal.com.evil.com/cert",
+      "http://api.paypal.com/v1/notifications/certs/CERT-1",
+      "https://api.paypal.com:8443/v1/notifications/certs/CERT-1",
+    ]) {
+      const result = await verifyPayPal(
+        makeReq(rsaSign(expectedPayload), certUrl),
+        "",
+        { webhookId },
+      );
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe("INVALID_SIGNATURE");
+    }
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("should reject invalid certUrl domains for RSA verification", async () => {
-    const req = {
-      headers: {
-        "paypal-transmission-id": transId,
-        "paypal-transmission-time": transTime,
-        "paypal-transmission-sig": "invalid_sig",
-        "paypal-cert-url": "https://evil.com/fake-cert",
-      },
-      body,
-    };
+  it("fetches the certificate from a trusted host once and caches it", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(pemPubKey, { status: 200 }));
+    const certUrl =
+      "https://api-m.sandbox.paypal.com/v1/notifications/certs/CERT-CACHE";
 
-    const result = await verifyPayPal(req, "", { webhookId });
+    for (let i = 0; i < 2; i++) {
+      const result = await verifyPayPal(
+        makeReq(rsaSign(expectedPayload), certUrl),
+        "",
+        { webhookId },
+      );
+      expect(result.valid).toBe(true);
+    }
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails closed when the certificate fetch fails", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("timeout"));
+    const result = await verifyPayPal(
+      makeReq(
+        rsaSign(expectedPayload),
+        "https://api.paypal.com/v1/notifications/certs/CERT-DOWN",
+      ),
+      "",
+      { webhookId },
+    );
     expect(result.valid).toBe(false);
+    expect(result.reason).toContain("Unable to fetch");
+  });
+
+  it("requires a webhook ID", async () => {
+    const result = await verifyPayPal(
+      makeReq(rsaSign(expectedPayload)),
+      pemPubKey,
+    );
+    expect(result.valid).toBe(false);
+    expect(result.code).toBe("INVALID_SECRET");
   });
 });

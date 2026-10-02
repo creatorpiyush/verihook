@@ -13,6 +13,8 @@ import {
   WebhookVerificationEvent,
 } from "./types.js";
 
+const KNOWN_ERROR_CODES = new Set<string>(Object.values(WebhookErrorCode));
+
 function dispatchTelemetry(
   result: VerificationResult,
   startTime: number,
@@ -114,13 +116,16 @@ export async function verifyWebhook(
             reason: "Duplicate webhook event detected (replay protection)",
             timestamp: result.timestamp,
           };
+        } else {
+          result = { ...result, dedupeKey };
         }
       }
     }
   } catch (err: unknown) {
     const errObj = err as Record<string, unknown> | null;
+    // Only surface our own codes; e.g. Node's "ERR_*" codes map to UNKNOWN_ERROR.
     const code: VerificationErrorCode =
-      errObj && typeof errObj.code === "string"
+      errObj && KNOWN_ERROR_CODES.has(errObj.code as string)
         ? (errObj.code as VerificationErrorCode)
         : WebhookErrorCode.UNKNOWN_ERROR;
     const message = err instanceof Error ? err.message : String(err);

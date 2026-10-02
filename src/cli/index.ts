@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import type { Server } from "http";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import * as http from "node:http";
 import process from "node:process";
@@ -12,6 +13,21 @@ import { ProviderName } from "../core/types.js";
 import { verifyWebhook } from "../core/verifier.js";
 import { ParsedCliArgs, validateCliArgs } from "../schemas/index.js";
 import { base64ToBytes, bytesToBase64, bytesToHex } from "../utils/encoding.js";
+
+// Injected from package.json at build time (tsup/vitest `define`).
+declare const __VERIHOOK_VERSION__: string | undefined;
+const CLI_VERSION =
+  typeof __VERIHOOK_VERSION__ === "string" ? __VERIHOOK_VERSION__ : "dev";
+
+// Wraps a value in single quotes for POSIX shells, escaping embedded quotes.
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
+// Value after the first "=" so secrets with base64 padding and URLs with queries survive.
+function flagValue(arg: string): string {
+  return arg.slice(arg.indexOf("=") + 1);
+}
 
 function parseArgs(args: string[]): ParsedCliArgs {
   const rawResult: Record<string, unknown> = {};
@@ -29,32 +45,32 @@ function parseArgs(args: string[]): ParsedCliArgs {
       commandDetected = true;
       i++;
     } else if (arg.startsWith("--forward-to=")) {
-      rawResult.forwardTo = arg.split("=")[1];
+      rawResult.forwardTo = flagValue(arg);
     } else if (arg === "--forward-to" && i + 1 < args.length) {
       rawResult.forwardTo = args[i + 1];
       i++;
     } else if (arg.startsWith("--port=")) {
-      rawResult.port = arg.split("=")[1];
+      rawResult.port = flagValue(arg);
     } else if ((arg === "--port" || arg === "-p") && i + 1 < args.length) {
       rawResult.port = args[i + 1];
       i++;
     } else if (arg.startsWith("--path=")) {
-      rawResult.path = arg.split("=")[1];
+      rawResult.path = flagValue(arg);
     } else if (arg === "--path" && i + 1 < args.length) {
       rawResult.path = args[i + 1];
       i++;
     } else if (arg.startsWith("--url=")) {
-      rawResult.url = arg.split("=")[1];
+      rawResult.url = flagValue(arg);
     } else if (arg === "--url" && i + 1 < args.length) {
       rawResult.url = args[i + 1];
       i++;
     } else if (arg.startsWith("--secret=")) {
-      rawResult.secret = arg.split("=")[1];
+      rawResult.secret = flagValue(arg);
     } else if (arg === "--secret" && i + 1 < args.length) {
       rawResult.secret = args[i + 1];
       i++;
     } else if (arg.startsWith("--event=")) {
-      rawResult.event = arg.split("=")[1];
+      rawResult.event = flagValue(arg);
     } else if (arg === "--event" && i + 1 < args.length) {
       rawResult.event = args[i + 1];
       i++;
@@ -375,7 +391,7 @@ export async function runListenServer(
   return new Promise((resolve, reject) => {
     server.listen(port, () => {
       console.log(`
-🪝 verihook Live Local Relay Proxy (v1.7.0)
+🪝 verihook Live Local Relay Proxy (v${CLI_VERSION})
 
 📡 Provider:     ${provider.toUpperCase()}
 👂 Listening on: http://localhost:${port}
@@ -401,7 +417,7 @@ export async function runCli(
 
   if (!args.provider) {
     console.log(`
-🪝 verihook CLI Toolchain (v1.7.0)
+🪝 verihook CLI Toolchain (v${CLI_VERSION})
 
 Usage:
   npx verihook simulate <provider> [options]
@@ -640,23 +656,109 @@ Examples:
       break;
     }
 
+    case "square": {
+      secret = secret || "square_signature_key_123";
+      rawBody = JSON.stringify({
+        type: eventType || "payment.created",
+        event_id: `sq_${Date.now()}`,
+      });
+      const hmac = await computeHmacSha256(secret, targetUrl + rawBody);
+      headers["x-square-hmacsha256-signature"] = bytesToBase64(hmac);
+      break;
+    }
+
+    case "zoom": {
+      secret = secret || "zoom_secret_token_123";
+      const timestamp = Math.floor(Date.now() / 1000);
+      rawBody = JSON.stringify({
+        event: eventType || "meeting.started",
+        payload: { object: { id: "123456789" } },
+      });
+      const hmac = await computeHmacSha256(
+        secret,
+        `v0:${timestamp}:${rawBody}`,
+      );
+      headers["x-zm-request-timestamp"] = String(timestamp);
+      headers["x-zm-signature"] = `v0=${bytesToHex(hmac)}`;
+      break;
+    }
+
+    case "linear": {
+      secret = secret || "linear_secret_123";
+      rawBody = JSON.stringify({
+        action: "create",
+        type: eventType || "Issue",
+        data: { id: "lin_100" },
+      });
+      const hmac = await computeHmacSha256(secret, rawBody);
+      headers["linear-signature"] = bytesToHex(hmac);
+      break;
+    }
+
+    case "razorpay": {
+      secret = secret || "razorpay_secret_123";
+      rawBody = JSON.stringify({
+        event: eventType || "payment.captured",
+        payload: { payment: { entity: { id: "pay_100" } } },
+      });
+      const hmac = await computeHmacSha256(secret, rawBody);
+      headers["x-razorpay-signature"] = bytesToHex(hmac);
+      break;
+    }
+
+    case "discord": {
+      // Discord signs with its private key; generate a throwaway pair and print the public key.
+      if (secret) {
+        console.warn(
+          "⚠️ Ignoring --secret for discord: simulation signs with a generated Ed25519 key pair.",
+        );
+      }
+      const { publicKey, privateKey } = crypto.generateKeyPairSync("ed25519");
+      const rawPublicKey = publicKey
+        .export({ type: "spki", format: "der" })
+        .subarray(-32);
+      secret = rawPublicKey.toString("hex");
+      const timestamp = String(Math.floor(Date.now() / 1000));
+      rawBody = JSON.stringify({ type: 1, id: `interaction_${Date.now()}` });
+      const signature = crypto.sign(
+        null,
+        Buffer.from(timestamp + rawBody),
+        privateKey,
+      );
+      headers["x-signature-timestamp"] = timestamp;
+      headers["x-signature-ed25519"] = signature.toString("hex");
+      console.log(`🔑 Discord public key for verification: ${secret}`);
+      break;
+    }
+
+    case "paypal": {
+      console.error(
+        "❌ PayPal webhooks are signed with PayPal's private RSA key and cannot be simulated locally. Use the PayPal Developer Dashboard webhook simulator instead.",
+      );
+      process.exitCode = 1;
+      return;
+    }
+
     default: {
+      // Matches the generic verifier defaults: "x-signature" header, hex HMAC-SHA256.
       secret = secret || "secret_123";
       rawBody = JSON.stringify({
         event: eventType || "simulated_event",
         timestamp: Date.now(),
       });
       const hmac = await computeHmacSha256(secret, rawBody);
-      headers["x-signature-256"] = bytesToHex(hmac);
+      headers["x-signature"] = bytesToHex(hmac);
       break;
     }
   }
 
   if (args.printCurl) {
     const headerFlags = Object.entries(headers)
-      .map(([k, v]) => `-H "${k}: ${v}"`)
+      .map(([k, v]) => `-H ${shellQuote(`${k}: ${v}`)}`)
       .join(" ");
-    console.log(`curl -X POST "${targetUrl}" ${headerFlags} -d '${rawBody}'`);
+    console.log(
+      `curl -X POST ${shellQuote(targetUrl)} ${headerFlags} -d ${shellQuote(rawBody)}`,
+    );
     return;
   }
 
