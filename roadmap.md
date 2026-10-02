@@ -124,6 +124,13 @@ Expand the CLI toolchain into a live local developer relay proxy:
 
 ---
 
+## 7. Testing Helpers & Troubleshooting Hints (v1.9.0) — ✅ Completed
+
+- **`verihook/testing`**: `signWebhook()` and `createSignedRequest()` build correctly signed requests for every built-in provider (except PayPal) for handler tests.
+- **`result.hint`**: Failed verifications explain the likely cause: a parsed or consumed body, the wrong kind of secret, another provider's headers, a proxy URL mismatch, or a replayed timestamp.
+
+---
+
 ## Priority & Phasing Summary
 
 - **Phase 1 (v1.2.0)**: Add **PayPal, LemonSqueezy, Paddle, X/Twitter, PagerDuty, Webflow**. ✅
@@ -132,4 +139,5 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **Phase 4 (v1.5.0 / v1.5.1)**: Add **CLI Simulator, E2E Test Suite & Express TS Typing fix**. ✅
 - **Phase 5 (v1.6.0)**: Add **Replay protection / deduplication store (`MemoryDedupeStore`)**. ✅
 - **Phase 6 (v1.7.0)**: Add **`npx verihook listen` live local relay proxy**. ✅
+- **Phase 7 (v1.9.0)**: Add **`verihook/testing` signing helpers & troubleshooting hints**. ✅
 
