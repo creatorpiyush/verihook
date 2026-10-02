@@ -5,6 +5,25 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- 🧪 **`verihook/testing`**: `signWebhook(provider, options)` returns a correctly signed `{ url, headers, body, secret }` for every built-in provider except PayPal. `createSignedRequest()` returns the same as a Fetch `Request`. Supports JSON or form bodies, fixed timestamps, Svix message IDs, Discord Ed25519 seeds and generic header, algorithm and encoding options.
+- 🩺 **Troubleshooting hints**: Failed results may include `hint` with the likely cause and fix:
+  - a body that was re-serialized or already consumed (checked against `content-length`);
+  - a Stripe API key used instead of the `whsec_` signing secret, a non-`whsec_` Svix/Resend/Clerk secret, or a secret with whitespace or quotes;
+  - headers from a different provider, or no headers at all;
+  - a Twilio/Square signed-URL mismatch behind a proxy;
+  - a replayed fixture with an expired timestamp.
+  
+  Hints are also on telemetry events and `WebhookVerificationError.hint`. Outside production and test runs, each distinct hint is printed once with `console.warn`. Hints are never included in middleware HTTP responses.
+
+### Fixed
+- 🛍️ **`npx verihook simulate shopify`** now sends a valid `x-shopify-hmac-sha256` signature. It previously fell through to the generic `x-signature` header and failed verification.
+
+### Changed
+- The CLI `simulate` command now signs through `signWebhook()`, so the CLI and the testing helpers share one implementation. Twilio JSON simulations are sent to the signed URL, including `bodySHA256`.
+
 ## [1.8.0] - 2026-10-02
 
 ### ⚠️ Upgrade Notes

@@ -182,6 +182,12 @@ export interface WebhookVerificationEvent {
   reason?: string;
 
   /**
+   * Likely cause of a failed verification and how to fix it (e.g. a parsed body or
+   * the wrong kind of secret). Meant for logs; don't send it in HTTP responses.
+   */
+  hint?: string;
+
+  /**
    * Extracted webhook timestamp if available (Unix epoch in seconds).
    */
   timestamp?: number;
@@ -240,6 +246,12 @@ export interface VerificationResult {
    * If verification failed, provides a clear human-readable explanation.
    */
   reason?: string;
+
+  /**
+   * Likely cause of a failed verification and how to fix it (e.g. a parsed body or
+   * the wrong kind of secret). Meant for logs; don't send it in HTTP responses.
+   */
+  hint?: string;
 
   /**
    * Extracted webhook timestamp if applicable (Unix epoch in seconds).

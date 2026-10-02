@@ -6,6 +6,7 @@ export default defineConfig({
     index: 'src/index.ts',
     express: 'src/express.ts',
     next: 'src/next.ts',
+    testing: 'src/testing.ts',
     cli: 'src/cli/index.ts',
   },
   format: ['cjs', 'esm'],

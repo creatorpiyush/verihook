@@ -28,6 +28,8 @@ No more hunting down bespoke HMAC code snippets for every service or installing 
 - ⏳ **Replay Attack Protection**: Built-in timestamp tolerance checks (Stripe, Slack, Svix, Zoom) and stateful deduplication (`MemoryDedupeStore`).
 - 🛡️ **Event Deduplication Store**: Pluggable `dedupeStore` interface with provider-aware event ID extraction to prevent duplicate event execution.
 - 🔌 **Extensible Plugin System**: Register custom provider verifiers with `registerProvider()`.
+- 🧪 **Testing Helpers**: `verihook/testing` signs webhooks for every built-in provider, so you can test your handlers end to end.
+- 🩺 **Troubleshooting Hints**: Failed verifications say *why* (parsed body, wrong kind of secret, proxy URL mismatch) through `result.hint`.
 
 ---
 
@@ -270,6 +272,25 @@ if (!result.valid) {
 | `WebhookErrorCode.DUPLICATE_EVENT` | Duplicate webhook event detected within deduplication TTL window. |
 | `WebhookErrorCode.UNKNOWN_ERROR` | Unexpected error during processing (original error attached to `result.error`). |
 
+#### Troubleshooting Hints (`result.hint`)
+
+When verification fails for a reason verihook can recognize, the result includes a `hint` with the likely cause and the fix. For example:
+
+- the body was parsed and re-serialized (its size no longer matches `content-length`), or its stream was already read;
+- the secret is the wrong kind (a Stripe API key `sk_...` instead of the `whsec_...` signing secret), or has stray whitespace or quotes;
+- the request has another provider's headers (e.g. verifying a GitHub webhook as `'stripe'`);
+- Twilio/Square signatures were checked against an internal URL behind a proxy;
+- a replayed test fixture has an expired timestamp.
+
+```ts
+const result = await verifyWebhook('stripe', req, secret);
+if (!result.valid) {
+  logger.warn({ code: result.code, reason: result.reason, hint: result.hint });
+}
+```
+
+Hints are also included on telemetry events and on `WebhookVerificationError.hint`. Outside production and test runs, each distinct hint is printed once with `console.warn`. The middlewares don't include hints in HTTP responses, and neither should you: they describe your configuration.
+
 ---
 
 ## Framework Integration Examples
@@ -371,6 +392,55 @@ registerProvider({
 
 await verifyWebhook('my-service', req, secret);
 ```
+
+---
+
+## Testing Your Webhook Handlers (`verihook/testing`)
+
+`signWebhook()` builds a correctly signed request for any built-in provider, so you can test your handlers without real provider traffic:
+
+```ts
+import { signWebhook } from 'verihook/testing';
+import request from 'supertest';
+
+it('handles payment_intent.succeeded', async () => {
+  const hook = await signWebhook('stripe', {
+    secret: process.env.STRIPE_WEBHOOK_SECRET!,
+    payload: { id: 'evt_1', type: 'payment_intent.succeeded', data: { object: {} } },
+  });
+
+  await request(app)
+    .post('/webhooks/stripe')
+    .set(hook.headers)
+    .send(hook.body) // send the exact signed string
+    .expect(200);
+});
+```
+
+For handlers that take a Fetch `Request` (Next.js route handlers, Hono, Cloudflare Workers), use `createSignedRequest()`:
+
+```ts
+import { createSignedRequest } from 'verihook/testing';
+import { POST } from '@/app/api/webhooks/github/route';
+
+const req = await createSignedRequest('github', { secret: 'test', event: 'push', payload: { ref: 'refs/heads/main' } });
+const res = await POST(req);
+```
+
+| Option | Description |
+| :--- | :--- |
+| `secret` | Signing secret, as you pass it to `verifyWebhook()` (required except for Discord). |
+| `payload` | Object (JSON-serialized) or exact string body. Default `{}`. |
+| `form` | Form fields sent as `application/x-www-form-urlencoded` (Slack, Twilio). |
+| `url` | Public URL signed by Twilio and Square. Default `https://example.com/webhooks/<provider>`. |
+| `timestamp` | Unix seconds. Default now. Use with `options.now` for fixed fixtures. |
+| `webhookId` | `svix-id` for Svix, Resend and Clerk. |
+| `event` | `x-github-event` for GitHub. Default `ping`. |
+| `privateKey` | Discord: 32-byte Ed25519 seed (hex). Omitted: a key pair is generated. The public key is returned as `secret`. |
+| `headerName`, `algorithm`, `encoding` | Generic provider settings, matching your `verifyWebhook()` options. |
+| `headers` | Extra headers to include (e.g. `x-shopify-topic`). |
+
+The result is `{ provider, method, url, headers, body, secret }`. PayPal can't be signed locally, because PayPal signs with its own private key.
 
 ---
 

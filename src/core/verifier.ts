@@ -1,6 +1,7 @@
 import { getProviderVerifier } from "../providers/index.js";
 import { normalizeRequest } from "../utils/normalize-request.js";
 import { extractEventId } from "./dedupe.js";
+import { diagnoseFailure, warnHintOnce } from "./diagnostics.js";
 import { WebhookVerificationError } from "./errors.js";
 import { getGlobalLogger } from "./logger.js";
 import {
@@ -27,6 +28,7 @@ function dispatchTelemetry(
     valid: result.valid,
     code: result.code,
     reason: result.reason,
+    hint: result.hint,
     timestamp: result.timestamp,
     durationMs,
     attemptedAt,
@@ -99,6 +101,20 @@ export async function verifyWebhook(
       const normalizedReq = await normalizeRequest(req);
       result = await verifier.verify(normalizedReq, secret || "", options);
 
+      if (!result.valid && !result.hint) {
+        const hint = diagnoseFailure(
+          provider,
+          normalizedReq,
+          secret || "",
+          result,
+          options,
+        );
+        if (hint) {
+          result = { ...result, hint };
+          warnHintOnce(provider, hint);
+        }
+      }
+
       if (result.valid && options?.dedupeStore) {
         const eventId =
           options.eventId || (await extractEventId(provider, normalizedReq));
@@ -162,6 +178,7 @@ export async function verifyWebhookOrThrow(
       result.reason || "Verification failed",
       (result.code as VerificationErrorCode) ||
         WebhookErrorCode.INVALID_SIGNATURE,
+      result.hint,
     );
   }
   return result;

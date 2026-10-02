@@ -8,17 +8,21 @@ export class WebhookVerificationError extends Error {
   public readonly provider: ProviderName;
   public readonly reason: string;
   public readonly code: VerificationErrorCode;
+  /** Likely cause and fix, when verihook can tell. */
+  public readonly hint?: string;
 
   constructor(
     provider: ProviderName,
     reason: string,
     code: VerificationErrorCode = WebhookErrorCode.INVALID_SIGNATURE,
+    hint?: string,
   ) {
     super(`[verihook] ${provider} verification failed: ${reason}`);
     this.name = "WebhookVerificationError";
     this.provider = provider;
     this.reason = reason;
     this.code = code;
+    this.hint = hint;
 
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, WebhookVerificationError);
