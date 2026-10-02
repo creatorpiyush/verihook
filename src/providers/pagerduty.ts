@@ -7,9 +7,11 @@ import {
   WebhookErrorCode,
 } from "../core/types.js";
 import { bytesToHex } from "../utils/encoding.js";
+import { readString } from "../core/event.js";
 
 export const pagerdutyVerifier: ProviderVerifier = {
   name: "pagerduty",
+  eventType: (event) => readString(event, "event", "event_type"),
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,

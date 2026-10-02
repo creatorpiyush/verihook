@@ -49,13 +49,21 @@ export interface VerihookExpressOptions extends VerifyWebhookOptions {
   ) => void | Promise<void>;
 }
 
-export interface VerihookRequestAdditions {
+/**
+ * Fields the middleware adds to the request. Pass the payload type for a typed
+ * `event`, e.g. `req as Request & VerihookRequestAdditions<StripeEvent>`.
+ */
+export interface VerihookRequestAdditions<TEvent = unknown> {
   verihook?: {
     valid: boolean;
     provider: ProviderName;
     payload: unknown;
+    /** Parsed payload (JSON, or form fields), same as `result.event`. */
+    event?: TEvent;
+    /** Event name, e.g. `"invoice.paid"`, same as `result.eventType`. */
+    eventType?: string;
     timestamp?: number;
-    result: VerificationResult;
+    result: VerificationResult<TEvent>;
   };
   verifiedPayload?: unknown;
 }
@@ -169,6 +177,8 @@ export function verihookExpress(
         valid: true,
         provider,
         payload,
+        event: result.event,
+        eventType: result.eventType,
         timestamp: result.timestamp,
         result,
       };

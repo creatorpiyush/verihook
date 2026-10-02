@@ -188,6 +188,11 @@ export interface WebhookVerificationEvent {
   hint?: string;
 
   /**
+   * Event name of a verified webhook (e.g. `"invoice.paid"`), when the provider sends one.
+   */
+  eventType?: string;
+
+  /**
    * Extracted webhook timestamp if available (Unix epoch in seconds).
    */
   timestamp?: number;
@@ -226,7 +231,7 @@ export enum WebhookErrorCode {
 
 export type VerificationErrorCode = `${WebhookErrorCode}`;
 
-export interface VerificationResult {
+export interface VerificationResult<TEvent = unknown> {
   /**
    * Indicates whether the signature verification succeeded.
    */
@@ -264,6 +269,19 @@ export interface VerificationResult {
   error?: Error;
 
   /**
+   * Parsed payload of a verified webhook: JSON, or the fields of a form post.
+   * Only set when `valid` is true; `undefined` for bodies that are neither.
+   */
+  event?: TEvent;
+
+  /**
+   * Event name of a verified webhook, e.g. `"invoice.paid"` (Stripe) or `"push"`
+   * (GitHub's `x-github-event` header). Only set when `valid` is true and the
+   * provider sends one.
+   */
+  eventType?: string;
+
+  /**
    * Key recorded in `options.dedupeStore` for this event, when deduplication ran.
    * Pass it to `dedupeStore.delete()` to allow a retry if processing fails.
    */
@@ -289,4 +307,11 @@ export interface ProviderVerifier {
     secret: string,
     options?: VerifyWebhookOptions,
   ): Promise<VerificationResult>;
+
+  /**
+   * Returns the event name of a verified webhook (`result.eventType`).
+   * `event` is the parsed body (JSON or form fields). When omitted, the body's
+   * `type`, `event` or `event_type` field is used.
+   */
+  eventType?(event: unknown, req: NormalizedWebhookRequest): string | undefined;
 }

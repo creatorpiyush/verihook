@@ -9,9 +9,22 @@ import {
 import { bytesToHex } from "../utils/encoding.js";
 
 import { toEpochSeconds } from "../utils/timestamp.js";
+import { readString } from "../core/event.js";
 
 export const slackVerifier: ProviderVerifier = {
   name: "slack",
+  eventType(event) {
+    // Interactivity posts a JSON `payload` form field; slash commands send `command`.
+    const interaction = readString(event, "payload");
+    if (interaction) {
+      try {
+        return readString(JSON.parse(interaction), "type");
+      } catch {
+        return undefined;
+      }
+    }
+    return readString(event, "type") ?? readString(event, "command");
+  },
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,

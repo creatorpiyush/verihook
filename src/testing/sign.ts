@@ -43,7 +43,10 @@ export interface SignWebhookOptions {
   /** Message ID for Svix-based providers (`svix-id`). @default random */
   webhookId?: string;
 
-  /** Event name sent in the `x-github-event` header for GitHub. @default "ping" */
+  /**
+   * Event name sent in a header: `x-github-event` for GitHub (default `"ping"`),
+   * `x-shopify-topic` for Shopify (default `"orders/create"`).
+   */
   event?: string;
 
   /**
@@ -230,6 +233,7 @@ export async function signWebhook(
       secret = requireSecret(name, secret);
       const hmac = await computeHmacSha256(secret, body);
       headers["x-shopify-hmac-sha256"] = bytesToBase64(hmac);
+      headers["x-shopify-topic"] = options.event || "orders/create";
       headers["x-shopify-webhook-id"] = randomId("");
       break;
     }

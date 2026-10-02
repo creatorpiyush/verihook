@@ -3,6 +3,8 @@ import { normalizeRequest } from "../utils/normalize-request.js";
 import { extractEventId } from "./dedupe.js";
 import { diagnoseFailure, warnHintOnce } from "./diagnostics.js";
 import { WebhookVerificationError } from "./errors.js";
+import { parseEvent, resolveEventType } from "./event.js";
+import type { EventFor, ResolveEvent } from "./event-types.js";
 import { getGlobalLogger } from "./logger.js";
 import {
   ProviderName,
@@ -29,6 +31,7 @@ function dispatchTelemetry(
     code: result.code,
     reason: result.reason,
     hint: result.hint,
+    eventType: result.eventType,
     timestamp: result.timestamp,
     durationMs,
     attemptedAt,
@@ -75,14 +78,20 @@ function dispatchTelemetry(
  * Normalizes input request formats (Fetch Request, Express req, Next.js, Fastify, custom)
  * and verifies signature against provider specification.
  *
- * @returns VerificationResult containing valid status, error code, reason, timestamp, and optional raw error.
+ * On success, `result.event` holds the parsed payload, typed for built-in providers.
+ * Pass a type argument to use your own: `verifyWebhook<Stripe.Event>("stripe", ...)`.
+ *
+ * @returns VerificationResult containing valid status, error code, reason, timestamp, parsed event, and optional raw error.
  */
-export async function verifyWebhook(
-  provider: ProviderName,
+export async function verifyWebhook<
+  TEvent = never,
+  P extends ProviderName = ProviderName,
+>(
+  provider: P,
   req: WebhookRequestInput,
   secret: string,
   options?: VerifyWebhookOptions,
-): Promise<VerificationResult> {
+): Promise<VerificationResult<ResolveEvent<TEvent, P>>> {
   const attemptedAt = Date.now();
   const startTime = performance.now();
 
@@ -113,6 +122,12 @@ export async function verifyWebhook(
           result = { ...result, hint };
           warnHintOnce(provider, hint);
         }
+      }
+
+      if (result.valid) {
+        const event = parseEvent(normalizedReq);
+        const eventType = resolveEventType(verifier, event, normalizedReq);
+        result = { ...result, event, eventType };
       }
 
       if (result.valid && options?.dedupeStore) {
@@ -156,7 +171,7 @@ export async function verifyWebhook(
   }
 
   dispatchTelemetry(result, startTime, attemptedAt, options);
-  return result;
+  return result as VerificationResult<ResolveEvent<TEvent, P>>;
 }
 
 /**
@@ -165,13 +180,16 @@ export async function verifyWebhook(
  *
  * @throws WebhookVerificationError when verification fails.
  */
-export async function verifyWebhookOrThrow(
-  provider: ProviderName,
+export async function verifyWebhookOrThrow<
+  TEvent = never,
+  P extends ProviderName = ProviderName,
+>(
+  provider: P,
   req: WebhookRequestInput,
   secret: string,
   options?: VerifyWebhookOptions,
-): Promise<VerificationResult> {
-  const result = await verifyWebhook(provider, req, secret, options);
+): Promise<VerificationResult<ResolveEvent<TEvent, P>>> {
+  const result = await verifyWebhook<TEvent, P>(provider, req, secret, options);
   if (!result.valid) {
     throw new WebhookVerificationError(
       result.provider,
@@ -185,136 +203,37 @@ export async function verifyWebhookOrThrow(
 }
 
 // Provider-specific helper shortcuts
-export const verifyStripe = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("stripe", req, secret, opts);
+function shortcut<P extends ProviderName>(provider: P) {
+  return <TEvent = EventFor<P>>(
+    req: WebhookRequestInput,
+    secret: string,
+    opts?: VerifyWebhookOptions,
+  ) =>
+    verifyWebhook(provider, req, secret, opts) as Promise<
+      VerificationResult<TEvent>
+    >;
+}
 
-export const verifyGitHub = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("github", req, secret, opts);
-
-export const verifyShopify = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("shopify", req, secret, opts);
-
-export const verifySlack = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("slack", req, secret, opts);
-
-export const verifyTwilio = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("twilio", req, secret, opts);
-
-export const verifySvix = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("svix", req, secret, opts);
-
-export const verifyResend = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("resend", req, secret, opts);
-
-export const verifyClerk = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("clerk", req, secret, opts);
-
-export const verifyLinear = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("linear", req, secret, opts);
-
-export const verifyRazorpay = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("razorpay", req, secret, opts);
-
-export const verifySquare = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("square", req, secret, opts);
-
-export const verifyZoom = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("zoom", req, secret, opts);
-
-export const verifyMeta = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("meta", req, secret, opts);
-
-export const verifyWhatsApp = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("whatsapp", req, secret, opts);
-
-export const verifyDiscord = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("discord", req, secret, opts);
-
-export const verifyTwitter = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("twitter", req, secret, opts);
-
+export const verifyStripe = shortcut("stripe");
+export const verifyGitHub = shortcut("github");
+export const verifyShopify = shortcut("shopify");
+export const verifySlack = shortcut("slack");
+export const verifyTwilio = shortcut("twilio");
+export const verifySvix = shortcut("svix");
+export const verifyResend = shortcut("resend");
+export const verifyClerk = shortcut("clerk");
+export const verifyLinear = shortcut("linear");
+export const verifyRazorpay = shortcut("razorpay");
+export const verifySquare = shortcut("square");
+export const verifyZoom = shortcut("zoom");
+export const verifyMeta = shortcut("meta");
+export const verifyWhatsApp = shortcut("whatsapp");
+export const verifyDiscord = shortcut("discord");
+export const verifyTwitter = shortcut("twitter");
 export const verifyX = verifyTwitter;
-
-export const verifyPayPal = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("paypal", req, secret, opts);
-
-export const verifyLemonSqueezy = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("lemonsqueezy", req, secret, opts);
-
-export const verifyPaddle = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("paddle", req, secret, opts);
-
-export const verifyPagerDuty = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("pagerduty", req, secret, opts);
-
-export const verifyWebflow = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("webflow", req, secret, opts);
-
-export const verifyWorkOS = (
-  req: WebhookRequestInput,
-  secret: string,
-  opts?: VerifyWebhookOptions,
-) => verifyWebhook("workos", req, secret, opts);
+export const verifyPayPal = shortcut("paypal");
+export const verifyLemonSqueezy = shortcut("lemonsqueezy");
+export const verifyPaddle = shortcut("paddle");
+export const verifyPagerDuty = shortcut("pagerduty");
+export const verifyWebflow = shortcut("webflow");
+export const verifyWorkOS = shortcut("workos");

@@ -14,6 +14,7 @@ import { bytesToHex } from "../utils/encoding.js";
 
 export const githubVerifier: ProviderVerifier = {
   name: "github",
+  eventType: (_event, req) => req.headers["x-github-event"],
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,

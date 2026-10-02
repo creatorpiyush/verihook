@@ -1,0 +1,42 @@
+name: Provider request
+description: Ask for (or offer to add) a webhook provider.
+labels: ["provider"]
+title: "Add provider: "
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Provider
+      placeholder: Paystack
+    validations:
+      required: true
+  - type: input
+    id: docs
+    attributes:
+      label: Link to the provider's webhook signature docs
+    validations:
+      required: true
+  - type: textarea
+    id: scheme
+    attributes:
+      label: Signature scheme
+      description: Headers sent, what is signed, algorithm and encoding, timestamp or replay rules. Leave blank if unsure.
+      placeholder: |
+        Header: x-paystack-signature
+        HMAC-SHA512 of the raw body, hex encoded, keyed with the secret key
+  - type: textarea
+    id: vector
+    attributes:
+      label: Test vector or official SDK
+      description: A sample payload, secret and signature from the docs, or the official SDK's verify function.
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you like to add it yourself?
+      description: CONTRIBUTING.md walks through adding a provider in 5 steps.
+      options:
+        - "Yes, I'd like to open a PR"
+        - "Maybe, with some guidance"
+        - "No, just requesting it"
+    validations:
+      required: true

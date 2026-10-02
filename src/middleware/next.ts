@@ -5,6 +5,7 @@ import {
   type VerificationResult,
   type VerifyWebhookOptions,
 } from "../core/types.js";
+import type { ResolveEvent } from "../core/event-types.js";
 import { verifyWebhook } from "../core/verifier.js";
 import type { SecretResolver } from "./express.js";
 
@@ -18,9 +19,10 @@ export interface VerihookNextOptions extends VerifyWebhookOptions {
   ) => Response | Promise<Response>;
 }
 
-export type NextWebhookCallback = (
+/** `result.event` is the parsed payload, typed for built-in providers. */
+export type NextWebhookCallback<TEvent = unknown> = (
   payload: unknown,
-  result: VerificationResult,
+  result: VerificationResult<TEvent>,
   req: Request,
 ) => Promise<Response | void> | Response | void;
 
@@ -70,11 +72,15 @@ async function readBodyWithLimit(
  * Next.js App Router & Web API Route Handler Factory for 1-line webhook verification.
  * Automatically verifies signatures, parses request payloads, executes callback logic,
  * and returns standardized HTTP responses with security headers.
+ * Pass a type argument to type `result.event` yourself: `createWebhookHandler<MyEvent>(...)`.
  */
-export function createWebhookHandler(
-  provider: ProviderName,
+export function createWebhookHandler<
+  TEvent = never,
+  P extends ProviderName = ProviderName,
+>(
+  provider: P,
   secret: SecretResolver<Request>,
-  handler: NextWebhookCallback,
+  handler: NextWebhookCallback<ResolveEvent<TEvent, P>>,
   options?: VerihookNextOptions,
 ) {
   const maxBytes = options?.maxBodySize ?? 2 * 1024 * 1024; // 2MB default
@@ -98,7 +104,7 @@ export function createWebhookHandler(
         );
       }
 
-      const result = await verifyWebhook(
+      const result = await verifyWebhook<TEvent, P>(
         provider,
         { headers: req.headers, rawBody, url: req.url, method: req.method },
         resolvedSecret,
