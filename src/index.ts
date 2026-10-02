@@ -32,6 +32,8 @@ export type {
   MetaChallengeResult,
 } from "./providers/meta.js";
 
+export { clearPayPalCertCache } from "./providers/paypal.js";
+
 export { verifyTwitterCrc, verifyXCrc } from "./providers/twitter.js";
 export type { TwitterCrcResponse } from "./providers/twitter.js";
 

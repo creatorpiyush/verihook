@@ -5,6 +5,37 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-10-02
+
+### ⚠️ Upgrade Notes
+- **PayPal**: Verification is RSA-SHA256 only. Requests are accepted only with a `paypal-cert-url` on a PayPal API host (or a PEM pinned as `secret`), and a webhook ID is required (`options.webhookId`). Integrations that relied on the HMAC fallback will now be rejected — that fallback was the vulnerability below.
+- **Duplicate events**: `verihookExpress` / `createWebhookHandler` now answer duplicates with `200 { received: true, duplicate: true }` instead of `401`.
+- **`MemoryDedupeStore`**: `maxSize` now defaults to `10_000` (previously unbounded).
+- **500 responses**: Middleware error bodies are now a generic `"Internal webhook verification error"`; use `onError` or telemetry for details.
+- **Twilio / Square**: Relative request URLs are now resolved from `x-forwarded-*`/`host` headers and `req.protocol` (default https); `options.url` still takes precedence.
+
+### Security
+- 💳 **PayPal: removed HMAC fallback (signature forgery)**: Requests without `paypal-cert-url` were verified with an HMAC keyed by `secret`; since the webhook ID is both the conventional `secret` and part of the signed payload, anyone knowing a webhook ID could forge events. PayPal never sends HMAC signatures, so verification is now RSA-SHA256 only.
+  - `paypal-cert-url` must be `https` on an exact PayPal API host (`api.paypal.com`, `api-m.paypal.com`, and sandbox equivalents); the previous `*.paypal.com` suffix match is gone.
+  - Certificate fetches use a 5s timeout, refuse redirects, and are cached per URL (`clearPayPalCertCache()` exported for tests).
+  - A webhook ID (`options.webhookId`, or a non-PEM `secret`) is now required.
+- 🙈 **No internal error details in responses**: Express and Next.js middlewares return a generic `500` message; the full error still reaches `onError` and telemetry.
+- 🧱 **Provider registry**: `Object.prototype` members (`constructor`, `__proto__`, …) no longer resolve as providers, and `registerProvider` rejects reserved names.
+- ⏱️ **Meta challenge** verify token is compared in constant time.
+
+### Fixed
+- 🔁 **Dedupe no longer drops retried events**: Express and Next.js middlewares answer duplicates with `200 { received: true, duplicate: true }` instead of `401`, and release the event when the handler fails (thrown error or 5xx). Added optional `DedupeStore.delete(key)` and `VerificationResult.dedupeKey`.
+- 🌐 **Twilio & Square behind Express/proxies**: Relative request URLs (e.g. `req.originalUrl`) are rebuilt into the public URL from `x-forwarded-proto`/`x-forwarded-host`/`host`, using `req.protocol` (Express/Fastify) when no forwarded protocol is present, else https. Twilio now signs the exact URL string instead of re-serializing it, and accepts URLs with or without the default port. Mismatch reasons include the signed URL to make misconfiguration obvious.
+- 📏 **Next.js body limit**: `createWebhookHandler` enforces `maxBodySize` (default 2MB, `413 PAYLOAD_TOO_LARGE`) and reads the body once instead of twice.
+- 🔄 **Secret rotation**: Paddle (`h=`) and WorkOS (`v1=`) accept any of multiple signatures in the header.
+- 🏷️ **Error codes**: Non-verihook error codes thrown during verification (e.g. Node's `ERR_*`) are reported as `UNKNOWN_ERROR`.
+- 🧠 **`MemoryDedupeStore` memory bound**: `maxSize` now defaults to 10,000 and expired entries are swept on insert.
+- 🧰 **CLI `--flag=value` parsing** no longer truncates values containing `=` (base64 secrets, URLs with query strings).
+- 🧪 **CLI `simulate`** now produces verifiable webhooks for Square, Zoom, Linear, Razorpay, Discord (generated Ed25519 key pair, public key printed) and generic (`x-signature` header). PayPal simulation is refused with an explanation.
+- 📦 **Package exports**: Added `"./package.json"` to `exports` so tooling can read `verihook/package.json`.
+- 🧩 **Examples**: Typed the Hono worker's `WEBHOOK_SECRET` binding so the example typechecks.
+- 🐚 **CLI** `--curl` output is shell-quoted, and the banner shows the real package version instead of a hardcoded `v1.7.0`.
+
 ## [1.7.3] - 2026-08-16
 
 ### Fixed

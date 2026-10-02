@@ -52,15 +52,28 @@ export const providers: Record<string, ProviderVerifier> = {
 
 export function getProviderVerifier(name: ProviderName): ProviderVerifier {
   const key = String(name).toLowerCase();
-  const provider = providers[key];
+  // Own-property check so names like "constructor" or "__proto__" never resolve.
+  const provider = Object.prototype.hasOwnProperty.call(providers, key)
+    ? providers[key]
+    : undefined;
   if (!provider) {
     throw new UnsupportedProviderError(String(name), Object.keys(providers));
   }
   return provider;
 }
 
+const RESERVED_PROVIDER_NAMES = new Set([
+  "__proto__",
+  "constructor",
+  "prototype",
+]);
+
 export function registerProvider(verifier: ProviderVerifier): void {
-  providers[verifier.name.toLowerCase()] = verifier;
+  const key = String(verifier.name).toLowerCase();
+  if (RESERVED_PROVIDER_NAMES.has(key)) {
+    throw new Error(`[verihook] Invalid provider name "${verifier.name}"`);
+  }
+  providers[key] = verifier;
 }
 
 export {

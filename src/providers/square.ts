@@ -7,6 +7,7 @@ import {
   WebhookErrorCode,
 } from "../core/types.js";
 import { bytesToBase64 } from "../utils/encoding.js";
+import { resolveSignedUrl } from "../utils/request-url.js";
 
 export const squareVerifier: ProviderVerifier = {
   name: "square",
@@ -25,7 +26,7 @@ export const squareVerifier: ProviderVerifier = {
       };
     }
 
-    const url = options?.url || req.url;
+    const url = resolveSignedUrl(req, options?.url);
     if (!url) {
       return {
         valid: false,
@@ -45,7 +46,7 @@ export const squareVerifier: ProviderVerifier = {
         valid: false,
         provider: "square",
         code: WebhookErrorCode.INVALID_SIGNATURE,
-        reason: "Signature mismatch",
+        reason: `Signature mismatch (signed URL: ${url})`,
       };
     }
 

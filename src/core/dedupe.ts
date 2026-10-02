@@ -4,6 +4,8 @@ import {
   MemoryDedupeStoreOptions,
   NormalizedWebhookRequest,
   ProviderName,
+  VerificationResult,
+  VerifyWebhookOptions,
 } from "./types.js";
 import { bytesToHex } from "../utils/encoding.js";
 
@@ -13,11 +15,11 @@ import { bytesToHex } from "../utils/encoding.js";
 export class MemoryDedupeStore implements DedupeStore {
   private cache = new Map<string, number>();
   private defaultTtlMs: number;
-  private maxSize?: number;
+  private maxSize: number;
 
   constructor(options?: MemoryDedupeStoreOptions) {
     this.defaultTtlMs = options?.ttlMs ?? 300_000; // 5 minutes default
-    this.maxSize = options?.maxSize;
+    this.maxSize = options?.maxSize ?? 10_000;
   }
 
   /**
@@ -41,8 +43,14 @@ export class MemoryDedupeStore implements DedupeStore {
       this.cache.delete(key);
     }
 
+    // Drop expired entries from the oldest end so idle keys don't accumulate
+    for (const [oldKey, expiry] of this.cache) {
+      if (expiry > now) break;
+      this.cache.delete(oldKey);
+    }
+
     // LRU eviction if maximum capacity is reached
-    if (this.maxSize && this.cache.size >= this.maxSize) {
+    if (this.maxSize > 0 && this.cache.size >= this.maxSize) {
       const firstKey = this.cache.keys().next().value;
       if (firstKey !== undefined) {
         this.cache.delete(firstKey);
@@ -51,6 +59,13 @@ export class MemoryDedupeStore implements DedupeStore {
 
     this.cache.set(key, now + effectiveTtl);
     return false;
+  }
+
+  /**
+   * Removes a single event key so a retry of that event is accepted again.
+   */
+  delete(key: string): void {
+    this.cache.delete(key);
   }
 
   /**
@@ -136,4 +151,22 @@ export async function extractEventId(
   // 4. SHA-256 fallback digest over provider + raw body
   const hashBytes = await computeSha256(`${provider}:${req.rawBody || ""}`);
   return bytesToHex(hashBytes);
+}
+
+/**
+ * Removes a verified event's dedupe record so the provider's retry is processed.
+ * Used by the framework middlewares when the webhook handler fails.
+ */
+export async function releaseDedupeKey(
+  result: VerificationResult,
+  options?: VerifyWebhookOptions,
+): Promise<void> {
+  if (!result.dedupeKey || !options?.dedupeStore?.delete) {
+    return;
+  }
+  try {
+    await options.dedupeStore.delete(result.dedupeKey);
+  } catch {
+    // Best-effort: a failed release only means the retry is treated as a duplicate.
+  }
 }

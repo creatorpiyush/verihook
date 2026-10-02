@@ -10,9 +10,9 @@ We actively maintain and provide security patches for the following versions of 
 
 | Version | Supported | Security Notes |
 | :--- | :--- | :--- |
-| `1.7.x` | :white_check_mark: | Current release family. Actively maintained. |
-| `1.6.x` | :white_check_mark: | Replay protection & deduplication store support. |
-| `< 1.6.0` | :x: | Legacy release. Upgrade to latest `1.7.x`. |
+| `1.8.x` | :white_check_mark: | Current release family. Actively maintained. |
+| `1.7.x` | :x: | Affected by PayPal signature forgery via HMAC fallback. Upgrade to `1.8.0`. |
+| `< 1.7.0` | :x: | Legacy release (also affected by the PayPal issue). Upgrade to latest `1.8.x`. |
 
 ---
 

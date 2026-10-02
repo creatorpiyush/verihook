@@ -37,6 +37,8 @@ export interface WebhookRequestInputObject {
   url?: string;
   originalUrl?: string;
   method?: string;
+  /** Request protocol as exposed by Express/Fastify (`req.protocol`), e.g. "http". */
+  protocol?: string;
 }
 
 export type WebhookRequestInput = Request | WebhookRequestInputObject;
@@ -46,6 +48,7 @@ export interface NormalizedWebhookRequest {
   rawBody: string;
   url?: string;
   method?: string;
+  protocol?: string;
 }
 
 export interface DedupeStore {
@@ -55,6 +58,13 @@ export interface DedupeStore {
    * @returns `true` if the event is a duplicate (already seen), `false` if it is new.
    */
   hasOrSet(key: string, ttlMs: number): Promise<boolean> | boolean;
+
+  /**
+   * Removes a recorded event ID (optional). When implemented, the framework
+   * middlewares call it if the webhook handler fails, so the provider's retry
+   * is processed instead of being rejected as a duplicate.
+   */
+  delete?(key: string): Promise<void> | void;
 
   /**
    * Clears all stored event IDs (optional, useful for testing or flushing).
@@ -71,6 +81,7 @@ export interface MemoryDedupeStoreOptions {
 
   /**
    * Maximum number of keys allowed in the store before LRU eviction.
+   * @default 10000
    */
   maxSize?: number;
 }
@@ -126,7 +137,7 @@ export interface VerifyWebhookOptions {
   log?: WebhookLoggerFn;
 
   /**
-   * Maximum allowed body size in bytes for unparsed streaming requests (defaults to 2MB = 2,097,152 bytes).
+   * Maximum allowed body size in bytes when the Express or Next.js middleware reads the request body (defaults to 2MB = 2,097,152 bytes).
    */
   maxBodySize?: number;
 
@@ -239,6 +250,12 @@ export interface VerificationResult {
    * Preserved raw Error instance if an unexpected exception was caught during verification.
    */
   error?: Error;
+
+  /**
+   * Key recorded in `options.dedupeStore` for this event, when deduplication ran.
+   * Pass it to `dedupeStore.delete()` to allow a retry if processing fails.
+   */
+  dedupeKey?: string;
 }
 
 export interface ProviderVerifier {

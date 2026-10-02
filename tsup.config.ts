@@ -1,4 +1,5 @@
 import { defineConfig } from 'tsup';
+import pkg from './package.json';
 
 export default defineConfig({
   entry: {
@@ -16,4 +17,7 @@ export default defineConfig({
   clean: true,
   minify: false,
   treeshake: true,
+  define: {
+    __VERIHOOK_VERSION__: JSON.stringify(pkg.version),
+  },
 });

@@ -133,7 +133,9 @@ describe("Express Middleware (verihookExpress)", () => {
 
     await middleware500(req500, res500, next500);
     expect(res500.status).toHaveBeenCalledWith(500);
-    expect(res500.body).toEqual({ error: "Database connection failed" });
+    expect(res500.body).toEqual({
+      error: "Internal webhook verification error",
+    });
 
     const onError = vi.fn().mockImplementation((_result, _req, res) => {
       res.status(503).json({ error: "service unavailable" });

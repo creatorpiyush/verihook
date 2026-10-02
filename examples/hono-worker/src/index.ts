@@ -2,7 +2,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { verifyWebhook } from 'verihook';
 
-const app = new Hono();
+const app = new Hono<{ Bindings: { WEBHOOK_SECRET?: string } }>();
 
 app.get('/', (c) => {
   return c.json({

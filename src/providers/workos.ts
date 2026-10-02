@@ -35,7 +35,7 @@ export const workosVerifier: ProviderVerifier = {
     }
 
     let timestampStr = "";
-    let sigHex = "";
+    const sigHexes: string[] = [];
     const parts = signature.split(",");
     for (const part of parts) {
       const trimmed = part.trim();
@@ -44,11 +44,12 @@ export const workosVerifier: ProviderVerifier = {
         const k = trimmed.slice(0, eqIdx).trim();
         const v = trimmed.slice(eqIdx + 1).trim();
         if (k === "t" && v) timestampStr = v;
-        if (k === "v1" && v) sigHex = v;
+        // Multiple v1= values are sent while a secret is being rotated.
+        if (k === "v1" && v) sigHexes.push(v.toLowerCase());
       }
     }
 
-    if (!timestampStr || !sigHex) {
+    if (!timestampStr || sigHexes.length === 0) {
       return {
         valid: false,
         provider: "workos",
@@ -86,7 +87,7 @@ export const workosVerifier: ProviderVerifier = {
     const hmacBytes = await computeHmacSha256(secret, payloadToSign);
     const expectedHex = bytesToHex(hmacBytes);
 
-    if (!timingSafeEqual(sigHex.toLowerCase(), expectedHex.toLowerCase())) {
+    if (!sigHexes.some((sig) => timingSafeEqual(sig, expectedHex))) {
       return {
         valid: false,
         provider: "workos",

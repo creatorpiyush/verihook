@@ -53,14 +53,14 @@ bun add verihook
 | **GitHub** | `'github'` | `x-hub-signature-256` or `x-hub-signature` |
 | **Shopify** | `'shopify'` | `x-shopify-hmac-sha256` |
 | **Slack** | `'slack'` | `x-slack-signature`, `x-slack-request-timestamp` |
-| **Twilio** | `'twilio'` | `x-twilio-signature` (Requires request URL; supports form payload signing and JSON `bodySHA256` flow) |
+| **Twilio** | `'twilio'` | `x-twilio-signature` (Signs the public request URL: rebuilt from `x-forwarded-*`/`host` and `req.protocol` for relative URLs, or pass `options.url`; supports form payload signing and JSON `bodySHA256` flow) |
 | **Svix** | `'svix'` | `svix-id`, `svix-timestamp`, `svix-signature` |
 | **Resend** | `'resend'` | Uses Svix signatures |
 | **Clerk** | `'clerk'` | Uses Svix signatures |
 | **WhatsApp / Meta** | `'meta'`, `'whatsapp'` | `x-hub-signature-256` (Supports `verifyMetaChallenge` GET handshake) |
 | **Discord** | `'discord'` | `x-signature-ed25519`, `x-signature-timestamp` (Ed25519 signature) |
 | **Twitter / X** | `'twitter'`, `'x'` | `x-twitter-webhooks-signature` (Supports `verifyTwitterCrc` GET handshake) |
-| **PayPal** | `'paypal'` | Transmission headers + `crc32` payload signing (RSA-SHA256 & HMAC) |
+| **PayPal** | `'paypal'` | Transmission headers + `paypal-cert-url` (RSA-SHA256). Pass `{ webhookId }`; certs are only fetched from PayPal API hosts, or pin a PEM as `secret` |
 | **LemonSqueezy** | `'lemonsqueezy'` | `x-signature` |
 | **Paddle** | `'paddle'` | `paddle-signature` (`ts=...;h=...`) |
 | **PagerDuty** | `'pagerduty'` | `x-pagerduty-signature` (`v1=...`) |
@@ -207,9 +207,20 @@ const result = await verifyWebhook('stripe', req, secret, {
 });
 
 if (!result.valid && result.code === WebhookErrorCode.DUPLICATE_EVENT) {
-  console.warn('Duplicate webhook event ignored (replay protection)');
+  // Respond 2xx so the provider stops retrying an event you already handled.
+  return res.status(200).json({ received: true, duplicate: true });
+}
+
+try {
+  await processEvent(result);
+} catch (err) {
+  // Forget the event so the provider's retry is processed instead of rejected.
+  await dedupeStore.delete(result.dedupeKey!);
+  throw err;
 }
 ```
+
+`verihookExpress` and `createWebhookHandler` do both automatically: duplicates get `200 { received: true, duplicate: true }`, and a handler failure (thrown error or 5xx response) releases the event if your store implements the optional `delete(key)` method. `MemoryDedupeStore` is capped at 10,000 entries by default.
 
 > [!NOTE]
 > **Serverless & Multi-Instance Edge Deployments**: `MemoryDedupeStore` operates in-process per instance. For serverless (AWS Lambda, Vercel Edge, Cloudflare Workers) or multi-replica deployments, implement a shared distributed store using the `DedupeStore` interface.
