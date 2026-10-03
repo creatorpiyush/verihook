@@ -409,6 +409,8 @@ Press Ctrl+C to stop listening.
 }
 
 // Default secrets and example payloads used by `simulate`.
+const KEY_PAIR_PROVIDERS = new Set(["discord", "sendgrid"]);
+
 function simulationSample(
   provider: string,
   eventType: string | undefined,
@@ -675,6 +677,170 @@ function simulationSample(
           account_code: "account_simulated",
         },
       };
+    case "gitlab":
+      return {
+        secret: "gitlab_secret_token_123",
+        event: "Push Hook",
+        payload: {
+          object_kind: eventType || "push",
+          ref: "refs/heads/main",
+          user_username: "verihook",
+          project: { id: 1, path_with_namespace: "creatorpiyush/verihook" },
+        },
+      };
+    case "bitbucket":
+      return {
+        secret: "bitbucket_secret_123",
+        event: eventType || "repo:push",
+        payload: {
+          actor: { display_name: "verihook" },
+          repository: { full_name: "creatorpiyush/verihook" },
+          push: { changes: [] },
+        },
+      };
+    case "vercel":
+      return {
+        secret: "vercel_webhook_secret_123",
+        payload: {
+          id: `evt_${now}`,
+          type: eventType || "deployment.succeeded",
+          createdAt: now,
+          payload: {
+            deployment: { id: "dpl_simulated", url: "verihook.vercel.app" },
+          },
+        },
+      };
+    case "sentry":
+      return {
+        secret: "sentry_client_secret_123",
+        event: "issue",
+        payload: {
+          action: eventType || "created",
+          installation: { uuid: "inst_simulated" },
+          data: { issue: { id: String(now), title: "Simulated issue" } },
+          actor: { type: "application", id: "sentry", name: "Sentry" },
+        },
+      };
+    case "twitch":
+      return {
+        secret: "twitch_eventsub_secret_123",
+        event: eventType || "channel.follow",
+        payload: {
+          subscription: {
+            id: `sub_${now}`,
+            type: eventType || "channel.follow",
+            version: "2",
+            status: "enabled",
+            condition: { broadcaster_user_id: "1337" },
+          },
+          event: {
+            user_id: "1234",
+            user_login: "verihook",
+            broadcaster_user_id: "1337",
+          },
+        },
+      };
+    case "telegram":
+      return {
+        secret: "telegram_secret_token_123",
+        payload: {
+          update_id: now % 1_000_000_000,
+          message: {
+            message_id: 1,
+            chat: { id: 42, type: "private" },
+            text: "Hello verihook!",
+          },
+        },
+      };
+    case "postmark":
+      return {
+        secret: "postmark_user:postmark_pass",
+        payload: {
+          RecordType: eventType || "Delivery",
+          MessageID: `msg_${now}`,
+          Recipient: "user@example.com",
+          MessageStream: "outbound",
+        },
+      };
+    case "sendgrid":
+      return {
+        payload: [
+          {
+            email: "user@example.com",
+            timestamp: Math.floor(now / 1000),
+            event: eventType || "delivered",
+            sg_event_id: `sg_${now}`,
+            sg_message_id: "msg_simulated",
+          },
+        ],
+      };
+    case "mailgun":
+      return {
+        secret: "mailgun_signing_key_123",
+        payload: {
+          "event-data": {
+            event: eventType || "delivered",
+            id: `evt_${now}`,
+            timestamp: now / 1000,
+            recipient: "user@example.com",
+          },
+        },
+      };
+    case "hubspot":
+      return {
+        secret: "hubspot_client_secret_123",
+        payload: [
+          {
+            eventId: now,
+            subscriptionId: 1,
+            portalId: 62515,
+            appId: 54321,
+            occurredAt: now,
+            subscriptionType: eventType || "contact.creation",
+            attemptNumber: 0,
+            objectId: 123,
+          },
+        ],
+      };
+    case "intercom":
+      return {
+        secret: "intercom_client_secret_123",
+        payload: {
+          type: "notification_event",
+          id: `notif_${now}`,
+          topic: eventType || "conversation.user.created",
+          app_id: "app_simulated",
+          created_at: Math.floor(now / 1000),
+          data: {
+            type: "notification_event_data",
+            item: { type: "conversation", id: "1" },
+          },
+        },
+      };
+    case "calendly":
+      return {
+        secret: "calendly_signing_key_123",
+        payload: {
+          event: eventType || "invitee.created",
+          created_at: new Date(now).toISOString(),
+          created_by: "https://api.calendly.com/users/simulated",
+          payload: { email: "invitee@example.com", name: "Simulated Invitee" },
+        },
+      };
+    case "typeform":
+      return {
+        secret: "typeform_secret_123",
+        payload: {
+          event_id: `evt_${now}`,
+          event_type: eventType || "form_response",
+          form_response: {
+            form_id: "simulated",
+            token: `tok_${now}`,
+            submitted_at: new Date(now).toISOString(),
+            answers: [],
+          },
+        },
+      };
     case "discord":
       return { payload: { type: 1, id: `interaction_${now}` } };
     default:
@@ -704,7 +870,9 @@ Commands:
 
 Supported Providers:
   stripe, github, shopify, slack, twilio, svix, resend, clerk, meta, whatsapp, discord, twitter, x, paypal, lemonsqueezy, paddle, pagerduty, webflow, workos, linear, razorpay, square, zoom,
-  cashfree, phonepe, mollie, adyen, checkout, authorizenet, recurly
+  cashfree, phonepe, mollie, adyen, checkout, authorizenet, recurly,
+  gitlab, bitbucket, vercel, sentry, twitch, telegram, postmark, sendgrid, mailgun,
+  hubspot, intercom, calendly, typeform
 
 Options:
   --forward-to <url>   Target webhook server endpoint to forward webhooks to (listen mode)
@@ -754,15 +922,19 @@ Examples:
   const signProvider = SIGNABLE_PROVIDERS.has(provider) ? provider : "generic";
   const signed = await signWebhook(signProvider, {
     ...sample,
-    secret: provider === "discord" ? undefined : args.secret || sample.secret,
+    // Discord and SendGrid sign with a private key; a throwaway pair is generated.
+    secret: KEY_PAIR_PROVIDERS.has(provider)
+      ? undefined
+      : args.secret || sample.secret,
     url: targetUrl,
   });
   const { headers, body: rawBody } = signed;
   // Twilio JSON webhooks carry the body hash in the signed URL.
   const sendUrl = signed.url;
 
-  if (provider === "discord") {
-    console.log(`🔑 Discord public key for verification: ${signed.secret}`);
+  if (KEY_PAIR_PROVIDERS.has(provider)) {
+    const label = provider === "discord" ? "Discord" : "SendGrid";
+    console.log(`🔑 ${label} public key for verification: ${signed.secret}`);
   }
 
   if (args.printCurl) {

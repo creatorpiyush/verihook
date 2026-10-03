@@ -284,6 +284,153 @@ export interface RecurlyEvent {
   [key: string]: unknown;
 }
 
+/** GitLab; `result.eventType` is `object_kind` (e.g. `push`, `merge_request`). */
+export interface GitLabEvent {
+  object_kind: string;
+  event_name?: string;
+  event_type?: string;
+  user?: Fields & { id: number; username: string };
+  project?: Fields & { id: number; path_with_namespace: string };
+  object_attributes?: Fields;
+  [key: string]: unknown;
+}
+
+/** Bitbucket sends the event name in `x-event-key` (see `result.eventType`). */
+export interface BitbucketEvent {
+  actor?: Fields;
+  repository?: Fields & { full_name?: string };
+  push?: Fields;
+  pullrequest?: Fields;
+  [key: string]: unknown;
+}
+
+export interface VercelEvent {
+  id: string;
+  type: string;
+  createdAt: number;
+  region?: string | null;
+  payload: Fields;
+  [key: string]: unknown;
+}
+
+/** Sentry; `result.eventType` is `<Sentry-Hook-Resource>.<action>` (e.g. `issue.created`). */
+export interface SentryEvent {
+  action: string;
+  installation: { uuid: string };
+  data: Fields;
+  actor?: Fields & { type: string };
+  [key: string]: unknown;
+}
+
+/**
+ * Twitch EventSub. `challenge` is set on `webhook_callback_verification` messages;
+ * `event` on notifications.
+ */
+export interface TwitchEvent {
+  subscription: Fields & {
+    id: string;
+    type: string;
+    version: string;
+    status: string;
+    condition: Fields;
+  };
+  event?: Fields;
+  challenge?: string;
+  [key: string]: unknown;
+}
+
+/** Telegram Update; `result.eventType` is the update kind (e.g. `message`). */
+export interface TelegramEvent {
+  update_id: number;
+  message?: Fields;
+  edited_message?: Fields;
+  channel_post?: Fields;
+  callback_query?: Fields;
+  inline_query?: Fields;
+  [key: string]: unknown;
+}
+
+export interface PostmarkEvent {
+  RecordType: string;
+  MessageID?: string;
+  ServerID?: number;
+  MessageStream?: string;
+  Recipient?: string;
+  Metadata?: Record<string, string>;
+  [key: string]: unknown;
+}
+
+export interface SendGridEventItem {
+  email: string;
+  timestamp: number;
+  event: string;
+  sg_event_id: string;
+  sg_message_id?: string;
+  [key: string]: unknown;
+}
+
+/** SendGrid posts a batch of events. */
+export type SendGridEvent = SendGridEventItem[];
+
+/** Mailgun JSON webhook. Form posts (routes) arrive as flat string fields instead. */
+export interface MailgunEvent {
+  signature: { timestamp: string; token: string; signature: string };
+  "event-data": Fields & { event: string; id: string; timestamp: number };
+  [key: string]: unknown;
+}
+
+export interface HubSpotWebhookEvent {
+  eventId: number;
+  subscriptionId: number;
+  portalId: number;
+  appId: number;
+  occurredAt: number;
+  subscriptionType: string;
+  attemptNumber: number;
+  objectId?: number;
+  propertyName?: string;
+  propertyValue?: string;
+  changeSource?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * HubSpot webhook batch. CRM card and workflow action requests have other shapes;
+ * pass your own type for those: `verifyHubSpot<MyAction>(...)`.
+ */
+export type HubSpotEvent = HubSpotWebhookEvent[];
+
+/** Intercom; `result.eventType` is `topic` (e.g. `conversation.user.created`). */
+export interface IntercomEvent {
+  type: "notification_event";
+  id: string;
+  topic: string;
+  app_id: string;
+  created_at: number;
+  data: { type: string; item: Fields };
+  [key: string]: unknown;
+}
+
+export interface CalendlyEvent {
+  event: string;
+  created_at: string;
+  created_by: string;
+  payload: Fields;
+  [key: string]: unknown;
+}
+
+export interface TypeformEvent {
+  event_id: string;
+  event_type: string;
+  form_response: Fields & {
+    form_id: string;
+    token: string;
+    submitted_at: string;
+    answers?: unknown[];
+  };
+  [key: string]: unknown;
+}
+
 /** Payload type for each built-in provider identifier. */
 export interface ProviderEventMap {
   stripe: StripeEvent;
@@ -318,6 +465,19 @@ export interface ProviderEventMap {
   checkout: CheckoutEvent;
   authorizenet: AuthorizeNetEvent;
   recurly: RecurlyEvent;
+  gitlab: GitLabEvent;
+  bitbucket: BitbucketEvent;
+  vercel: VercelEvent;
+  sentry: SentryEvent;
+  twitch: TwitchEvent;
+  telegram: TelegramEvent;
+  postmark: PostmarkEvent;
+  sendgrid: SendGridEvent;
+  mailgun: MailgunEvent;
+  hubspot: HubSpotEvent;
+  intercom: IntercomEvent;
+  calendly: CalendlyEvent;
+  typeform: TypeformEvent;
   generic: unknown;
 }
 

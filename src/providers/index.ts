@@ -26,6 +26,19 @@ import { adyenVerifier } from "./adyen.js";
 import { checkoutVerifier } from "./checkout.js";
 import { authorizenetVerifier } from "./authorizenet.js";
 import { recurlyVerifier } from "./recurly.js";
+import { gitlabVerifier } from "./gitlab.js";
+import { bitbucketVerifier } from "./bitbucket.js";
+import { vercelVerifier } from "./vercel.js";
+import { sentryVerifier } from "./sentry.js";
+import { twitchVerifier } from "./twitch.js";
+import { telegramVerifier } from "./telegram.js";
+import { postmarkVerifier } from "./postmark.js";
+import { sendgridVerifier } from "./sendgrid.js";
+import { mailgunVerifier } from "./mailgun.js";
+import { hubspotVerifier } from "./hubspot.js";
+import { intercomVerifier } from "./intercom.js";
+import { calendlyVerifier } from "./calendly.js";
+import { typeformVerifier } from "./typeform.js";
 import { genericVerifier } from "./generic.js";
 
 export const providers: Record<string, ProviderVerifier> = {
@@ -61,6 +74,19 @@ export const providers: Record<string, ProviderVerifier> = {
   checkout: checkoutVerifier,
   authorizenet: authorizenetVerifier,
   recurly: recurlyVerifier,
+  gitlab: gitlabVerifier,
+  bitbucket: bitbucketVerifier,
+  vercel: vercelVerifier,
+  sentry: sentryVerifier,
+  twitch: twitchVerifier,
+  telegram: telegramVerifier,
+  postmark: postmarkVerifier,
+  sendgrid: sendgridVerifier,
+  mailgun: mailgunVerifier,
+  hubspot: hubspotVerifier,
+  intercom: intercomVerifier,
+  calendly: calendlyVerifier,
+  typeform: typeformVerifier,
   generic: genericVerifier,
 };
 
@@ -117,5 +143,18 @@ export {
   checkoutVerifier,
   authorizenetVerifier,
   recurlyVerifier,
+  gitlabVerifier,
+  bitbucketVerifier,
+  vercelVerifier,
+  sentryVerifier,
+  twitchVerifier,
+  telegramVerifier,
+  postmarkVerifier,
+  sendgridVerifier,
+  mailgunVerifier,
+  hubspotVerifier,
+  intercomVerifier,
+  calendlyVerifier,
+  typeformVerifier,
   genericVerifier,
 };

@@ -80,6 +80,19 @@ bun add verihook
 | **Checkout.com** 🇪🇺 | `'checkout'` | `cko-signature` |
 | **Authorize.net** 🇺🇸 | `'authorizenet'` | `x-anet-signature` (`sha512=...`). Secret: your Signature Key |
 | **Recurly** 🇺🇸 | `'recurly'` | `recurly-signature` (`<ms timestamp>,<sig>[,<sig>]`, JSON webhooks) |
+| **GitLab** | `'gitlab'` | `webhook-signature`, `webhook-id`, `webhook-timestamp` (signing token, `whsec_...`, GitLab 19.1+) or `x-gitlab-token` (secret token, compared as-is) |
+| **Bitbucket** | `'bitbucket'` | `x-hub-signature` (`sha256=...`); event in `x-event-key` |
+| **Vercel** | `'vercel'` | `x-vercel-signature` (HMAC-SHA1) |
+| **Sentry** | `'sentry'` | `sentry-hook-signature`. Secret: the integration's client secret; `eventType` is `<resource>.<action>` |
+| **Twitch EventSub** | `'twitch'` | `twitch-eventsub-message-signature`, `-message-id`, `-message-timestamp` (10-minute default tolerance). Answer `webhook_callback_verification` with `event.challenge` |
+| **Telegram** | `'telegram'` | `x-telegram-bot-api-secret-token` (the `secret_token` from `setWebhook`) |
+| **Postmark** | `'postmark'` | `authorization` (Basic auth from `user:pass@` in the webhook URL). Secret: `"username:password"`. Postmark doesn't sign webhooks |
+| **SendGrid** | `'sendgrid'` | `x-twilio-email-event-webhook-signature`, `-timestamp` (ECDSA P-256). Secret: the Event Webhook verification key |
+| **Mailgun** | `'mailgun'` | Signature in the body (`signature.timestamp/token/signature`, or form fields). Secret: the HTTP webhook signing key. Covers the sender, not the event data |
+| **HubSpot** | `'hubspot'` | `x-hubspot-signature-v3` + `x-hubspot-request-timestamp`, or `x-hubspot-signature` (v1/v2). Secret: the app's client secret. v2/v3 sign the URL (like Twilio) |
+| **Intercom** | `'intercom'` | `x-hub-signature` (`sha1=...`). Secret: the app's client secret |
+| **Calendly** | `'calendly'` | `calendly-webhook-signature` (`t=...,v1=...`, 3-minute default tolerance) |
+| **Typeform** | `'typeform'` | `typeform-signature` (`sha256=<base64>`) |
 | **Generic / Custom** | `'generic'` | Configurable header, algorithm, encoding |
 
 ---
@@ -598,7 +611,7 @@ The repository includes pre-commit, pre-release, regression, and comprehensive t
 # Run complete end-to-end test suite (Format + Typecheck + Coverage + Regression + Build + CLI + Module Exports)
 npm run test:all
 
-# Run end-to-end regression test suite across all 20+ providers & middleware adapters
+# Run end-to-end regression test suite across all 35+ providers & middleware adapters
 npm run test:regression
 
 # Run format check, typecheck, coverage tests, and package build

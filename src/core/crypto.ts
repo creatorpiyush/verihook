@@ -276,3 +276,106 @@ export async function verifyRsaSha256(
     return false;
   }
 }
+
+function readDerLength(
+  bytes: Uint8Array,
+  offset: number,
+): [length: number, next: number] {
+  const first = bytes[offset];
+  if (first < 0x80) return [first, offset + 1];
+  const count = first & 0x7f;
+  if (count < 1 || count > 2) throw new Error("Unsupported DER length");
+  let length = 0;
+  for (let i = 1; i <= count; i++) length = (length << 8) | bytes[offset + i];
+  return [length, offset + 1 + count];
+}
+
+/**
+ * Converts a DER-encoded ECDSA signature (`SEQUENCE { r INTEGER, s INTEGER }`) into
+ * the fixed-size `r || s` form Web Crypto expects.
+ */
+export function ecdsaDerToRaw(der: Uint8Array, size = 32): Uint8Array {
+  if (der[0] !== 0x30) throw new Error("Invalid DER signature");
+  let [, offset] = readDerLength(der, 1);
+  const raw = new Uint8Array(size * 2);
+  for (let part = 0; part < 2; part++) {
+    if (der[offset] !== 0x02) throw new Error("Invalid DER integer");
+    const [length, start] = readDerLength(der, offset + 1);
+    let value = der.subarray(start, start + length);
+    while (value.length > size && value[0] === 0) value = value.subarray(1);
+    if (value.length > size) throw new Error("Invalid DER integer size");
+    raw.set(value, part * size + (size - value.length));
+    offset = start + length;
+  }
+  return raw;
+}
+
+/** Converts a fixed-size `r || s` ECDSA signature into DER. */
+export function ecdsaRawToDer(raw: Uint8Array): Uint8Array {
+  const size = raw.length / 2;
+  const integer = (bytes: Uint8Array): number[] => {
+    let start = 0;
+    while (start < bytes.length - 1 && bytes[start] === 0) start++;
+    const trimmed = Array.from(bytes.subarray(start));
+    if (trimmed[0] & 0x80) trimmed.unshift(0);
+    return [0x02, trimmed.length, ...trimmed];
+  };
+  const body = [
+    ...integer(raw.subarray(0, size)),
+    ...integer(raw.subarray(size)),
+  ];
+  return new Uint8Array([0x30, body.length, ...body]);
+}
+
+/**
+ * Verifies an ECDSA P-256 / SHA-256 signature (as SendGrid sends).
+ * `publicKey` is a base64 SPKI key or a PEM `PUBLIC KEY` block; `signature` is a
+ * base64 DER signature.
+ */
+export async function verifyEcdsaP256Sha256(
+  publicKey: string,
+  signature: string,
+  data: string | Uint8Array,
+): Promise<boolean> {
+  try {
+    const keyDer = base64ToBytes(
+      publicKey
+        .replace(/-----(BEGIN|END) PUBLIC KEY-----/g, "")
+        .replace(/\s+/g, ""),
+    );
+    const sigDer = base64ToBytes(signature.trim());
+    const dataBytes = typeof data === "string" ? stringToBytes(data) : data;
+
+    const cryptoSubtle = globalThis.crypto?.subtle;
+    if (cryptoSubtle) {
+      const cryptoKey = await cryptoSubtle.importKey(
+        "spki",
+        keyDer as unknown as BufferSource,
+        { name: "ECDSA", namedCurve: "P-256" },
+        false,
+        ["verify"],
+      );
+      return await cryptoSubtle.verify(
+        { name: "ECDSA", hash: "SHA-256" },
+        cryptoKey,
+        ecdsaDerToRaw(sigDer) as unknown as BufferSource,
+        dataBytes as unknown as BufferSource,
+      );
+    }
+
+    const nodeCrypto = await import("node:crypto");
+    const keyObject = nodeCrypto.createPublicKey({
+      key: Buffer.from(keyDer),
+      format: "der",
+      type: "spki",
+    });
+    return nodeCrypto.verify(
+      "sha256",
+      Buffer.from(dataBytes),
+      { key: keyObject, dsaEncoding: "der" },
+      Buffer.from(sigDer),
+    );
+  } catch {
+    return false;
+  }
+}

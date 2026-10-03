@@ -5,6 +5,27 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- 🛠️ **Developer tools & SaaS providers.** Each has a `verify*` shortcut, a typed event, `signWebhook()` and `npx verihook simulate` support, and tests with known-good vectors:
+  - `gitlab` (`verifyGitLab`): signing tokens (Standard Webhooks `webhook-*` headers, GitLab 19.1+) and legacy `x-gitlab-token` secret tokens.
+  - `bitbucket` (`verifyBitbucket`): Bitbucket Cloud and Data Center `x-hub-signature`. `eventType` comes from `x-event-key`.
+  - `vercel` (`verifyVercel`): HMAC-SHA1 `x-vercel-signature`.
+  - `sentry` (`verifySentry`): `sentry-hook-signature`. `eventType` is `<resource>.<action>`, e.g. `issue.created`.
+  - `twitch` (`verifyTwitch`): EventSub signatures with a 10-minute default tolerance, as Twitch recommends.
+  - `telegram` (`verifyTelegram`): the `setWebhook` secret token. `eventType` is the update kind.
+  - `postmark` (`verifyPostmark`): Basic auth credentials. Postmark doesn't sign webhooks.
+  - `sendgrid` (`verifySendGrid`): signed Event Webhook (ECDSA P-256), verified with Web Crypto.
+  - `mailgun` (`verifyMailgun`): the body signature for JSON webhooks and form posts. Dedupe keys on the signature token.
+  - `hubspot` (`verifyHubSpot`): v3, v2 and v1 signatures. v2 and v3 sign the request URL.
+  - `intercom` (`verifyIntercom`): HMAC-SHA1 `x-hub-signature`.
+  - `calendly` (`verifyCalendly`): `t=...,v1=...` signatures with a 3-minute default tolerance, as Calendly recommends.
+  - `typeform` (`verifyTypeform`): base64 `typeform-signature`.
+- `verifyEcdsaP256Sha256()` crypto helper (DER signatures, base64 SPKI or PEM keys).
+- Dedupe uses `twitch-eventsub-message-id`, GitLab's `idempotency-key`, Standard Webhooks' `webhook-id` and Mailgun's signature token.
+- `signWebhook("sendgrid")` generates a throwaway P-256 key pair (or takes `privateKey`) and returns the public key as `secret`, like Discord.
+
 ## [1.12.0] - 2026-10-03
 
 ### Added
