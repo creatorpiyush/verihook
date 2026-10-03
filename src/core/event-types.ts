@@ -196,6 +196,94 @@ export interface WorkOSEvent {
   [key: string]: unknown;
 }
 
+/** Cashfree Payments, e.g. `PAYMENT_SUCCESS_WEBHOOK`. */
+export interface CashfreeEvent {
+  type: string;
+  event_time: string;
+  data: Fields;
+  [key: string]: unknown;
+}
+
+/** PhonePe Payment Gateway, e.g. `checkout.order.completed`. Ignore the deprecated `type`. */
+export interface PhonePeEvent {
+  event: string;
+  type?: string;
+  payload: Fields;
+  [key: string]: unknown;
+}
+
+/** Mollie next-gen webhook event, e.g. `payment-link.paid`. */
+export interface MollieEvent {
+  resource: "event";
+  id: string;
+  type: string;
+  entityId: string;
+  createdAt: string;
+  _embedded?: Fields;
+  _links?: Fields;
+  [key: string]: unknown;
+}
+
+export interface AdyenNotificationRequestItem {
+  eventCode: string;
+  success: "true" | "false";
+  pspReference: string;
+  originalReference?: string;
+  merchantAccountCode: string;
+  merchantReference: string;
+  amount?: { value: number; currency: string };
+  eventDate?: string;
+  additionalData?: Fields & { hmacSignature?: string };
+  [key: string]: unknown;
+}
+
+/**
+ * Adyen standard notification (`notificationItems`, event in `eventCode`), or a
+ * platform/management webhook (`type`, `data`).
+ */
+export interface AdyenEvent {
+  live?: string;
+  notificationItems?: Array<{
+    NotificationRequestItem: AdyenNotificationRequestItem;
+  }>;
+  type?: string;
+  data?: Fields;
+  [key: string]: unknown;
+}
+
+/** Checkout.com, e.g. `payment_approved`. */
+export interface CheckoutEvent {
+  id: string;
+  type: string;
+  version?: string;
+  created_on: string;
+  data: Fields;
+  _links?: Fields;
+  [key: string]: unknown;
+}
+
+/** Authorize.net, e.g. `net.authorize.payment.authcapture.created`. */
+export interface AuthorizeNetEvent {
+  notificationId: string;
+  eventType: string;
+  eventDate: string;
+  webhookId: string;
+  payload: Fields;
+  [key: string]: unknown;
+}
+
+/** Recurly JSON webhook; `result.eventType` is `<object_type>.<event_type>`. */
+export interface RecurlyEvent {
+  id: string;
+  object_type: string;
+  site_id: string;
+  event_type: string;
+  event_time: string;
+  account_code?: string;
+  uuid?: string;
+  [key: string]: unknown;
+}
+
 /** Payload type for each built-in provider identifier. */
 export interface ProviderEventMap {
   stripe: StripeEvent;
@@ -223,6 +311,13 @@ export interface ProviderEventMap {
   pagerduty: PagerDutyEvent;
   webflow: WebflowEvent;
   workos: WorkOSEvent;
+  cashfree: CashfreeEvent;
+  phonepe: PhonePeEvent;
+  mollie: MollieEvent;
+  adyen: AdyenEvent;
+  checkout: CheckoutEvent;
+  authorizenet: AuthorizeNetEvent;
+  recurly: RecurlyEvent;
   generic: unknown;
 }
 

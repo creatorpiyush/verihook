@@ -122,6 +122,12 @@ export async function extractEventId(
           return parsed.msg_id;
         }
         if (
+          typeof parsed.notificationId === "string" &&
+          parsed.notificationId
+        ) {
+          return parsed.notificationId;
+        }
+        if (
           Array.isArray(parsed.messages) &&
           parsed.messages[0] &&
           typeof parsed.messages[0].id === "string"

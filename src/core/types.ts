@@ -24,6 +24,13 @@ export type ProviderName =
   | "pagerduty"
   | "webflow"
   | "workos"
+  | "cashfree"
+  | "phonepe"
+  | "mollie"
+  | "adyen"
+  | "checkout"
+  | "authorizenet"
+  | "recurly"
   | "generic"
   | (string & {});
 

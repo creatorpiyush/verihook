@@ -271,6 +271,13 @@ Both CLI commands enforce origin validation as a best-effort defense-in-depth me
 | **Razorpay** | `x-razorpay-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
 | **Square** | `x-square-hmacsha256-signature` | HMAC-SHA256 / Base64 | `url + rawBody` | N/A |
 | **Zoom** | `x-zm-signature` | HMAC-SHA256 / Hex | `v0:${timestamp}:${rawBody}` | ✅ Default 300s |
+| **Cashfree** | `x-webhook-signature` | HMAC-SHA256 / Base64 | `${timestamp}${rawBody}` (ms timestamp) | ✅ Default 300s |
+| **PhonePe** | `authorization` | SHA-256 / Hex | `${username}:${password}` (body not signed) | N/A |
+| **Mollie** | `x-mollie-signature` | HMAC-SHA256 / Hex | `rawBody` (any of the signatures may match) | N/A |
+| **Adyen** | `additionalData.hmacSignature` / `hmacsignature` | HMAC-SHA256 (hex-decoded key) / Base64 | Per item: `pspReference:originalReference:merchantAccountCode:merchantReference:value:currency:eventCode:success` <br> Header: `rawBody` | N/A |
+| **Checkout.com** | `cko-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
+| **Authorize.net** | `x-anet-signature` | HMAC-SHA512 / Hex (uppercase) | `rawBody` | N/A |
+| **Recurly** | `recurly-signature` | HMAC-SHA256 / Hex | `${timestamp}.${rawBody}` (ms timestamp) | ✅ Default 300s |
 | **Generic** | Custom | Custom (SHA256/1/512, Hex/Base64) | `rawBody` | Optional |
 
 ---

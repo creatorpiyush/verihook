@@ -73,6 +73,13 @@ bun add verihook
 | **Razorpay** | `'razorpay'` | `x-razorpay-signature` |
 | **Square** | `'square'` | `x-square-hmacsha256-signature` |
 | **Zoom** | `'zoom'` | `x-zm-signature`, `x-zm-request-timestamp` |
+| **Cashfree** 🇮🇳 | `'cashfree'` | `x-webhook-signature`, `x-webhook-timestamp`. Secret: your PG client secret |
+| **PhonePe** 🇮🇳 | `'phonepe'` | `authorization` (SHA-256 of the webhook credentials). Secret: `"username:password"`. The body isn't signed, so confirm the order status with PhonePe before fulfilling |
+| **Mollie** 🇪🇺 | `'mollie'` | `x-mollie-signature` (`sha256=...`, next-gen webhooks; both signatures accepted during secret rotation) |
+| **Adyen** 🇪🇺 | `'adyen'` | `additionalData.hmacSignature` in every notification item, or the `hmacsignature` header for platform/management webhooks. Secret: the hex HMAC key |
+| **Checkout.com** 🇪🇺 | `'checkout'` | `cko-signature` |
+| **Authorize.net** 🇺🇸 | `'authorizenet'` | `x-anet-signature` (`sha512=...`). Secret: your Signature Key |
+| **Recurly** 🇺🇸 | `'recurly'` | `recurly-signature` (`<ms timestamp>,<sig>[,<sig>]`, JSON webhooks) |
 | **Generic / Custom** | `'generic'` | Configurable header, algorithm, encoding |
 
 ---

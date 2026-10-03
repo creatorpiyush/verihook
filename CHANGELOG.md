@@ -5,6 +5,20 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- 🌍 **Regional payment providers** for India, Europe and the USA. Each has a `verify*` shortcut, a typed event, `signWebhook()` and `npx verihook simulate` support, and tests with known-good vectors:
+  - 🇮🇳 `cashfree` (`verifyCashfree`): HMAC-SHA256 of `<timestamp><body>`, base64, with replay protection.
+  - 🇮🇳 `phonepe` (`verifyPhonePe`): checks the `authorization` hash of the webhook credentials. Pass `"username:password"` as the secret. PhonePe doesn't sign the body.
+  - 🇪🇺 `mollie` (`verifyMollie`): next-gen `x-mollie-signature`. Either signature is accepted during secret rotation.
+  - 🇪🇺 `adyen` (`verifyAdyen`): standard notifications (every item's `hmacSignature` must verify) and `HmacSignature`-header webhooks. The secret is the hex HMAC key.
+  - 🇪🇺 `checkout` (`verifyCheckout`): Checkout.com `cko-signature`.
+  - 🇺🇸 `authorizenet` (`verifyAuthorizeNet`): HMAC-SHA512 `x-anet-signature`.
+  - 🇺🇸 `recurly` (`verifyRecurly`): `recurly-signature` with millisecond timestamps, key rotation and replay protection. `eventType` is `<object_type>.<event_type>`.
+- Dedupe uses Authorize.net's `notificationId` as the event key.
+- Wrong-provider hints now recognize the Mollie, Adyen, Checkout.com, Authorize.net and Recurly signature headers.
+
 ## [1.11.0] - 2026-10-03
 
 ### Added
