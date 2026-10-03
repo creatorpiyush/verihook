@@ -1,9 +1,16 @@
 /** `verihook/meta`: verifies only this provider, without bundling the others. */
 import { bindVerifier } from "../core/provider-entry.js";
+import type { ProviderVerifyFunction } from "../core/types.js";
 import { metaVerifier } from "../providers/meta.js";
 
-export const verifyMeta = bindVerifier("meta", metaVerifier);
-export const verifyWhatsApp = bindVerifier("whatsapp", metaVerifier);
+export const verifyMeta: ProviderVerifyFunction<"meta"> = bindVerifier(
+  "meta",
+  metaVerifier,
+);
+export const verifyWhatsApp: ProviderVerifyFunction<"whatsapp"> = bindVerifier(
+  "whatsapp",
+  metaVerifier,
+);
 
 export { metaVerifier };
 export { verifyMetaChallenge } from "../providers/meta.js";

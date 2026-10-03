@@ -1,0 +1,46 @@
+---
+title: verihook
+description: Verify webhook signatures from Stripe, GitHub, Shopify, Slack, Twilio and 35+ providers in any JavaScript framework, with zero dependencies.
+template: splash
+hero:
+  tagline: Verify webhooks from Stripe, GitHub, Shopify, Slack and 35+ other providers with one typed API. Zero dependencies. Runs on Node.js, Deno, Bun and edge runtimes.
+  actions:
+    - text: Get started
+      link: getting-started/
+      icon: right-arrow
+    - text: Find your provider
+      link: providers/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+```ts
+import { verifyWebhook } from 'verihook';
+
+const result = await verifyWebhook('stripe', request, process.env.STRIPE_WEBHOOK_SECRET!);
+
+if (result.valid) {
+  console.log(result.eventType, result.event); // typed as StripeEvent
+}
+```
+
+<CardGrid>
+  <Card title="One API, 40 providers" icon="puzzle">
+    Payments, developer tools, messaging and regional gateways. Each signature
+    scheme is checked against the provider's docs, and Stripe, GitHub, Svix and
+    Twilio are also tested against their official SDKs.
+  </Card>
+  <Card title="Your framework, one line" icon="rocket">
+    Adapters for Next.js, Express, Fastify, Hono, NestJS, Nuxt, SvelteKit,
+    Remix, Astro and AWS Lambda handle the raw body for you.
+  </Card>
+  <Card title="Tells you what went wrong" icon="information">
+    Failed checks return an error code and a hint: a parsed body, the wrong kind
+    of secret, a proxy rewriting the URL.
+  </Card>
+  <Card title="Test without real traffic" icon="approve-check">
+    `verihook/testing` signs requests for every provider, and `npx verihook
+    simulate` sends them to your local server.
+  </Card>
+</CardGrid>

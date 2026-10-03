@@ -1,8 +1,12 @@
 /** `verihook/paypal`: verifies only this provider, without bundling the others. */
 import { bindVerifier } from "../core/provider-entry.js";
+import type { ProviderVerifyFunction } from "../core/types.js";
 import { paypalVerifier } from "../providers/paypal.js";
 
-export const verifyPayPal = bindVerifier("paypal", paypalVerifier);
+export const verifyPayPal: ProviderVerifyFunction<"paypal"> = bindVerifier(
+  "paypal",
+  paypalVerifier,
+);
 
 export { paypalVerifier };
 export { clearPayPalCertCache } from "../providers/paypal.js";

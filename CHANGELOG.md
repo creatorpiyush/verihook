@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- 📖 **Documentation site** (Starlight, deployed to GitHub Pages from `docs/`): a page per provider with where to find the secret, the headers sent, framework gotchas and copy-paste code for all ten adapters; a page per framework; troubleshooting by error code; guides for the raw body, testing, deduplication, typed events, custom providers, the CLI and edge bundles. Provider pages are generated from `docs/src/data/providers.mjs`, and a test checks that data against the code and runs every page's testing snippet.
+- **JSR package** (`jsr:@verihook/verihook`) for Deno, published from the same tag as npm. CI runs a Deno smoke test without permissions and a `deno publish --dry-run`.
+- `ProviderVerifyFunction<P>` type for the provider shortcuts (`verifyStripe`, ...), which now have explicit types.
+
+### Fixed
+- Deno: verification threw `NotCapable: Requires env access to "NODE_ENV"` unless the script ran with `--allow-env`. verihook now reads `NODE_ENV` only when env access is already granted, so it never fails or prompts.
+
 ## [1.14.2] - 2026-10-03
 
 ### Fixed

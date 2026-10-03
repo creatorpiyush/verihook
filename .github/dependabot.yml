@@ -16,10 +16,11 @@ updates:
       - /examples/fastify-server
       - /examples/hono-worker
       - /examples/nextjs-app
+      - /docs
     schedule:
       interval: weekly
     groups:
-      examples:
+      examples-and-docs:
         patterns: ["*"]
         update-types: [minor, patch]
 

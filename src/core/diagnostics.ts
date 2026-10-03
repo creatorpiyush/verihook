@@ -1,3 +1,4 @@
+import { readNodeEnv } from "../utils/env.js";
 import { resolveSignedUrl } from "../utils/request-url.js";
 import {
   NormalizedWebhookRequest,
@@ -143,7 +144,7 @@ const warnedHints = new Set<string>();
 
 /** Prints each distinct hint once outside production and test runs. */
 export function warnHintOnce(provider: ProviderName, hint: string): void {
-  const env = typeof process !== "undefined" ? process.env?.NODE_ENV : "";
+  const env = readNodeEnv();
   if (env === "production" || env === "test" || warnedHints.has(hint)) {
     return;
   }

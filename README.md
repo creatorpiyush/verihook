@@ -3,6 +3,8 @@
 > **Universal, typed webhook signature verifier** for TypeScript and JavaScript.
 
 [![npm version](https://img.shields.io/npm/v/verihook.svg)](https://www.npmjs.com/package/verihook)
+[![JSR](https://jsr.io/badges/@verihook/verihook)](https://jsr.io/@verihook/verihook)
+[![docs](https://img.shields.io/badge/docs-creatorpiyush.github.io%2Fverihook-blue.svg)](https://creatorpiyush.github.io/verihook/)
 [![license](https://img.shields.io/npm/l/verihook.svg)](https://github.com/creatorpiyush/verihook/blob/main/LICENSE)
 [![CI Verification](https://github.com/creatorpiyush/verihook/actions/workflows/pr-verify.yml/badge.svg)](https://github.com/creatorpiyush/verihook/actions)
 [![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcreatorpiyush%2Fverihook%2Fbadges%2Fcoverage.json)](https://github.com/creatorpiyush/verihook/actions/workflows/coverage-badge.yml)
@@ -16,7 +18,7 @@
 
 No more hunting down bespoke HMAC code snippets for every service or installing 10 heavy SDK dependencies just to verify incoming webhooks!
 
-📖 Read the full [Architecture & Technical Specification](./ARCHITECTURE.md) and [Security Policy](./SECURITY.md).
+📖 **[Documentation](https://creatorpiyush.github.io/verihook/)**: a page per provider (where to find the secret, headers, code for every framework) and [troubleshooting by error code](https://creatorpiyush.github.io/verihook/troubleshooting/). See also the [Architecture & Technical Specification](./ARCHITECTURE.md) and [Security Policy](./SECURITY.md).
 
 ---
 
@@ -48,11 +50,15 @@ pnpm add verihook
 yarn add verihook
 # or
 bun add verihook
+# or, for Deno (JSR)
+deno add jsr:@verihook/verihook
 ```
 
 ---
 
 ## Supported Providers
+
+Each provider has its own docs page: [creatorpiyush.github.io/verihook/providers](https://creatorpiyush.github.io/verihook/providers/).
 
 | Provider | Identifier | Required Headers / Notes |
 | :--- | :--- | :--- |

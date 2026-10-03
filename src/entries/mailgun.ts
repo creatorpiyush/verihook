@@ -1,8 +1,12 @@
 /** `verihook/mailgun`: verifies only this provider, without bundling the others. */
 import { bindVerifier } from "../core/provider-entry.js";
+import type { ProviderVerifyFunction } from "../core/types.js";
 import { mailgunVerifier } from "../providers/mailgun.js";
 
-export const verifyMailgun = bindVerifier("mailgun", mailgunVerifier);
+export const verifyMailgun: ProviderVerifyFunction<"mailgun"> = bindVerifier(
+  "mailgun",
+  mailgunVerifier,
+);
 
 export { mailgunVerifier };
 export type { MailgunEvent } from "../core/event-types.js";

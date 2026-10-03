@@ -3,6 +3,7 @@ import { runVerification } from "./run.js";
 import {
   ProviderName,
   ProviderVerifier,
+  ProviderVerifyFunction,
   VerificationResult,
   VerifyWebhookOptions,
   WebhookRequestInput,
@@ -16,7 +17,7 @@ import {
 export function bindVerifier<P extends ProviderName>(
   provider: P,
   verifier: ProviderVerifier,
-) {
+): ProviderVerifyFunction<P> {
   return <TEvent = EventFor<P>>(
     req: WebhookRequestInput,
     secret: string,
