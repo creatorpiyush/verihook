@@ -106,6 +106,16 @@ export async function extractEventId(
   if (headers["paypal-transmission-id"]) {
     return headers["paypal-transmission-id"];
   }
+  if (headers["twitch-eventsub-message-id"]) {
+    return headers["twitch-eventsub-message-id"];
+  }
+  // GitLab: stable across retries; Standard Webhooks (GitLab signing tokens).
+  if (headers["idempotency-key"]) {
+    return headers["idempotency-key"];
+  }
+  if (headers["webhook-id"]) {
+    return headers["webhook-id"];
+  }
 
   // 2. Parse JSON body for common ID properties
   if (req.rawBody) {
@@ -120,6 +130,15 @@ export async function extractEventId(
         }
         if (typeof parsed.msg_id === "string" && parsed.msg_id) {
           return parsed.msg_id;
+        }
+        // Mailgun recommends rejecting reused signature tokens.
+        if (
+          parsed.signature &&
+          typeof parsed.signature === "object" &&
+          typeof parsed.signature.token === "string" &&
+          parsed.signature.token
+        ) {
+          return parsed.signature.token;
         }
         if (
           typeof parsed.notificationId === "string" &&

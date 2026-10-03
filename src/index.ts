@@ -31,6 +31,19 @@ export {
   verifyCheckout,
   verifyAuthorizeNet,
   verifyRecurly,
+  verifyGitLab,
+  verifyBitbucket,
+  verifyVercel,
+  verifySentry,
+  verifyTwitch,
+  verifyTelegram,
+  verifyPostmark,
+  verifySendGrid,
+  verifyMailgun,
+  verifyHubSpot,
+  verifyIntercom,
+  verifyCalendly,
+  verifyTypeform,
 } from "./core/verifier.js";
 
 export { verifyMetaChallenge } from "./providers/meta.js";
@@ -55,6 +68,7 @@ export {
   computeHmacSha512,
   verifyEd25519,
   verifyRsaSha256,
+  verifyEcdsaP256Sha256,
 } from "./core/crypto.js";
 export { registerProvider, providers } from "./providers/index.js";
 export {
@@ -134,4 +148,19 @@ export type {
   CheckoutEvent,
   AuthorizeNetEvent,
   RecurlyEvent,
+  GitLabEvent,
+  BitbucketEvent,
+  VercelEvent,
+  SentryEvent,
+  TwitchEvent,
+  TelegramEvent,
+  PostmarkEvent,
+  SendGridEvent,
+  MailgunEvent,
+  HubSpotEvent,
+  IntercomEvent,
+  CalendlyEvent,
+  TypeformEvent,
+  HubSpotWebhookEvent,
+  SendGridEventItem,
 } from "./core/event-types.js";

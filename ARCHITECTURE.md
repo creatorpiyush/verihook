@@ -8,7 +8,7 @@ This document details the architectural design, security mechanisms, request nor
 
 ## 1. Executive Overview
 
-`verihook` provides a unified, strongly-typed interface (`verifyWebhook(provider, req, secret)`) for verifying incoming webhook signatures across 20+ major SaaS providers (27 provider identifiers).
+`verihook` provides a unified, strongly-typed interface (`verifyWebhook(provider, req, secret)`) for verifying incoming webhook signatures across 35+ major SaaS providers (46 provider identifiers).
 
 ### Core Objectives
 1. **Zero External Runtime Dependencies**: Powered by native Web Crypto API (`crypto.subtle`) with Node.js `node:crypto` fallback.
@@ -278,6 +278,19 @@ Both CLI commands enforce origin validation as a best-effort defense-in-depth me
 | **Checkout.com** | `cko-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
 | **Authorize.net** | `x-anet-signature` | HMAC-SHA512 / Hex (uppercase) | `rawBody` | N/A |
 | **Recurly** | `recurly-signature` | HMAC-SHA256 / Hex | `${timestamp}.${rawBody}` (ms timestamp) | ✅ Default 300s |
+| **GitLab** | `webhook-signature` / `x-gitlab-token` | HMAC-SHA256 / Base64 (Standard Webhooks) or plain token | `${webhookId}.${timestamp}.${rawBody}` | ✅ Default 300s (signing token) |
+| **Bitbucket** | `x-hub-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
+| **Vercel** | `x-vercel-signature` | HMAC-SHA1 / Hex | `rawBody` | N/A |
+| **Sentry** | `sentry-hook-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
+| **Twitch EventSub** | `twitch-eventsub-message-signature` | HMAC-SHA256 / Hex | `${messageId}${timestamp}${rawBody}` | ✅ Default 600s |
+| **Telegram** | `x-telegram-bot-api-secret-token` | Plain token | N/A | N/A |
+| **Postmark** | `authorization` | HTTP Basic | `username:password` (body not signed) | N/A |
+| **SendGrid** | `x-twilio-email-event-webhook-signature` | ECDSA P-256 SHA-256 / Base64 DER | `${timestamp}${rawBody}` | ✅ Default 300s |
+| **Mailgun** | Body `signature` | HMAC-SHA256 / Hex | `${timestamp}${token}` (event data not signed) | ✅ Default 300s |
+| **HubSpot** | `x-hubspot-signature-v3` / `x-hubspot-signature` | v3: HMAC-SHA256 / Base64 <br> v1/v2: SHA-256 / Hex | v3: `${method}${uri}${rawBody}${timestamp}` <br> v2: `${secret}${method}${uri}${rawBody}` <br> v1: `${secret}${rawBody}` | ✅ Default 300s (v3) |
+| **Intercom** | `x-hub-signature` | HMAC-SHA1 / Hex | `rawBody` | N/A |
+| **Calendly** | `calendly-webhook-signature` | HMAC-SHA256 / Hex | `${t}.${rawBody}` | ✅ Default 180s |
+| **Typeform** | `typeform-signature` | HMAC-SHA256 / Base64 | `rawBody` | N/A |
 | **Generic** | Custom | Custom (SHA256/1/512, Hex/Base64) | `rawBody` | Optional |
 
 ---

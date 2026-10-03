@@ -30,8 +30,20 @@ const SIGNATURE_HEADERS: Array<[header: string, provider: string]> = [
   ["cko-signature", "checkout"],
   ["x-anet-signature", "authorizenet"],
   ["recurly-signature", "recurly"],
+  ["x-gitlab-event", "gitlab"],
+  ["x-event-key", "bitbucket"],
+  ["x-vercel-signature", "vercel"],
+  ["sentry-hook-signature", "sentry"],
+  ["twitch-eventsub-message-signature", "twitch"],
+  ["x-telegram-bot-api-secret-token", "telegram"],
+  ["x-twilio-email-event-webhook-signature", "sendgrid"],
+  ["x-hubspot-signature-v3", "hubspot"],
+  ["x-hubspot-signature", "hubspot"],
+  ["calendly-webhook-signature", "calendly"],
+  ["typeform-signature", "typeform"],
   ["x-github-event", "github"],
   ["x-hub-signature-256", "github or meta"],
+  ["x-hub-signature", "github or bitbucket or intercom"],
 ];
 
 const SVIX_FAMILY = new Set(["svix", "resend", "clerk"]);
