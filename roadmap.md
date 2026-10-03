@@ -155,6 +155,18 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **CRM, support & forms**: HubSpot (`hubspot`, v1/v2/v3), Intercom (`intercom`), Calendly (`calendly`), Typeform (`typeform`).
 - New `verifyEcdsaP256Sha256()` helper; GitLab signing tokens share the Svix / Standard Webhooks check.
 
+## Future Plans: More Regional Payment Providers 🗓️
+
+Support for these providers is planned for a future release:
+
+| Region | Providers |
+| :--- | :--- |
+| Africa | Paystack, Flutterwave |
+| LATAM | Mercado Pago |
+| SE Asia | Xendit, Midtrans |
+
+Each will ship like the v1.12.0 providers: a `verify*` shortcut, a typed event, `signWebhook()` / `npx verihook simulate` support and known-good test vectors. Need one sooner? Open a [provider request](https://github.com/creatorpiyush/verihook/issues/new/choose) or contribute it (see [CONTRIBUTING.md](./CONTRIBUTING.md)).
+
 ---
 
 ## Priority & Phasing Summary
