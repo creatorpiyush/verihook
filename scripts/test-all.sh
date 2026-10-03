@@ -36,6 +36,11 @@ echo -e "${YELLOW}5️⃣ Building ESM, CJS, and TypeScript declaration bundles.
 npm run build
 echo -e "${GREEN}  ✓ Tsup build completed successfully!${NC}\n"
 
+# 5b. Bundle size budget
+echo -e "${YELLOW}📦 Checking bundle size budgets...${NC}"
+npm run size
+echo -e "${GREEN}  ✓ Bundles are within their size-limit budgets!${NC}\n"
+
 # 6. User CLI Binary Simulations
 echo -e "${YELLOW}6️⃣ Validating CLI binary execution & cURL generation...${NC}"
 
@@ -117,6 +122,30 @@ Promise.all(
 });
 "
 echo -e "${GREEN}  ✓ Framework adapter subpath exports verified!${NC}\n"
+
+node -e "
+const pkg = require('./package.json');
+const subpaths = Object.keys(pkg.exports).filter(
+  (key) => key !== '.' && key !== './package.json' && !pkg.exports[key].import.includes('/cli'),
+);
+Promise.all(
+  subpaths.map(async (key) => {
+    const name = key.slice(2);
+    const cjs = require('./dist/' + name + '.js');
+    const esm = await import('./dist/' + name + '.mjs');
+    if (Object.keys(cjs).length === 0 || Object.keys(esm).length === 0) {
+      throw new Error('Empty exports in verihook/' + name);
+    }
+  }),
+).then(() => {
+  const { verifyStripe } = require('./dist/stripe.js');
+  if (typeof verifyStripe !== 'function') throw new Error('verihook/stripe is missing verifyStripe');
+}).catch((err) => {
+  console.error(err.message);
+  process.exit(1);
+});
+"
+echo -e "${GREEN}  ✓ All per-provider and adapter subpaths load in CommonJS and ESM!${NC}\n"
 
 echo -e "${GREEN}==================================================${NC}"
 echo -e "${GREEN}🎉 ALL END-TO-END TESTS PASSED SUCCESSFULLY!${NC}"

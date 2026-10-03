@@ -5,6 +5,19 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- 🪶 **Per-provider entry points.** Every provider has its own subpath (`verihook/stripe`, `verihook/github`, `verihook/svix`, ...) exporting its `verify*` functions, verifier, event type and `WebhookErrorCode`. `verifyStripe` from `verihook/stripe` is ~4 kB (min + brotli) against ~10 kB for `verifyWebhook` with every provider.
+- `"sideEffects": false` in `package.json`, so bundlers can drop unused modules.
+- Bundle size budgets in CI (`npm run size`, size-limit).
+- Cross-SDK conformance tests against the official Stripe, Octokit, Svix and Twilio SDKs, in both directions (`npm run test:conformance`).
+- OpenSSF Scorecard workflow and badge. The coverage badge now comes from CI instead of a hardcoded value.
+
+### Changed
+- The build emits shared code as chunks (`splitting: true`) instead of copying the core into every entry. The published package drops from 1.7 MB to about 0.35 MB, and the main entry, adapters and CLI work as before.
+- GitHub Actions are pinned to commit SHAs, and workflow tokens default to read-only.
+
 ## [1.13.0] - 2026-10-03
 
 ### Added

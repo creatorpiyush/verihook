@@ -56,6 +56,7 @@ In the copy, change the headers, the signed string and the encoding to match the
 - **`src/core/types.ts`:** add `"acme"` to the `ProviderName` union.
 - **`src/core/verifier.ts`:** add `export const verifyAcme = shortcut("acme");`.
 - **`src/index.ts`:** export `verifyAcme`.
+- **`src/entries/acme.ts`:** the `verihook/acme` subpath. Copy an existing entry (e.g. `src/entries/stripe.ts`) and add `"./acme"` to `exports` in `package.json`. The build picks up the file automatically, and `tests/provider-entries.test.ts` fails if either part is missing.
 
 ### 3. Make it signable
 
