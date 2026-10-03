@@ -1,0 +1,32 @@
+[
+  {
+    "name": "verifyWebhook (all providers)",
+    "path": "dist/index.mjs",
+    "import": "{ verifyWebhook }",
+    "limit": "12 kB"
+  },
+  {
+    "name": "verihook/stripe",
+    "path": "dist/stripe.mjs",
+    "import": "{ verifyStripe }",
+    "limit": "5 kB"
+  },
+  {
+    "name": "verihook/github",
+    "path": "dist/github.mjs",
+    "import": "{ verifyGitHub }",
+    "limit": "5 kB"
+  },
+  {
+    "name": "verihook/svix",
+    "path": "dist/svix.mjs",
+    "import": "{ verifySvix }",
+    "limit": "5 kB"
+  },
+  {
+    "name": "verihook/express",
+    "path": "dist/express.mjs",
+    "import": "{ verihookExpress }",
+    "limit": "12 kB"
+  }
+]

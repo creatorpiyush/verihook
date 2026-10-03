@@ -5,6 +5,7 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -66,6 +67,201 @@
       "import": "./dist/nestjs.mjs",
       "require": "./dist/nestjs.js"
     },
+    "./adyen": {
+      "types": "./dist/adyen.d.ts",
+      "import": "./dist/adyen.mjs",
+      "require": "./dist/adyen.js"
+    },
+    "./authorizenet": {
+      "types": "./dist/authorizenet.d.ts",
+      "import": "./dist/authorizenet.mjs",
+      "require": "./dist/authorizenet.js"
+    },
+    "./bitbucket": {
+      "types": "./dist/bitbucket.d.ts",
+      "import": "./dist/bitbucket.mjs",
+      "require": "./dist/bitbucket.js"
+    },
+    "./calendly": {
+      "types": "./dist/calendly.d.ts",
+      "import": "./dist/calendly.mjs",
+      "require": "./dist/calendly.js"
+    },
+    "./cashfree": {
+      "types": "./dist/cashfree.d.ts",
+      "import": "./dist/cashfree.mjs",
+      "require": "./dist/cashfree.js"
+    },
+    "./checkout": {
+      "types": "./dist/checkout.d.ts",
+      "import": "./dist/checkout.mjs",
+      "require": "./dist/checkout.js"
+    },
+    "./discord": {
+      "types": "./dist/discord.d.ts",
+      "import": "./dist/discord.mjs",
+      "require": "./dist/discord.js"
+    },
+    "./github": {
+      "types": "./dist/github.d.ts",
+      "import": "./dist/github.mjs",
+      "require": "./dist/github.js"
+    },
+    "./gitlab": {
+      "types": "./dist/gitlab.d.ts",
+      "import": "./dist/gitlab.mjs",
+      "require": "./dist/gitlab.js"
+    },
+    "./hubspot": {
+      "types": "./dist/hubspot.d.ts",
+      "import": "./dist/hubspot.mjs",
+      "require": "./dist/hubspot.js"
+    },
+    "./intercom": {
+      "types": "./dist/intercom.d.ts",
+      "import": "./dist/intercom.mjs",
+      "require": "./dist/intercom.js"
+    },
+    "./lemonsqueezy": {
+      "types": "./dist/lemonsqueezy.d.ts",
+      "import": "./dist/lemonsqueezy.mjs",
+      "require": "./dist/lemonsqueezy.js"
+    },
+    "./linear": {
+      "types": "./dist/linear.d.ts",
+      "import": "./dist/linear.mjs",
+      "require": "./dist/linear.js"
+    },
+    "./mailgun": {
+      "types": "./dist/mailgun.d.ts",
+      "import": "./dist/mailgun.mjs",
+      "require": "./dist/mailgun.js"
+    },
+    "./meta": {
+      "types": "./dist/meta.d.ts",
+      "import": "./dist/meta.mjs",
+      "require": "./dist/meta.js"
+    },
+    "./mollie": {
+      "types": "./dist/mollie.d.ts",
+      "import": "./dist/mollie.mjs",
+      "require": "./dist/mollie.js"
+    },
+    "./paddle": {
+      "types": "./dist/paddle.d.ts",
+      "import": "./dist/paddle.mjs",
+      "require": "./dist/paddle.js"
+    },
+    "./pagerduty": {
+      "types": "./dist/pagerduty.d.ts",
+      "import": "./dist/pagerduty.mjs",
+      "require": "./dist/pagerduty.js"
+    },
+    "./paypal": {
+      "types": "./dist/paypal.d.ts",
+      "import": "./dist/paypal.mjs",
+      "require": "./dist/paypal.js"
+    },
+    "./phonepe": {
+      "types": "./dist/phonepe.d.ts",
+      "import": "./dist/phonepe.mjs",
+      "require": "./dist/phonepe.js"
+    },
+    "./postmark": {
+      "types": "./dist/postmark.d.ts",
+      "import": "./dist/postmark.mjs",
+      "require": "./dist/postmark.js"
+    },
+    "./razorpay": {
+      "types": "./dist/razorpay.d.ts",
+      "import": "./dist/razorpay.mjs",
+      "require": "./dist/razorpay.js"
+    },
+    "./recurly": {
+      "types": "./dist/recurly.d.ts",
+      "import": "./dist/recurly.mjs",
+      "require": "./dist/recurly.js"
+    },
+    "./sendgrid": {
+      "types": "./dist/sendgrid.d.ts",
+      "import": "./dist/sendgrid.mjs",
+      "require": "./dist/sendgrid.js"
+    },
+    "./sentry": {
+      "types": "./dist/sentry.d.ts",
+      "import": "./dist/sentry.mjs",
+      "require": "./dist/sentry.js"
+    },
+    "./shopify": {
+      "types": "./dist/shopify.d.ts",
+      "import": "./dist/shopify.mjs",
+      "require": "./dist/shopify.js"
+    },
+    "./slack": {
+      "types": "./dist/slack.d.ts",
+      "import": "./dist/slack.mjs",
+      "require": "./dist/slack.js"
+    },
+    "./square": {
+      "types": "./dist/square.d.ts",
+      "import": "./dist/square.mjs",
+      "require": "./dist/square.js"
+    },
+    "./stripe": {
+      "types": "./dist/stripe.d.ts",
+      "import": "./dist/stripe.mjs",
+      "require": "./dist/stripe.js"
+    },
+    "./svix": {
+      "types": "./dist/svix.d.ts",
+      "import": "./dist/svix.mjs",
+      "require": "./dist/svix.js"
+    },
+    "./telegram": {
+      "types": "./dist/telegram.d.ts",
+      "import": "./dist/telegram.mjs",
+      "require": "./dist/telegram.js"
+    },
+    "./twilio": {
+      "types": "./dist/twilio.d.ts",
+      "import": "./dist/twilio.mjs",
+      "require": "./dist/twilio.js"
+    },
+    "./twitch": {
+      "types": "./dist/twitch.d.ts",
+      "import": "./dist/twitch.mjs",
+      "require": "./dist/twitch.js"
+    },
+    "./twitter": {
+      "types": "./dist/twitter.d.ts",
+      "import": "./dist/twitter.mjs",
+      "require": "./dist/twitter.js"
+    },
+    "./typeform": {
+      "types": "./dist/typeform.d.ts",
+      "import": "./dist/typeform.mjs",
+      "require": "./dist/typeform.js"
+    },
+    "./vercel": {
+      "types": "./dist/vercel.d.ts",
+      "import": "./dist/vercel.mjs",
+      "require": "./dist/vercel.js"
+    },
+    "./webflow": {
+      "types": "./dist/webflow.d.ts",
+      "import": "./dist/webflow.mjs",
+      "require": "./dist/webflow.js"
+    },
+    "./workos": {
+      "types": "./dist/workos.d.ts",
+      "import": "./dist/workos.mjs",
+      "require": "./dist/workos.js"
+    },
+    "./zoom": {
+      "types": "./dist/zoom.d.ts",
+      "import": "./dist/zoom.mjs",
+      "require": "./dist/zoom.js"
+    },
     "./package.json": "./package.json"
   },
   "bin": {
@@ -81,10 +277,12 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "tsup",
+    "size": "size-limit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:regression": "vitest run tests/regression.test.ts",
+    "test:conformance": "vitest run tests/conformance",
     "test:all": "bash scripts/test-all.sh",
     "typecheck": "tsc --noEmit && tsc -p tests/types/tsconfig.json",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
@@ -172,6 +370,8 @@
     "@nestjs/common": "12.1.2",
     "@nestjs/core": "12.1.2",
     "@nestjs/platform-express": "12.1.2",
+    "@octokit/webhooks-methods": "6.0.0",
+    "@size-limit/preset-small-lib": "14.1.0",
     "@types/node": "20.19.43",
     "@vitest/coverage-v8": "4.1.10",
     "fastify": "5.12.5",
@@ -180,7 +380,11 @@
     "prettier": "3.9.6",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
+    "size-limit": "14.1.0",
+    "stripe": "23.0.0",
+    "svix": "2.6.1",
     "tsup": "8.5.1",
+    "twilio": "6.1.2",
     "typescript": "5.9.3",
     "vitest": "4.1.10"
   },

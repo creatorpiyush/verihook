@@ -151,6 +151,8 @@ After a successful verification, `verifyWebhook` parses the raw body into `resul
 
 New built-in providers start from `src/providers/_template.ts`; see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
+The verification pipeline (normalize, verify, diagnose, parse, dedupe, telemetry) lives in `src/core/run.ts`, which never imports the provider registry. `verifyWebhook` looks up the verifier in the registry and calls it. Each per-provider entry point (`src/entries/<name>.ts`, published as `verihook/<name>`) binds a single verifier to the pipeline with `bindVerifier()`, so its bundle contains only that provider. The package is marked `"sideEffects": false`, and tsup emits shared code as chunks (`splitting: true`), so entries don't duplicate the core.
+
 Custom providers can be registered dynamically at runtime:
 
 ```ts
@@ -297,7 +299,11 @@ Both CLI commands enforce origin validation as a best-effort defense-in-depth me
 
 ## 6. Security & Build Hygiene
 
-- **Automated Verification Pipeline**: `"test:all": "bash scripts/test-all.sh"` validates Prettier code style, strict TypeScript types, V8 unit test coverage (96%+), end-to-end regression suite, CJS/ESM/DTS tsup bundle generation, CLI simulate/listen execution, and module exports in sequence.
+- **Automated Verification Pipeline**: `"test:all": "bash scripts/test-all.sh"` validates Prettier code style, strict TypeScript types, V8 unit test coverage, end-to-end regression suite, CJS/ESM/DTS tsup bundle generation, CLI simulate/listen execution, and module exports in sequence.
 - **CI Security Auditing**: GitHub Actions workflow includes mandatory `npm audit --audit-level=high` step.
+- **Bundle Size Budgets**: `npm run size` (size-limit, in `test:all`) fails CI when `verifyWebhook`, `verihook/express` or a per-provider entry outgrows its budget in `.size-limit.json`.
+- **Cross-SDK Conformance**: `tests/conformance/` signs webhooks with the official `stripe`, `@octokit/webhooks-methods`, `svix` and `twilio` SDKs (devDependencies only) and verifies them with verihook. It also signs with `verihook/testing` and verifies with those SDKs.
+- **Supply Chain**: GitHub Actions are pinned to commit SHAs, workflow tokens default to read-only, the OpenSSF Scorecard runs weekly and on `main`, and npm releases are published with provenance.
+- **Coverage Badge**: `coverage-badge.yml` publishes `main`'s line coverage to the `badges` branch as a shields.io endpoint file, which the README badge reads.
 - **Zero Runtime Overhead**: No third-party runtime npm dependencies (`"dependencies": {}`).
 - **Dual Bundle**: Ships CommonJS (`dist/index.js`, `dist/cli.js`) & ESM (`dist/index.mjs`, `dist/cli.mjs`) with TypeScript declaration maps (`dist/index.d.ts`, `dist/cli.d.ts`).

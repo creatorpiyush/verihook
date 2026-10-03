@@ -5,7 +5,9 @@
 [![npm version](https://img.shields.io/npm/v/verihook.svg)](https://www.npmjs.com/package/verihook)
 [![license](https://img.shields.io/npm/l/verihook.svg)](https://github.com/creatorpiyush/verihook/blob/main/LICENSE)
 [![CI Verification](https://github.com/creatorpiyush/verihook/actions/workflows/pr-verify.yml/badge.svg)](https://github.com/creatorpiyush/verihook/actions)
-[![code coverage](https://img.shields.io/badge/coverage-96%25-brightgreen.svg)](https://github.com/creatorpiyush/verihook)
+[![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcreatorpiyush%2Fverihook%2Fbadges%2Fcoverage.json)](https://github.com/creatorpiyush/verihook/actions/workflows/coverage-badge.yml)
+[![bundle size](https://img.shields.io/bundlejs/size/verihook?exports=verifyWebhook)](https://bundlejs.com/?q=verihook&treeshake=%5B%7BverifyWebhook%7D%5D)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/creatorpiyush/verihook/badge)](https://securityscorecards.dev/viewer/?uri=github.com/creatorpiyush/verihook)
 [![zero dependencies](https://img.shields.io/badge/dependencies-0-success.svg)](https://www.npmjs.com/package/verihook)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://www.typescriptlang.org/)
 [![npm downloads](https://img.shields.io/npm/dm/verihook.svg)](https://www.npmjs.com/package/verihook)
@@ -24,6 +26,8 @@ No more hunting down bespoke HMAC code snippets for every service or installing 
 - 🚀 **1-Line Framework Adapters**: Express, Next.js, Fastify, Hono, NestJS, Nuxt/h3, SvelteKit, Remix/React Router, Astro and AWS Lambda, each a subpath import (`verihook/fastify`, ...). They share the same raw-body handling, size limits and duplicate/retry semantics.
 - 🛡️ **Hardened & Secure**: Built-in SSRF origin protection, unparsed payload stream byte limits (`maxBodySize`), and standard HTTP security headers (`nosniff`, `DENY`).
 - 🌐 **Edge Ready**: Runs anywhere — Node.js, Vercel Edge, Cloudflare Workers, Deno, Bun, Next.js, Hono, Express, Fastify.
+- 🪶 **Small, Tree-Shakeable Bundles**: Import one provider (`verihook/stripe`, ~4 kB min+brotli) instead of all of them (~10 kB). Size budgets are checked in CI with size-limit.
+- ✅ **Conformance-Tested**: CI checks verihook against the official Stripe, GitHub (Octokit), Svix and Twilio SDKs in both directions.
 - 🔐 **Timing-Safe**: Protects against side-channel timing attacks out of the box.
 - ⏳ **Replay Attack Protection**: Built-in timestamp tolerance checks (Stripe, Slack, Svix, Zoom) and stateful deduplication (`MemoryDedupeStore`).
 - 🛡️ **Event Deduplication Store**: Pluggable `dedupeStore` interface with provider-aware event ID extraction to prevent duplicate event execution.
@@ -232,6 +236,25 @@ await verifySlack(req, process.env.SLACK_SECRET!);
 await verifyWhatsApp(req, process.env.META_APP_SECRET!);
 await verifyDiscord(req, process.env.DISCORD_PUBLIC_KEY!);
 ```
+
+### Per-Provider Imports (Smaller Edge Bundles)
+
+Every provider has its own subpath, so a bundler only includes the provider you use. Use these on edge runtimes (Cloudflare Workers, Vercel Edge) where bundle size matters:
+
+```ts
+import { verifyStripe } from 'verihook/stripe';
+import { verifyResend } from 'verihook/svix'; // Svix, Resend and Clerk
+import { verifyWhatsApp, verifyMetaChallenge } from 'verihook/meta';
+
+const result = await verifyStripe(request, env.STRIPE_WEBHOOK_SECRET);
+```
+
+Each subpath exports the provider's `verify*` functions, its verifier object (`stripeVerifier`), its event type and `WebhookErrorCode`. The results, hints, dedupe and telemetry match `verifyWebhook`. A subpath always uses the built-in verifier, so `registerProvider()` overrides only apply to `verifyWebhook`.
+
+| Import | Size (min + brotli) |
+| --- | --- |
+| `verifyWebhook` from `verihook` (all providers) | ~10 kB |
+| `verifyStripe` from `verihook/stripe` | ~4 kB |
 
 ### Meta / WhatsApp Verification Handshake (`verifyMetaChallenge`)
 
@@ -608,11 +631,17 @@ The result is `{ provider, method, url, headers, body, secret }`. PayPal can't b
 The repository includes pre-commit, pre-release, regression, and comprehensive testing scripts to enforce strict code quality and security standards:
 
 ```bash
-# Run complete end-to-end test suite (Format + Typecheck + Coverage + Regression + Build + CLI + Module Exports)
+# Run complete end-to-end test suite (Format + Typecheck + Coverage + Regression + Build + Bundle size + CLI + Module Exports)
 npm run test:all
 
 # Run end-to-end regression test suite across all 35+ providers & middleware adapters
 npm run test:regression
+
+# Check verihook against the official Stripe, Octokit, Svix and Twilio SDKs
+npm run test:conformance
+
+# Check bundle sizes against the budgets in .size-limit.json (run after a build)
+npm run size
 
 # Run format check, typecheck, coverage tests, and package build
 npm run verify
