@@ -445,7 +445,8 @@ function simulationSample(
     case "shopify":
       return {
         secret: "shopify_secret_123",
-        payload: { id: now, topic: eventType || "orders/create" },
+        event: eventType || "orders/create",
+        payload: { id: now },
       };
     case "meta":
     case "whatsapp":

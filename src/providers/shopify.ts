@@ -10,6 +10,7 @@ import { bytesToBase64 } from "../utils/encoding.js";
 
 export const shopifyVerifier: ProviderVerifier = {
   name: "shopify",
+  eventType: (_event, req) => req.headers["x-shopify-topic"],
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,

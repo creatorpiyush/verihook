@@ -10,6 +10,11 @@ import { bytesToBase64 } from "../utils/encoding.js";
 
 export const twitterVerifier: ProviderVerifier = {
   name: "twitter",
+  eventType(event) {
+    // Account Activity payloads use one `<name>_events` key, e.g. `tweet_create_events`.
+    if (!event || typeof event !== "object") return undefined;
+    return Object.keys(event).find((key) => key.endsWith("_events"));
+  },
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,

@@ -9,9 +9,11 @@ import {
 import { bytesToHex } from "../utils/encoding.js";
 
 import { toEpochSeconds } from "../utils/timestamp.js";
+import { readString } from "../core/event.js";
 
 export const webflowVerifier: ProviderVerifier = {
   name: "webflow",
+  eventType: (event) => readString(event, "triggerType"),
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,

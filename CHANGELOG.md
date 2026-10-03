@@ -5,6 +5,23 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- 🏷️ **Typed events**: Verified results now include `event` and `eventType`. Failed results never carry the payload.
+  - `event` is the parsed payload: JSON, or the fields of a form post.
+  - `eventType` is the event name, read from wherever the provider puts it: the body (`type`, `event`, `event_type`, `meta.event_name`, …) or a header (GitHub `x-github-event`, Shopify `x-shopify-topic`).
+  - Built-in providers have lightweight payload types (`StripeEvent`, `GitHubEvent`, `SvixEvent`, …, mapped in `ProviderEventMap`). They need no provider SDK.
+  - Override the type with `verifyWebhook<MyEvent>(...)`, `verifyStripe<MyEvent>(...)` or `createWebhookHandler<MyEvent>(...)`.
+  - Express adds `event` and `eventType` to `req.verihook`. Telemetry events include `eventType`.
+  - Custom providers can define `eventType(event, req)`.
+- `signWebhook("shopify")` sends `x-shopify-topic`, taken from `options.event` (default `orders/create`).
+- 🤝 **Contributor on-ramp**:
+  - `CONTRIBUTING.md` with "Add a provider in 5 steps";
+  - a tested provider template (`src/providers/_template.ts`, not shipped);
+  - issue forms for bugs, provider requests and framework requests;
+  - a pull request template.
+
 ## [1.9.0] - 2026-10-03
 
 ### Added

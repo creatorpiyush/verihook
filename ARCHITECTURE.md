@@ -136,13 +136,20 @@ Every provider implements the `ProviderVerifier` interface:
 ```ts
 export interface ProviderVerifier {
   name: ProviderName;
+  requiresSecret?: boolean;
   verify(
     req: NormalizedWebhookRequest,
     secret: string,
     options?: VerifyWebhookOptions
   ): Promise<VerificationResult>;
+  /** Event name for result.eventType; defaults to the body's type / event / event_type. */
+  eventType?(event: unknown, req: NormalizedWebhookRequest): string | undefined;
 }
 ```
+
+After a successful verification, `verifyWebhook` parses the raw body into `result.event` (`src/core/event.ts`): JSON, or the fields of an `application/x-www-form-urlencoded` post. It then asks the verifier for `result.eventType`. Failed results never carry the payload. Payload types for built-in providers live in `src/core/event-types.ts` (`ProviderEventMap`). They are type-only and add nothing to the bundle.
+
+New built-in providers start from `src/providers/_template.ts`; see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 Custom providers can be registered dynamically at runtime:
 

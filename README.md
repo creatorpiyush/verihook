@@ -29,6 +29,7 @@ No more hunting down bespoke HMAC code snippets for every service or installing 
 - 🛡️ **Event Deduplication Store**: Pluggable `dedupeStore` interface with provider-aware event ID extraction to prevent duplicate event execution.
 - 🔌 **Extensible Plugin System**: Register custom provider verifiers with `registerProvider()`.
 - 🧪 **Testing Helpers**: `verihook/testing` signs webhooks for every built-in provider, so you can test your handlers end to end.
+- 🏷️ **Typed Events**: Verified results include the parsed payload (`result.event`, typed per provider) and its name (`result.eventType`).
 - 🩺 **Troubleshooting Hints**: Failed verifications say *why* (parsed body, wrong kind of secret, proxy URL mismatch) through `result.hint`.
 
 ---
@@ -134,15 +135,55 @@ const result = await verifyWebhook('stripe', req, process.env.STRIPE_WEBHOOK_SEC
 
 if (result.valid) {
   console.log('Webhook verified! Timestamp:', result.timestamp);
-
-  // Parse raw body string/Buffer to access event payload data
-  const event = JSON.parse(req.body.toString('utf-8'));
-  console.log('Event Type:', event.type);          // e.g. "payment_intent.succeeded"
-  console.log('Event Data:', event.data.object);   // e.g. amount, customer ID, status
+  console.log('Event Type:', result.eventType);          // e.g. "payment_intent.succeeded"
+  console.log('Event Data:', result.event?.data.object); // typed as StripeEvent
 } else {
   console.error(`Verification failed [${result.code}]:`, result.reason);
 }
 ```
+
+### Typed Events (`result.event`, `result.eventType`)
+
+When verification succeeds, the result carries the parsed payload. It's set only for valid requests, so you never act on an unverified body.
+
+- `result.event` is the parsed JSON body, or the fields of a form post (Twilio, Slack slash commands). It is typed for every built-in provider (`StripeEvent`, `GitHubEvent`, `SvixEvent`, …). These lightweight types cover each provider's envelope and need no provider SDK.
+- `result.eventType` is the event name, wherever the provider puts it:
+
+| Provider | `eventType` comes from | Example |
+| :--- | :--- | :--- |
+| Stripe, Svix / Resend / Clerk, Square, Linear | body `type` | `invoice.paid` |
+| GitHub | `x-github-event` header | `push` |
+| Shopify | `x-shopify-topic` header | `orders/create` |
+| Slack | body `type`, slash `command` or interaction `payload.type` | `event_callback` |
+| Razorpay, Zoom, WorkOS | body `event` | `payment.captured` |
+| PayPal, Paddle | body `event_type` | `transaction.completed` |
+| LemonSqueezy | `meta.event_name` | `order_created` |
+| PagerDuty | `event.event_type` | `incident.triggered` |
+| Webflow | `triggerType` | `form_submission` |
+| Meta / WhatsApp | `object` | `whatsapp_business_account` |
+| Discord | `event.type`, or the interaction type | `APPLICATION_AUTHORIZED`, `PING` |
+| Twitter / X | the `*_events` key | `tweet_create_events` |
+| Generic / custom | body `type`, `event` or `event_type` | |
+
+```ts
+import { verifyWebhook } from 'verihook';
+
+const result = await verifyWebhook('github', req, process.env.GITHUB_SECRET!);
+if (result.valid && result.eventType === 'issues') {
+  console.log(result.event?.action, result.event?.repository?.full_name);
+}
+```
+
+You can pass your own type, for example the official SDK's type, for a precise shape:
+
+```ts
+import type Stripe from 'stripe';
+
+const result = await verifyWebhook<Stripe.Event>('stripe', req, secret);
+// result.event is Stripe.Event | undefined
+```
+
+The provider shortcuts (`verifyStripe<T>()`) and `createWebhookHandler<T>()` accept a type argument too.
 
 ### Strict Mode (Throw on Error)
 
@@ -302,7 +343,7 @@ import { createWebhookHandler } from 'verihook/next'; // or 'verihook'
 
 export const POST = createWebhookHandler('github', process.env.GITHUB_SECRET!, async (payload, result) => {
   // Executed ONLY if signature is 100% valid!
-  console.log('Verified issue event:', (payload as any).action);
+  console.log(`Verified ${result.eventType} event:`, result.event?.action); // result.event is a GitHubEvent
 });
 ```
 
@@ -310,7 +351,8 @@ export const POST = createWebhookHandler('github', process.env.GITHUB_SECRET!, a
 
 ```ts
 import express from 'express';
-import { verihookExpress } from 'verihook/express'; // or 'verihook'
+import { verihookExpress, type VerihookRequestAdditions } from 'verihook/express'; // or 'verihook'
+import type { StripeEvent } from 'verihook';
 
 const app = express();
 
@@ -320,8 +362,9 @@ app.post(
     maxBodySize: 2 * 1024 * 1024, // Optional payload size limit in bytes (default 2MB)
   }),
   (req, res) => {
-    // req.verifiedPayload is guaranteed valid and raw body preserved!
-    console.log('Verified stripe event:', (req as any).verifiedPayload.type);
+    // req.verihook is only set when the signature is valid
+    const { event, eventType } = (req as Request & VerihookRequestAdditions<StripeEvent>).verihook!;
+    console.log('Verified stripe event:', eventType, event?.data.object);
     res.json({ received: true });
   }
 );
@@ -388,10 +431,14 @@ registerProvider({
     // ... custom verification logic
     return { valid: true, provider: 'my-service' };
   },
+  // Optional: where result.eventType comes from (defaults to body type / event / event_type)
+  eventType: (event, req) => req.headers['x-myservice-event'],
 });
 
 await verifyWebhook('my-service', req, secret);
 ```
+
+Want it built in? [CONTRIBUTING.md](./CONTRIBUTING.md) shows how to add a provider in 5 steps.
 
 ---
 
@@ -467,6 +514,12 @@ npm run test:coverage
 # Perform security vulnerability audit
 npm run audit
 ```
+
+---
+
+## Contributing
+
+Contributions are welcome, especially new providers. See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, the provider template and the PR checklist.
 
 ---
 

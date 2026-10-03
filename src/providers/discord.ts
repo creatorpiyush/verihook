@@ -8,9 +8,26 @@ import {
 } from "../core/types.js";
 
 import { toEpochSeconds } from "../utils/timestamp.js";
+import { readString } from "../core/event.js";
+
+const DISCORD_TYPES: Record<number, string> = {
+  0: "PING",
+  1: "PING",
+  2: "APPLICATION_COMMAND",
+  3: "MESSAGE_COMPONENT",
+  4: "APPLICATION_COMMAND_AUTOCOMPLETE",
+  5: "MODAL_SUBMIT",
+};
 
 export const discordVerifier: ProviderVerifier = {
   name: "discord",
+  eventType(event) {
+    // Webhook events carry `event.type`; interactions only a numeric `type`.
+    const name = readString(event, "event", "type");
+    if (name) return name;
+    const type = (event as { type?: unknown } | undefined)?.type;
+    return typeof type === "number" ? DISCORD_TYPES[type] : undefined;
+  },
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,

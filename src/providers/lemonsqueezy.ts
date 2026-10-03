@@ -7,9 +7,12 @@ import {
   WebhookErrorCode,
 } from "../core/types.js";
 import { bytesToHex } from "../utils/encoding.js";
+import { readString } from "../core/event.js";
 
 export const lemonsqueezyVerifier: ProviderVerifier = {
   name: "lemonsqueezy",
+  eventType: (event, req) =>
+    readString(event, "meta", "event_name") ?? req.headers["x-event-name"],
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/creatorpiyush/verihook/security/advisories/new
+    about: Please report vulnerabilities privately, not in a public issue.
+  - name: Contributing guide
+    url: https://github.com/creatorpiyush/verihook/blob/main/CONTRIBUTING.md
+    about: How to set up the project and add a provider in 5 steps.

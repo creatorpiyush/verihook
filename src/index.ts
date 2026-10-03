@@ -96,3 +96,27 @@ export type {
   DedupeStore,
   MemoryDedupeStoreOptions,
 } from "./core/types.js";
+
+export type {
+  ProviderEventMap,
+  EventFor,
+  StripeEvent,
+  GitHubEvent,
+  ShopifyEvent,
+  SlackEvent,
+  TwilioEvent,
+  SvixEvent,
+  LinearEvent,
+  RazorpayEvent,
+  SquareEvent,
+  ZoomEvent,
+  MetaEvent,
+  DiscordEvent,
+  TwitterEvent,
+  PayPalEvent,
+  LemonSqueezyEvent,
+  PaddleEvent,
+  PagerDutyEvent,
+  WebflowEvent,
+  WorkOSEvent,
+} from "./core/event-types.js";

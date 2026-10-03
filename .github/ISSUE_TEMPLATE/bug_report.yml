@@ -1,0 +1,48 @@
+name: Bug report
+description: Verification fails for a valid webhook, or something else is broken.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Never paste real secrets or production payloads.** If you can, reproduce with `signWebhook()` from `verihook/testing`.
+        Security issues: please use [a private advisory](https://github.com/creatorpiyush/verihook/security/advisories/new) instead.
+  - type: input
+    id: provider
+    attributes:
+      label: Provider
+      placeholder: stripe
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: verihook, framework and runtime versions
+      placeholder: verihook 1.9.0, Next.js 15.3, Node 22 (or Cloudflare Workers, Bun 1.2, ...)
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Verification result
+      description: The `code`, `reason` and `hint` from the failed result, or the error you got.
+      render: json
+  - type: textarea
+    id: body-handling
+    attributes:
+      label: How does your route read the body?
+      description: Most failures come from a body parser. Show the middleware or code that runs before verihook (e.g. `express.json()`, `express.raw()`, `await request.text()`).
+      render: ts
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: A minimal snippet or repository. A failing test using `signWebhook()` is ideal.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
