@@ -7,8 +7,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@cloudflare/workers-types": "^5.20260811.1",
-    "@upstash/redis": "1.34.3",
+    "@cloudflare/workers-types": "^5.20260930.2",
+    "@upstash/redis": "1.39.0",
     "verihook": "file:../.."
   },
   "devDependencies": {
