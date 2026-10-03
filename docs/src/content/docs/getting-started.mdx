@@ -1,0 +1,100 @@
+---
+title: Getting started
+description: Install verihook and verify your first webhook in Node.js, Deno, Bun or an edge runtime.
+sidebar:
+  order: 1
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Install
+
+<Tabs syncKey="pkg">
+<TabItem label="npm">
+
+```sh
+npm install verihook
+```
+
+</TabItem>
+<TabItem label="pnpm">
+
+```sh
+pnpm add verihook
+```
+
+</TabItem>
+<TabItem label="yarn">
+
+```sh
+yarn add verihook
+```
+
+</TabItem>
+<TabItem label="bun">
+
+```sh
+bun add verihook
+```
+
+</TabItem>
+<TabItem label="Deno">
+
+```sh
+deno add jsr:@verihook/verihook
+# or from npm
+deno add npm:verihook
+```
+
+</TabItem>
+</Tabs>
+
+verihook has no runtime dependencies. It uses the Web Crypto API, with a Node.js fallback, so it runs on Node.js 18.17+, Deno, Bun, Cloudflare Workers and Vercel Edge.
+
+## Verify a webhook
+
+Pass the provider, the incoming request and your webhook secret:
+
+```ts
+import { verifyWebhook } from 'verihook';
+
+export async function POST(request: Request) {
+  const result = await verifyWebhook('github', request, process.env.GITHUB_WEBHOOK_SECRET!);
+
+  if (!result.valid) {
+    // result.code says what failed; result.hint often says why
+    return new Response('Invalid signature', { status: 401 });
+  }
+
+  console.log(result.eventType); // "push", "issues", ...
+  return Response.json({ received: true });
+}
+```
+
+`request` can be:
+
+- a Fetch `Request` (Next.js route handlers, Hono, Cloudflare Workers, Deno, Bun);
+- an object `{ headers, body, url? }`, where `body` is the **raw** body as a string or bytes.
+
+Signatures are computed over the exact bytes the provider sent. If a body parser has already turned the body into an object, verification fails. [Why the raw body matters](../guides/raw-body/) explains how to keep it in each framework.
+
+## Use your framework's adapter
+
+The adapters read the raw body, verify it and answer failed requests for you:
+
+```ts
+// app/api/webhooks/stripe/route.ts
+import { createWebhookHandler } from 'verihook/next';
+
+export const POST = createWebhookHandler('stripe', process.env.STRIPE_WEBHOOK_SECRET!, async (payload, result) => {
+  // Runs only when the signature is valid
+});
+```
+
+See the [Frameworks](../frameworks/nextjs/) section for Express, Fastify, Hono, NestJS, Nuxt, SvelteKit, Remix, Astro and AWS Lambda.
+
+## Next steps
+
+- Find your provider's page in [Providers](../providers/). It covers where the secret is, which headers are sent and copy-paste code for each framework.
+- [Test your handlers](../guides/testing/) with signed requests.
+- [Reject duplicate deliveries](../guides/dedupe/) with a dedupe store.

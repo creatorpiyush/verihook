@@ -1,8 +1,12 @@
 /** `verihook/shopify`: verifies only this provider, without bundling the others. */
 import { bindVerifier } from "../core/provider-entry.js";
+import type { ProviderVerifyFunction } from "../core/types.js";
 import { shopifyVerifier } from "../providers/shopify.js";
 
-export const verifyShopify = bindVerifier("shopify", shopifyVerifier);
+export const verifyShopify: ProviderVerifyFunction<"shopify"> = bindVerifier(
+  "shopify",
+  shopifyVerifier,
+);
 
 export { shopifyVerifier };
 export type { ShopifyEvent } from "../core/event-types.js";

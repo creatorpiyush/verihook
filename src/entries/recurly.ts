@@ -1,8 +1,12 @@
 /** `verihook/recurly`: verifies only this provider, without bundling the others. */
 import { bindVerifier } from "../core/provider-entry.js";
+import type { ProviderVerifyFunction } from "../core/types.js";
 import { recurlyVerifier } from "../providers/recurly.js";
 
-export const verifyRecurly = bindVerifier("recurly", recurlyVerifier);
+export const verifyRecurly: ProviderVerifyFunction<"recurly"> = bindVerifier(
+  "recurly",
+  recurlyVerifier,
+);
 
 export { recurlyVerifier };
 export type { RecurlyEvent } from "../core/event-types.js";

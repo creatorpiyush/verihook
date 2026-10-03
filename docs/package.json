@@ -1,0 +1,15 @@
+{
+  "name": "verihook-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node scripts/generate-pages.mjs",
+    "dev": "npm run generate && astro dev",
+    "build": "npm run generate && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.42.5",
+    "astro": "7.3.5"
+  }
+}

@@ -84,7 +84,11 @@ export function verihookExpress(
   provider: ProviderName,
   secret: SecretResolver,
   options?: VerihookExpressOptions,
-) {
+): (
+  req: ExpressRequestLike,
+  res: ExpressResponseLike,
+  next: ExpressNextLike,
+) => Promise<void> {
   const maxBytes = options?.maxBodySize ?? 2 * 1024 * 1024; // 2MB default
 
   return async (

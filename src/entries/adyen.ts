@@ -1,8 +1,12 @@
 /** `verihook/adyen`: verifies only this provider, without bundling the others. */
 import { bindVerifier } from "../core/provider-entry.js";
+import type { ProviderVerifyFunction } from "../core/types.js";
 import { adyenVerifier } from "../providers/adyen.js";
 
-export const verifyAdyen = bindVerifier("adyen", adyenVerifier);
+export const verifyAdyen: ProviderVerifyFunction<"adyen"> = bindVerifier(
+  "adyen",
+  adyenVerifier,
+);
 
 export { adyenVerifier };
 export type {

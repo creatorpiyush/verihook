@@ -1,8 +1,12 @@
 /** `verihook/slack`: verifies only this provider, without bundling the others. */
 import { bindVerifier } from "../core/provider-entry.js";
+import type { ProviderVerifyFunction } from "../core/types.js";
 import { slackVerifier } from "../providers/slack.js";
 
-export const verifySlack = bindVerifier("slack", slackVerifier);
+export const verifySlack: ProviderVerifyFunction<"slack"> = bindVerifier(
+  "slack",
+  slackVerifier,
+);
 
 export { slackVerifier };
 export type { SlackEvent } from "../core/event-types.js";

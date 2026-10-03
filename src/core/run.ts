@@ -1,3 +1,4 @@
+import { readNodeEnv } from "../utils/env.js";
 import { normalizeRequest } from "../utils/normalize-request.js";
 import { extractEventId } from "./dedupe.js";
 import { diagnoseFailure, warnHintOnce } from "./diagnostics.js";
@@ -40,7 +41,7 @@ function dispatchTelemetry(
   const globalLogger = getGlobalLogger();
 
   const isDev =
-    typeof process !== "undefined" && process.env?.NODE_ENV !== "production";
+    typeof process !== "undefined" && readNodeEnv() !== "production";
 
   if (perCallLogger) {
     try {

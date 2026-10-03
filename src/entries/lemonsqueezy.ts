@@ -1,11 +1,10 @@
 /** `verihook/lemonsqueezy`: verifies only this provider, without bundling the others. */
 import { bindVerifier } from "../core/provider-entry.js";
+import type { ProviderVerifyFunction } from "../core/types.js";
 import { lemonsqueezyVerifier } from "../providers/lemonsqueezy.js";
 
-export const verifyLemonSqueezy = bindVerifier(
-  "lemonsqueezy",
-  lemonsqueezyVerifier,
-);
+export const verifyLemonSqueezy: ProviderVerifyFunction<"lemonsqueezy"> =
+  bindVerifier("lemonsqueezy", lemonsqueezyVerifier);
 
 export { lemonsqueezyVerifier };
 export type { LemonSqueezyEvent } from "../core/event-types.js";

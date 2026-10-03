@@ -36,3 +36,20 @@ jobs:
 
       - name: Run verification checks (format, typecheck, coverage, regression, build, CLI, exports)
         run: npm run test:all
+  deno:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.x
+
+      - name: Run the Deno smoke test (no permissions)
+        run: deno run --unstable-sloppy-imports tests/deno/smoke.ts
+
+      - name: Check the JSR package (dry run)
+        run: deno publish --dry-run --allow-dirty --no-check --unstable-sloppy-imports

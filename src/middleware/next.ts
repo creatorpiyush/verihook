@@ -37,7 +37,7 @@ export function createWebhookHandler<
   secret: SecretResolver<Request>,
   handler: NextWebhookCallback<ResolveEvent<TEvent, P>>,
   options?: VerihookNextOptions,
-) {
+): (req: Request, ..._extraArgs: unknown[]) => Promise<Response> {
   const handle = createWebAdapter(
     provider,
     secret,

@@ -4,6 +4,7 @@ import type { EventFor, ResolveEvent } from "./event-types.js";
 import { runVerification } from "./run.js";
 import {
   ProviderName,
+  ProviderVerifyFunction,
   VerificationErrorCode,
   VerificationResult,
   VerifyWebhookOptions,
@@ -69,7 +70,9 @@ export async function verifyWebhookOrThrow<
 }
 
 // Provider-specific helper shortcuts
-function shortcut<P extends ProviderName>(provider: P) {
+function shortcut<P extends ProviderName>(
+  provider: P,
+): ProviderVerifyFunction<P> {
   return <TEvent = EventFor<P>>(
     req: WebhookRequestInput,
     secret: string,
@@ -80,46 +83,82 @@ function shortcut<P extends ProviderName>(provider: P) {
     >;
 }
 
-export const verifyStripe = shortcut("stripe");
-export const verifyGitHub = shortcut("github");
-export const verifyShopify = shortcut("shopify");
-export const verifySlack = shortcut("slack");
-export const verifyTwilio = shortcut("twilio");
-export const verifySvix = shortcut("svix");
-export const verifyResend = shortcut("resend");
-export const verifyClerk = shortcut("clerk");
-export const verifyLinear = shortcut("linear");
-export const verifyRazorpay = shortcut("razorpay");
-export const verifySquare = shortcut("square");
-export const verifyZoom = shortcut("zoom");
-export const verifyMeta = shortcut("meta");
-export const verifyWhatsApp = shortcut("whatsapp");
-export const verifyDiscord = shortcut("discord");
-export const verifyTwitter = shortcut("twitter");
-export const verifyX = verifyTwitter;
-export const verifyPayPal = shortcut("paypal");
-export const verifyLemonSqueezy = shortcut("lemonsqueezy");
-export const verifyPaddle = shortcut("paddle");
-export const verifyPagerDuty = shortcut("pagerduty");
-export const verifyWebflow = shortcut("webflow");
-export const verifyWorkOS = shortcut("workos");
-export const verifyCashfree = shortcut("cashfree");
-export const verifyPhonePe = shortcut("phonepe");
-export const verifyMollie = shortcut("mollie");
-export const verifyAdyen = shortcut("adyen");
-export const verifyCheckout = shortcut("checkout");
-export const verifyAuthorizeNet = shortcut("authorizenet");
-export const verifyRecurly = shortcut("recurly");
-export const verifyGitLab = shortcut("gitlab");
-export const verifyBitbucket = shortcut("bitbucket");
-export const verifyVercel = shortcut("vercel");
-export const verifySentry = shortcut("sentry");
-export const verifyTwitch = shortcut("twitch");
-export const verifyTelegram = shortcut("telegram");
-export const verifyPostmark = shortcut("postmark");
-export const verifySendGrid = shortcut("sendgrid");
-export const verifyMailgun = shortcut("mailgun");
-export const verifyHubSpot = shortcut("hubspot");
-export const verifyIntercom = shortcut("intercom");
-export const verifyCalendly = shortcut("calendly");
-export const verifyTypeform = shortcut("typeform");
+export const verifyStripe: ProviderVerifyFunction<"stripe"> =
+  shortcut("stripe");
+export const verifyGitHub: ProviderVerifyFunction<"github"> =
+  shortcut("github");
+export const verifyShopify: ProviderVerifyFunction<"shopify"> =
+  shortcut("shopify");
+export const verifySlack: ProviderVerifyFunction<"slack"> = shortcut("slack");
+export const verifyTwilio: ProviderVerifyFunction<"twilio"> =
+  shortcut("twilio");
+export const verifySvix: ProviderVerifyFunction<"svix"> = shortcut("svix");
+export const verifyResend: ProviderVerifyFunction<"resend"> =
+  shortcut("resend");
+export const verifyClerk: ProviderVerifyFunction<"clerk"> = shortcut("clerk");
+export const verifyLinear: ProviderVerifyFunction<"linear"> =
+  shortcut("linear");
+export const verifyRazorpay: ProviderVerifyFunction<"razorpay"> =
+  shortcut("razorpay");
+export const verifySquare: ProviderVerifyFunction<"square"> =
+  shortcut("square");
+export const verifyZoom: ProviderVerifyFunction<"zoom"> = shortcut("zoom");
+export const verifyMeta: ProviderVerifyFunction<"meta"> = shortcut("meta");
+export const verifyWhatsApp: ProviderVerifyFunction<"whatsapp"> =
+  shortcut("whatsapp");
+export const verifyDiscord: ProviderVerifyFunction<"discord"> =
+  shortcut("discord");
+export const verifyTwitter: ProviderVerifyFunction<"twitter"> =
+  shortcut("twitter");
+export const verifyX: ProviderVerifyFunction<"twitter"> = verifyTwitter;
+export const verifyPayPal: ProviderVerifyFunction<"paypal"> =
+  shortcut("paypal");
+export const verifyLemonSqueezy: ProviderVerifyFunction<"lemonsqueezy"> =
+  shortcut("lemonsqueezy");
+export const verifyPaddle: ProviderVerifyFunction<"paddle"> =
+  shortcut("paddle");
+export const verifyPagerDuty: ProviderVerifyFunction<"pagerduty"> =
+  shortcut("pagerduty");
+export const verifyWebflow: ProviderVerifyFunction<"webflow"> =
+  shortcut("webflow");
+export const verifyWorkOS: ProviderVerifyFunction<"workos"> =
+  shortcut("workos");
+export const verifyCashfree: ProviderVerifyFunction<"cashfree"> =
+  shortcut("cashfree");
+export const verifyPhonePe: ProviderVerifyFunction<"phonepe"> =
+  shortcut("phonepe");
+export const verifyMollie: ProviderVerifyFunction<"mollie"> =
+  shortcut("mollie");
+export const verifyAdyen: ProviderVerifyFunction<"adyen"> = shortcut("adyen");
+export const verifyCheckout: ProviderVerifyFunction<"checkout"> =
+  shortcut("checkout");
+export const verifyAuthorizeNet: ProviderVerifyFunction<"authorizenet"> =
+  shortcut("authorizenet");
+export const verifyRecurly: ProviderVerifyFunction<"recurly"> =
+  shortcut("recurly");
+export const verifyGitLab: ProviderVerifyFunction<"gitlab"> =
+  shortcut("gitlab");
+export const verifyBitbucket: ProviderVerifyFunction<"bitbucket"> =
+  shortcut("bitbucket");
+export const verifyVercel: ProviderVerifyFunction<"vercel"> =
+  shortcut("vercel");
+export const verifySentry: ProviderVerifyFunction<"sentry"> =
+  shortcut("sentry");
+export const verifyTwitch: ProviderVerifyFunction<"twitch"> =
+  shortcut("twitch");
+export const verifyTelegram: ProviderVerifyFunction<"telegram"> =
+  shortcut("telegram");
+export const verifyPostmark: ProviderVerifyFunction<"postmark"> =
+  shortcut("postmark");
+export const verifySendGrid: ProviderVerifyFunction<"sendgrid"> =
+  shortcut("sendgrid");
+export const verifyMailgun: ProviderVerifyFunction<"mailgun"> =
+  shortcut("mailgun");
+export const verifyHubSpot: ProviderVerifyFunction<"hubspot"> =
+  shortcut("hubspot");
+export const verifyIntercom: ProviderVerifyFunction<"intercom"> =
+  shortcut("intercom");
+export const verifyCalendly: ProviderVerifyFunction<"calendly"> =
+  shortcut("calendly");
+export const verifyTypeform: ProviderVerifyFunction<"typeform"> =
+  shortcut("typeform");

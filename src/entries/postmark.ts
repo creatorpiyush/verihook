@@ -1,8 +1,12 @@
 /** `verihook/postmark`: verifies only this provider, without bundling the others. */
 import { bindVerifier } from "../core/provider-entry.js";
+import type { ProviderVerifyFunction } from "../core/types.js";
 import { postmarkVerifier } from "../providers/postmark.js";
 
-export const verifyPostmark = bindVerifier("postmark", postmarkVerifier);
+export const verifyPostmark: ProviderVerifyFunction<"postmark"> = bindVerifier(
+  "postmark",
+  postmarkVerifier,
+);
 
 export { postmarkVerifier };
 export type { PostmarkEvent } from "../core/event-types.js";

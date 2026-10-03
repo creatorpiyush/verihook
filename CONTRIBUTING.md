@@ -74,7 +74,8 @@ These changes let users test against your provider with `verihook/testing` and t
 
 ### 5. Document it
 
-- **`README.md`:** add a row to "Supported Providers" with the identifier and headers.
+- **`docs/src/data/providers.mjs`:** add an entry. It generates the provider's docs page: where to find the secret, the headers, the signature scheme and gotchas. `tests/docs-providers.test.ts` fails until every provider has one, and it runs the page's testing snippet. Preview with `cd docs && npm install && npm run dev`.
+- **`README.md`:** add the provider to the "Providers" table.
 - **`ARCHITECTURE.md`:** add a row to the "Provider Implementation Matrix".
 - **`CHANGELOG.md`:** add a line under `## [Unreleased]`. Create that section at the top if it isn't there.
 
