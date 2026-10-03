@@ -136,6 +136,11 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **`result.event` / `result.eventType`**: Verified results carry the parsed payload, typed per built-in provider (`StripeEvent`, `GitHubEvent`, …), and the event name from the body or provider headers. Custom types via `verifyWebhook<MyEvent>()`.
 - **Contributor on-ramp**: `CONTRIBUTING.md` ("Add a provider in 5 steps"), a tested provider template, issue forms and a PR template.
 
+## 9. Framework Adapters (v1.11.0) — ✅ Completed
+
+- **Eight new subpath adapters**: `verihook/fastify`, `/hono`, `/h3` (Nuxt), `/sveltekit`, `/remix` (React Router), `/astro`, `/lambda` (API Gateway v1/v2, Function URLs) and `/nestjs` (guard).
+- **Shared adapter contract** (`src/middleware/shared.ts`): 401 on failure, 200 for duplicates, 413 above `maxBodySize`, generic 500 on exceptions, dedupe release when the handler fails. No runtime framework dependencies.
+
 ---
 
 ## Priority & Phasing Summary
@@ -148,4 +153,5 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **Phase 6 (v1.7.0)**: Add **`npx verihook listen` live local relay proxy**. ✅
 - **Phase 7 (v1.9.0)**: Add **`verihook/testing` signing helpers & troubleshooting hints**. ✅
 - **Phase 8 (v1.10.0)**: Add **typed events (`result.event`, `result.eventType`) & contributor on-ramp**. ✅
+- **Phase 9 (v1.11.0)**: Add **framework adapters (Fastify, Hono, h3/Nuxt, SvelteKit, Remix, Astro, AWS Lambda, NestJS)**. ✅
 
