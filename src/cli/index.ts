@@ -589,6 +589,91 @@ function simulationSample(
           payload: { payment: { entity: { id: "pay_100" } } },
         },
       };
+    case "cashfree":
+      return {
+        secret: "cashfree_client_secret_123",
+        payload: {
+          type: eventType || "PAYMENT_SUCCESS_WEBHOOK",
+          event_time: new Date(now).toISOString(),
+          data: {
+            order: { order_id: `order_${now}`, order_amount: 100 },
+            payment: { cf_payment_id: now, payment_status: "SUCCESS" },
+          },
+        },
+      };
+    case "phonepe":
+      return {
+        secret: "webhook_user:webhook_password",
+        payload: {
+          event: eventType || "checkout.order.completed",
+          payload: { orderId: `OMO${now}`, state: "COMPLETED", amount: 10000 },
+        },
+      };
+    case "mollie":
+      return {
+        secret: "mollie_signing_secret_123",
+        payload: {
+          resource: "event",
+          id: `event_${now}`,
+          type: eventType || "payment-link.paid",
+          entityId: "pl_simulated",
+          createdAt: new Date(now).toISOString(),
+        },
+      };
+    case "adyen":
+      return {
+        secret:
+          "44782DEF547AAA06C910C43932B1EB0C71FC68D9D0C057550C48EC2ACF6BA056",
+        payload: {
+          live: "false",
+          notificationItems: [
+            {
+              NotificationRequestItem: {
+                eventCode: eventType || "AUTHORISATION",
+                success: "true",
+                pspReference: String(now),
+                merchantAccountCode: "TestMerchant",
+                merchantReference: `order_${now}`,
+                amount: { value: 1000, currency: "EUR" },
+                eventDate: new Date(now).toISOString(),
+              },
+            },
+          ],
+        },
+      };
+    case "checkout":
+      return {
+        secret: "checkout_signature_key_123",
+        payload: {
+          id: `evt_${now}`,
+          type: eventType || "payment_approved",
+          created_on: new Date(now).toISOString(),
+          data: { id: "pay_simulated", amount: 1000, currency: "EUR" },
+        },
+      };
+    case "authorizenet":
+      return {
+        secret: "authorizenet_signature_key_123",
+        payload: {
+          notificationId: `notif_${now}`,
+          eventType: eventType || "net.authorize.payment.authcapture.created",
+          eventDate: new Date(now).toISOString(),
+          webhookId: "webhook_simulated",
+          payload: { responseCode: 1, authAmount: 10, id: String(now) },
+        },
+      };
+    case "recurly":
+      return {
+        secret: "recurly_webhook_secret_123",
+        payload: {
+          id: `notif_${now}`,
+          object_type: "subscription",
+          site_id: "site_simulated",
+          event_type: eventType || "created",
+          event_time: new Date(now).toISOString(),
+          account_code: "account_simulated",
+        },
+      };
     case "discord":
       return { payload: { type: 1, id: `interaction_${now}` } };
     default:
@@ -617,7 +702,8 @@ Commands:
   listen <provider>    Run a live local relay proxy intercepting & forwarding webhooks
 
 Supported Providers:
-  stripe, github, shopify, slack, twilio, svix, resend, clerk, meta, whatsapp, discord, twitter, x, paypal, lemonsqueezy, paddle, pagerduty, webflow, workos, linear, razorpay, square, zoom
+  stripe, github, shopify, slack, twilio, svix, resend, clerk, meta, whatsapp, discord, twitter, x, paypal, lemonsqueezy, paddle, pagerduty, webflow, workos, linear, razorpay, square, zoom,
+  cashfree, phonepe, mollie, adyen, checkout, authorizenet, recurly
 
 Options:
   --forward-to <url>   Target webhook server endpoint to forward webhooks to (listen mode)

@@ -25,6 +25,11 @@ const SIGNATURE_HEADERS: Array<[header: string, provider: string]> = [
   ["x-razorpay-signature", "razorpay"],
   ["x-square-hmacsha256-signature", "square"],
   ["x-zm-signature", "zoom"],
+  ["x-mollie-signature", "mollie"],
+  ["hmacsignature", "adyen"],
+  ["cko-signature", "checkout"],
+  ["x-anet-signature", "authorizenet"],
+  ["recurly-signature", "recurly"],
   ["x-github-event", "github"],
   ["x-hub-signature-256", "github or meta"],
 ];

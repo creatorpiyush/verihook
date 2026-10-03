@@ -19,6 +19,13 @@ import { paddleVerifier } from "./paddle.js";
 import { pagerdutyVerifier } from "./pagerduty.js";
 import { webflowVerifier } from "./webflow.js";
 import { workosVerifier } from "./workos.js";
+import { cashfreeVerifier } from "./cashfree.js";
+import { phonepeVerifier } from "./phonepe.js";
+import { mollieVerifier } from "./mollie.js";
+import { adyenVerifier } from "./adyen.js";
+import { checkoutVerifier } from "./checkout.js";
+import { authorizenetVerifier } from "./authorizenet.js";
+import { recurlyVerifier } from "./recurly.js";
 import { genericVerifier } from "./generic.js";
 
 export const providers: Record<string, ProviderVerifier> = {
@@ -47,6 +54,13 @@ export const providers: Record<string, ProviderVerifier> = {
   razorpay: razorpayVerifier,
   square: squareVerifier,
   zoom: zoomVerifier,
+  cashfree: cashfreeVerifier,
+  phonepe: phonepeVerifier,
+  mollie: mollieVerifier,
+  adyen: adyenVerifier,
+  checkout: checkoutVerifier,
+  authorizenet: authorizenetVerifier,
+  recurly: recurlyVerifier,
   generic: genericVerifier,
 };
 
@@ -96,5 +110,12 @@ export {
   pagerdutyVerifier,
   webflowVerifier,
   workosVerifier,
+  cashfreeVerifier,
+  phonepeVerifier,
+  mollieVerifier,
+  adyenVerifier,
+  checkoutVerifier,
+  authorizenetVerifier,
+  recurlyVerifier,
   genericVerifier,
 };

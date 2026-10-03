@@ -2,8 +2,10 @@ import {
   computeHmac,
   computeHmacSha1,
   computeHmacSha256,
+  computeHmacSha512,
   computeSha256,
 } from "../core/crypto.js";
+import { adyenSigningString } from "../providers/adyen.js";
 import { ProviderName } from "../core/types.js";
 import {
   base64ToBytes,
@@ -37,7 +39,10 @@ export interface SignWebhookOptions {
    */
   url?: string;
 
-  /** Signature timestamp in Unix seconds. @default now */
+  /**
+   * Signature timestamp in Unix seconds (sent as milliseconds for Cashfree and
+   * Recurly). @default now
+   */
   timestamp?: number;
 
   /** Message ID for Svix-based providers (`svix-id`). @default random */
@@ -102,6 +107,13 @@ export const SIGNABLE_PROVIDERS: ReadonlySet<string> = new Set([
   "razorpay",
   "square",
   "zoom",
+  "cashfree",
+  "phonepe",
+  "mollie",
+  "adyen",
+  "checkout",
+  "authorizenet",
+  "recurly",
   "generic",
 ]);
 
@@ -354,6 +366,103 @@ export async function signWebhook(
       headers["x-square-hmacsha256-signature"] = bytesToBase64(
         await computeHmacSha256(secret, url + body),
       );
+      break;
+    }
+
+    case "cashfree": {
+      secret = requireSecret(name, secret);
+      const timestampMs = String(timestamp * 1000);
+      headers["x-webhook-timestamp"] = timestampMs;
+      headers["x-webhook-signature"] = bytesToBase64(
+        await computeHmacSha256(secret, `${timestampMs}${body}`),
+      );
+      break;
+    }
+
+    case "phonepe": {
+      secret = requireSecret(name, secret);
+      if (!secret.includes(":")) {
+        throw new Error(
+          '[verihook/testing] PhonePe secret must be "username:password"',
+        );
+      }
+      headers["authorization"] = bytesToHex(await computeSha256(secret));
+      break;
+    }
+
+    case "mollie": {
+      secret = requireSecret(name, secret);
+      const hmac = await computeHmacSha256(secret, body);
+      headers["x-mollie-signature"] = `sha256=${bytesToHex(hmac)}`;
+      break;
+    }
+
+    case "checkout": {
+      secret = requireSecret(name, secret);
+      headers["cko-signature"] = bytesToHex(
+        await computeHmacSha256(secret, body),
+      );
+      break;
+    }
+
+    case "authorizenet": {
+      secret = requireSecret(name, secret);
+      const hmac = await computeHmacSha512(secret, body);
+      headers["x-anet-signature"] = `sha512=${bytesToHex(hmac).toUpperCase()}`;
+      break;
+    }
+
+    case "recurly": {
+      secret = requireSecret(name, secret);
+      const timestampMs = timestamp * 1000;
+      const hmac = await computeHmacSha256(secret, `${timestampMs}.${body}`);
+      headers["recurly-signature"] = `${timestampMs},${bytesToHex(hmac)}`;
+      break;
+    }
+
+    case "adyen": {
+      secret = requireSecret(name, secret);
+      let key: Uint8Array;
+      try {
+        key = hexToBytes(secret.trim());
+      } catch {
+        throw new Error(
+          "[verihook/testing] Adyen secret must be the hex HMAC key from the Customer Area",
+        );
+      }
+      const payload = options.payload as
+        { notificationItems?: unknown } | undefined;
+      if (
+        !options.form &&
+        payload &&
+        typeof payload === "object" &&
+        Array.isArray(payload.notificationItems)
+      ) {
+        // Standard notifications carry an HMAC per item in additionalData.
+        const items = await Promise.all(
+          payload.notificationItems.map(async (entry) => {
+            const item = (entry as { NotificationRequestItem?: object })
+              .NotificationRequestItem as Record<string, unknown>;
+            const additionalData = (item.additionalData ?? {}) as object;
+            const hmacSignature = bytesToBase64(
+              await computeHmacSha256(key, adyenSigningString(item)),
+            );
+            return {
+              ...(entry as object),
+              NotificationRequestItem: {
+                ...item,
+                additionalData: { ...additionalData, hmacSignature },
+              },
+            };
+          }),
+        );
+        body = JSON.stringify({ ...payload, notificationItems: items });
+      } else {
+        headers["hmacsignature"] = bytesToBase64(
+          await computeHmacSha256(key, body),
+        );
+        headers["protocol"] = "HmacSHA256";
+      }
       break;
     }
 

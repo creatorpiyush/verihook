@@ -9,9 +9,10 @@ import {
 const svixSecret = "whsec_dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==";
 
 function secretFor(provider: string): string {
-  return ["svix", "resend", "clerk"].includes(provider)
-    ? svixSecret
-    : `${provider}_test_secret`;
+  if (["svix", "resend", "clerk"].includes(provider)) return svixSecret;
+  if (provider === "phonepe") return "phonepe_user:phonepe_pass";
+  if (provider === "adyen") return "44782def547aaa06c910c43932b1eb0c";
+  return `${provider}_test_secret`;
 }
 
 describe("signWebhook round-trips through verifyWebhook", () => {
