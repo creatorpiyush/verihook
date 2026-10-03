@@ -303,7 +303,9 @@ Both CLI commands enforce origin validation as a best-effort defense-in-depth me
 - **CI Security Auditing**: GitHub Actions workflow includes mandatory `npm audit --audit-level=high` step.
 - **Bundle Size Budgets**: `npm run size` (size-limit, in `test:all`) fails CI when `verifyWebhook`, `verihook/express` or a per-provider entry outgrows its budget in `.size-limit.json`.
 - **Cross-SDK Conformance**: `tests/conformance/` signs webhooks with the official `stripe`, `@octokit/webhooks-methods`, `svix` and `twilio` SDKs (devDependencies only) and verifies them with verihook. It also signs with `verihook/testing` and verifies with those SDKs.
-- **Supply Chain**: GitHub Actions are pinned to commit SHAs, workflow tokens default to read-only, the OpenSSF Scorecard runs weekly and on `main`, and npm releases are published with provenance.
+- **Supply Chain**: GitHub Actions are pinned to commit SHAs, workflow tokens default to read-only, the OpenSSF Scorecard runs weekly and on `main`, and npm releases are published with provenance. Dependabot (`.github/dependabot.yml`) updates npm dependencies, including the example apps, and GitHub Actions every week.
+- **Static Analysis**: CodeQL (`security-extended` queries) runs on every pull request, on `main` and weekly.
+- **Fuzzing**: `tests/fuzz.test.ts` uses fast-check to feed random headers, bodies and secrets to every offline provider (verifications must fail with a known error code and never throw), to check that any signed JSON payload verifies and any change to a signed body is rejected, and to check the crypto and encoding helpers.
 - **Coverage Badge**: `coverage-badge.yml` publishes `main`'s line coverage to the `badges` branch as a shields.io endpoint file, which the README badge reads.
 - **Zero Runtime Overhead**: No third-party runtime npm dependencies (`"dependencies": {}`).
 - **Dual Bundle**: Ships CommonJS (`dist/index.js`, `dist/cli.js`) & ESM (`dist/index.mjs`, `dist/cli.mjs`) with TypeScript declaration maps (`dist/index.d.ts`, `dist/cli.d.ts`).

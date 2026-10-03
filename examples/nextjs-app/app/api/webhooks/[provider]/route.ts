@@ -3,9 +3,10 @@ import { verifyWebhook } from 'verihook';
 
 export async function POST(
   req: Request,
-  { params }: { params: { provider: string } }
+  { params }: { params: Promise<{ provider: string }> }
 ) {
-  const provider = params.provider;
+  // Next.js 15+ passes route params as a Promise.
+  const { provider } = await params;
 
   // Retrieve environment secret corresponding to the provider
   const envKey = `${provider.toUpperCase()}_WEBHOOK_SECRET`;
@@ -19,9 +20,8 @@ export async function POST(
     return NextResponse.json({ error: result.reason }, { status: 401 });
   }
 
-  // Parse verified JSON payload
-  const body = await req.json();
-  console.log(`✅ [Next.js Webhook] ${provider} verified successfully:`, body);
+  // The verified, parsed payload
+  console.log(`✅ [Next.js Webhook] ${provider} verified successfully:`, result.event);
 
   return NextResponse.json({
     success: true,

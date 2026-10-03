@@ -3,8 +3,8 @@ set -e
 
 echo "=== Running Pre-Release Checklist & Build ==="
 
-echo "0. Running NPM install..."
-npm install
+echo "0. Installing dependencies from the lockfile..."
+npm ci
 
 echo "1. Checking code formatting..."
 npm run format:check

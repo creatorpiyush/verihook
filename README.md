@@ -640,6 +640,9 @@ npm run test:regression
 # Check verihook against the official Stripe, Octokit, Svix and Twilio SDKs
 npm run test:conformance
 
+# Property-based fuzz tests (fast-check): random headers, bodies, secrets and payloads
+npm run test:fuzz
+
 # Check bundle sizes against the budgets in .size-limit.json (run after a build)
 npm run size
 
