@@ -141,6 +141,13 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **Eight new subpath adapters**: `verihook/fastify`, `/hono`, `/h3` (Nuxt), `/sveltekit`, `/remix` (React Router), `/astro`, `/lambda` (API Gateway v1/v2, Function URLs) and `/nestjs` (guard).
 - **Shared adapter contract** (`src/middleware/shared.ts`): 401 on failure, 200 for duplicates, 413 above `maxBodySize`, generic 500 on exceptions, dedupe release when the handler fails. No runtime framework dependencies.
 
+## 10. Regional Payment Providers (v1.12.0) — ✅ Completed
+
+- **India**: Cashfree (`cashfree`), PhonePe (`phonepe`).
+- **Europe**: Mollie (`mollie`, next-gen webhooks), Adyen (`adyen`, standard notifications and `HmacSignature` webhooks), Checkout.com (`checkout`).
+- **USA**: Authorize.net (`authorizenet`), Recurly (`recurly`).
+- Each provider ships with a `verify*` shortcut, a typed event, `signWebhook()` / `npx verihook simulate` support and known-good test vectors.
+
 ---
 
 ## Priority & Phasing Summary
@@ -154,4 +161,6 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **Phase 7 (v1.9.0)**: Add **`verihook/testing` signing helpers & troubleshooting hints**. ✅
 - **Phase 8 (v1.10.0)**: Add **typed events (`result.event`, `result.eventType`) & contributor on-ramp**. ✅
 - **Phase 9 (v1.11.0)**: Add **framework adapters (Fastify, Hono, h3/Nuxt, SvelteKit, Remix, Astro, AWS Lambda, NestJS)**. ✅
+- **Phase 10 (v1.12.0)**: Add **regional payment providers (Cashfree, PhonePe, Mollie, Adyen, Checkout.com, Authorize.net, Recurly)**. ✅
+- **Phase 11 (v1.13.0)**: Add **developer tools & SaaS providers (GitLab, Bitbucket, Vercel, Sentry, Twitch EventSub, Telegram, Postmark, SendGrid, Mailgun, HubSpot, Intercom, Calendly, Typeform)**. ⬜
 
