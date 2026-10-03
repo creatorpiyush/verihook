@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Paddle: real Paddle Billing webhooks failed verification. Paddle sends `Paddle-Signature: ts=<ts>;h1=<hex>`, but verihook only read `h=` values, so every genuine request was rejected with `MISSING_HEADER`. verihook now reads `h1` (several during secret rotation) and still accepts `h`. `signWebhook('paddle')` and `npx verihook simulate paddle` now send `h1`.
+
 ## [1.14.1] - 2026-10-03
 
 ### Security

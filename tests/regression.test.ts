@@ -251,7 +251,7 @@ describe("Comprehensive End-to-End Regression Suite", () => {
         await verifyPaddle(
           {
             headers: {
-              "paddle-signature": `ts=${ts};h=${bytesToHex(await computeHmacSha256("sec", `${ts}:raw`))}`,
+              "paddle-signature": `ts=${ts};h1=${bytesToHex(await computeHmacSha256("sec", `${ts}:raw`))}`,
             },
             body: "raw",
           },
