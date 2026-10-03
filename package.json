@@ -374,7 +374,7 @@
     "@octokit/webhooks-methods": "6.0.0",
     "@size-limit/preset-small-lib": "14.1.0",
     "@types/node": "20.19.43",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "5.0.2",
     "fast-check": "4.10.2",
     "fastify": "5.12.5",
     "h3": "1.15.11",
