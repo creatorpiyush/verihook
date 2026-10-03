@@ -375,7 +375,7 @@ export async function signWebhook(
     case "paddle": {
       secret = requireSecret(name, secret);
       const hmac = await computeHmacSha256(secret, `${timestamp}:${body}`);
-      headers["paddle-signature"] = `ts=${timestamp};h=${bytesToHex(hmac)}`;
+      headers["paddle-signature"] = `ts=${timestamp};h1=${bytesToHex(hmac)}`;
       break;
     }
 

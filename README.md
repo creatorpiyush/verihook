@@ -69,7 +69,7 @@ bun add verihook
 | **Twitter / X** | `'twitter'`, `'x'` | `x-twitter-webhooks-signature` (Supports `verifyTwitterCrc` GET handshake) |
 | **PayPal** | `'paypal'` | Transmission headers + `paypal-cert-url` (RSA-SHA256). Pass `{ webhookId }`; certs are only fetched from PayPal API hosts, or pin a PEM as `secret` |
 | **LemonSqueezy** | `'lemonsqueezy'` | `x-signature` |
-| **Paddle** | `'paddle'` | `paddle-signature` (`ts=...;h=...`) |
+| **Paddle** | `'paddle'` | `paddle-signature` (`ts=...;h1=...`) |
 | **PagerDuty** | `'pagerduty'` | `x-pagerduty-signature` (`v1=...`) |
 | **Webflow** | `'webflow'` | `x-webflow-signature`, `x-webflow-timestamp` |
 | **WorkOS** | `'workos'` | `workos-signature` (`t=...,v1=...`) or `svix-signature` |

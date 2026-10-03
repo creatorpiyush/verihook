@@ -38,8 +38,9 @@ export const paddleVerifier: ProviderVerifier = {
         const k = trimmed.slice(0, eqIdx).trim();
         const v = trimmed.slice(eqIdx + 1).trim();
         if (k === "ts" && v) timestampStr = v;
-        // Multiple h= values are sent while a secret is being rotated.
-        if (k === "h" && v) signatures.push(v.toLowerCase());
+        // Paddle sends `h1`; several are sent while a secret is being rotated.
+        // `h` is accepted too, for fixtures signed by verihook before 1.14.2.
+        if ((k === "h1" || k === "h") && v) signatures.push(v.toLowerCase());
       }
     }
 

@@ -165,13 +165,13 @@ describe("provider registry", () => {
 describe("secret rotation (multiple signatures)", () => {
   const body = JSON.stringify({ id: "evt_rot" });
 
-  it("Paddle accepts any matching h= value", async () => {
+  it("Paddle accepts any matching h1= value", async () => {
     const good = bytesToHex(await computeHmacSha256("new", `${now}:${body}`));
     const result = await verifyWebhook(
       "paddle",
       {
         headers: {
-          "paddle-signature": `ts=${now};h=${"0".repeat(64)};h=${good}`,
+          "paddle-signature": `ts=${now};h1=${"0".repeat(64)};h1=${good}`,
         },
         body,
       },
