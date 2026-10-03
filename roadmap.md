@@ -131,6 +131,13 @@ Expand the CLI toolchain into a live local developer relay proxy:
 
 ---
 
+## 8. Typed Events & Contributor On-Ramp (v1.10.0) — ✅ Completed
+
+- **`result.event` / `result.eventType`**: Verified results carry the parsed payload, typed per built-in provider (`StripeEvent`, `GitHubEvent`, …), and the event name from the body or provider headers. Custom types via `verifyWebhook<MyEvent>()`.
+- **Contributor on-ramp**: `CONTRIBUTING.md` ("Add a provider in 5 steps"), a tested provider template, issue forms and a PR template.
+
+---
+
 ## Priority & Phasing Summary
 
 - **Phase 1 (v1.2.0)**: Add **PayPal, LemonSqueezy, Paddle, X/Twitter, PagerDuty, Webflow**. ✅
@@ -140,4 +147,5 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **Phase 5 (v1.6.0)**: Add **Replay protection / deduplication store (`MemoryDedupeStore`)**. ✅
 - **Phase 6 (v1.7.0)**: Add **`npx verihook listen` live local relay proxy**. ✅
 - **Phase 7 (v1.9.0)**: Add **`verihook/testing` signing helpers & troubleshooting hints**. ✅
+- **Phase 8 (v1.10.0)**: Add **typed events (`result.event`, `result.eventType`) & contributor on-ramp**. ✅
 
