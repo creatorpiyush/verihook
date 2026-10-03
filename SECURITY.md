@@ -10,10 +10,10 @@ We actively maintain and provide security patches for the following versions of 
 
 | Version | Supported | Security Notes |
 | :--- | :--- | :--- |
-| `1.14.x` | :white_check_mark: | Current release family. Actively maintained. `1.14.1` fixes a `dedupeStore` replay bypass via unsigned ID headers. |
-| `1.8.x` – `1.13.x` | :x: | Superseded by `1.14.x` (drop-in upgrade, no breaking changes). |
-| `1.7.x` | :x: | Affected by PayPal signature forgery via HMAC fallback. Upgrade to latest `1.14.x`. |
-| `< 1.7.0` | :x: | Legacy release (also affected by the PayPal issue). Upgrade to latest `1.14.x`. |
+| `1.15.x` | :white_check_mark: | Current release family. Actively maintained. |
+| `1.8.x` – `1.14.x` | :x: | Superseded by `1.15.x` (drop-in upgrade, no breaking changes). Versions before `1.14.1` are affected by a `dedupeStore` replay bypass via unsigned ID headers. |
+| `1.7.x` | :x: | Affected by PayPal signature forgery via HMAC fallback. Upgrade to latest `1.15.x`. |
+| `< 1.7.0` | :x: | Legacy release (also affected by the PayPal issue). Upgrade to latest `1.15.x`. |
 
 ---
 

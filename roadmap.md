@@ -162,6 +162,12 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **Cross-SDK conformance tests** against the official Stripe, Octokit, Svix and Twilio SDKs, in both directions.
 - **Supply chain**: coverage badge generated in CI, OpenSSF Scorecard, GitHub Actions pinned to commit SHAs, npm provenance.
 
+## 13. Discoverability (v1.15.0) — ✅ Completed
+
+- **Documentation site** at [creatorpiyush.github.io/verihook](https://creatorpiyush.github.io/verihook/): a generated page per provider (where to find the secret, headers, framework snippets), a page per framework, troubleshooting by error code and guides.
+- **JSR package** (`jsr:@verihook/verihook`) for Deno, published with every npm release.
+- **README** shortened to a landing page that links to the docs.
+
 ## Future Plans: More Regional Payment Providers 🗓️
 
 Support for these providers is planned for a future release:
@@ -190,4 +196,5 @@ Each will ship like the v1.12.0 providers: a `verify*` shortcut, a typed event, 
 - **Phase 10 (v1.12.0)**: Add **regional payment providers (Cashfree, PhonePe, Mollie, Adyen, Checkout.com, Authorize.net, Recurly)**. ✅
 - **Phase 11 (v1.13.0)**: Add **developer tools & SaaS providers (GitLab, Bitbucket, Vercel, Sentry, Twitch EventSub, Telegram, Postmark, SendGrid, Mailgun, HubSpot, Intercom, Calendly, Typeform)**. ✅
 - **Phase 12 (v1.14.0)**: Add **per-provider entry points, bundle size budgets, cross-SDK conformance tests and supply-chain hardening**. ✅
+- **Phase 13 (v1.15.0)**: Add **a documentation site and JSR publishing for Deno**. ✅
 
