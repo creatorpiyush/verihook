@@ -5,6 +5,18 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Property-based fuzz tests with fast-check (`npm run test:fuzz`): random requests never verify or throw, any signed payload verifies, and any change to a signed body is rejected.
+- CodeQL static analysis on pull requests, on `main` and weekly.
+- Dependabot for npm (root and example apps) and GitHub Actions.
+
+### Changed
+- Example apps upgraded to current majors (Next.js 16, React 19, Express 5, Fastify 5, `@hono/node-server` 2), clearing the advisories in their lockfiles. The Next.js route awaits `params`, as Next.js 15+ requires.
+- vitest 4.1.11 fixes the moderate dev-only advisory in `@vitest/mocker`. `npm audit` now reports no vulnerabilities.
+- `scripts/pre-commit.sh` and `scripts/pre-release.sh` install with `npm ci` (lockfile-pinned) instead of `npm install`.
+
 ## [1.14.0] - 2026-10-03
 
 ### Added

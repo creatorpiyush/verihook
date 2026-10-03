@@ -44,7 +44,8 @@ app.post('/webhooks/github', async (req: Request, res: Response) => {
 
   if (!result.valid) {
     console.error('❌ [GitHub] Webhook verification failed:', result.reason);
-    return res.status(401).json({ error: result.reason });
+    res.status(401).json({ error: result.reason });
+    return;
   }
 
   const payload = JSON.parse(req.body.toString('utf-8'));
@@ -63,7 +64,8 @@ app.post('/webhooks/svix', async (req: Request, res: Response) => {
 
   if (!result.valid) {
     console.error('❌ [Svix] Webhook verification failed:', result.reason);
-    return res.status(401).json({ error: result.reason });
+    res.status(401).json({ error: result.reason });
+    return;
   }
 
   const payload = JSON.parse(req.body.toString('utf-8'));
@@ -100,7 +102,8 @@ app.post('/webhooks/slack', async (req: Request, res: Response) => {
 
   if (!result.valid) {
     console.error('❌ [Slack] Webhook verification failed:', result.reason);
-    return res.status(401).json({ error: result.reason });
+    res.status(401).json({ error: result.reason });
+    return;
   }
 
   const payloadStr = req.body.toString('utf-8');
@@ -119,7 +122,8 @@ app.post('/webhooks/linear', async (req: Request, res: Response) => {
 
   if (!result.valid) {
     console.error('❌ [Linear] Webhook verification failed:', result.reason);
-    return res.status(401).json({ error: result.reason });
+    res.status(401).json({ error: result.reason });
+    return;
   }
 
   const payload = JSON.parse(req.body.toString('utf-8'));
@@ -142,7 +146,8 @@ app.post('/webhooks/generic', async (req: Request, res: Response) => {
 
   if (!result.valid) {
     console.error('❌ [Generic] Webhook verification failed:', result.reason);
-    return res.status(401).json({ error: result.reason });
+    res.status(401).json({ error: result.reason });
+    return;
   }
 
   console.log('✅ [Generic] Verified custom webhook');

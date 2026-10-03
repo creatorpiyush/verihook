@@ -283,6 +283,7 @@
     "test:coverage": "vitest run --coverage",
     "test:regression": "vitest run tests/regression.test.ts",
     "test:conformance": "vitest run tests/conformance",
+    "test:fuzz": "vitest run tests/fuzz.test.ts",
     "test:all": "bash scripts/test-all.sh",
     "typecheck": "tsc --noEmit && tsc -p tests/types/tsconfig.json",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
@@ -373,7 +374,8 @@
     "@octokit/webhooks-methods": "6.0.0",
     "@size-limit/preset-small-lib": "14.1.0",
     "@types/node": "20.19.43",
-    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/coverage-v8": "4.1.11",
+    "fast-check": "4.10.2",
     "fastify": "5.12.5",
     "h3": "1.15.11",
     "hono": "4.13.12",
@@ -386,7 +388,7 @@
     "tsup": "8.5.1",
     "twilio": "6.1.2",
     "typescript": "5.9.3",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   },
   "overrides": {
     "esbuild": "0.28.1"
