@@ -79,20 +79,28 @@ describe("Replay Protection & Deduplication Store", () => {
       expect(id).toBe("msg_test_123");
     });
 
-    it("should extract x-github-delivery header for GitHub", async () => {
-      const id = await extractEventId("github", {
-        headers: { "x-github-delivery": "guid-github-123" },
-        rawBody: "{}",
+    it("ignores unsigned ID headers (x-github-delivery, x-shopify-webhook-id, svix-id on other providers)", async () => {
+      const body = "plain text non json body";
+      const digest = await extractEventId("github", {
+        headers: {},
+        rawBody: body,
       });
-      expect(id).toBe("guid-github-123");
-    });
-
-    it("should extract x-shopify-webhook-id header for Shopify", async () => {
-      const id = await extractEventId("shopify", {
-        headers: { "x-shopify-webhook-id": "shopify_evt_99" },
-        rawBody: "{}",
-      });
-      expect(id).toBe("shopify_evt_99");
+      for (const headers of [
+        { "x-github-delivery": "guid-github-123" },
+        { "svix-id": "msg_spoofed" },
+        { "webhook-id": "msg_spoofed" },
+        { "paypal-transmission-id": "tx_spoofed" },
+      ]) {
+        expect(await extractEventId("github", { headers, rawBody: body })).toBe(
+          digest,
+        );
+      }
+      expect(
+        await extractEventId("shopify", {
+          headers: { "x-shopify-webhook-id": "shopify_evt_99" },
+          rawBody: JSON.stringify({ id: 4242 }),
+        }),
+      ).toHaveLength(64);
     });
 
     it("should extract paypal-transmission-id header for PayPal", async () => {
@@ -130,11 +138,29 @@ describe("Replay Protection & Deduplication Store", () => {
       });
       expect(idMsg).toBe("msg_custom_300");
 
+      // Signature headers are not used: their format allows variations that still verify.
       const idTwilio = await extractEventId("twilio", {
         headers: { "x-twilio-signature": "twilio_sig_hash" },
         rawBody: "unparseable_invalid_json{",
       });
-      expect(idTwilio).toBe("twilio_sig_hash");
+      expect(idTwilio).toHaveLength(64);
+    });
+
+    it("uses the signed Mailgun token over unsigned body fields", async () => {
+      const id = await extractEventId("mailgun", {
+        headers: {},
+        rawBody: JSON.stringify({
+          id: "unsigned_top_level",
+          signature: { timestamp: "1", token: "mg_token_1", signature: "x" },
+        }),
+      });
+      expect(id).toBe("mg_token_1");
+
+      const form = await extractEventId("mailgun", {
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        rawBody: "timestamp=1&token=mg_form_token&signature=x",
+      });
+      expect(form).toBe("mg_form_token");
     });
 
     it("should fallback to SHA-256 hash when no header or JSON ID is present", async () => {
@@ -185,6 +211,49 @@ describe("Replay Protection & Deduplication Store", () => {
       expect(res2.valid).toBe(false);
       expect(res2.code).toBe(WebhookErrorCode.DUPLICATE_EVENT);
       expect(res2.reason).toContain("Duplicate webhook event");
+    });
+
+    it("rejects a replay that adds or changes unsigned ID headers", async () => {
+      const dedupeStore = new MemoryDedupeStore();
+      const stripeHeader = await makeStripeHeader();
+      const first = await verifyWebhook(
+        "stripe",
+        { headers: { "stripe-signature": stripeHeader }, body: bodyStr },
+        secret,
+        { now: timestamp, dedupeStore },
+      );
+      expect(first.valid).toBe(true);
+      const replay = await verifyWebhook(
+        "stripe",
+        {
+          headers: { "stripe-signature": stripeHeader, "svix-id": "msg_new" },
+          body: bodyStr,
+        },
+        secret,
+        { now: timestamp, dedupeStore },
+      );
+      expect(replay.code).toBe(WebhookErrorCode.DUPLICATE_EVENT);
+
+      const ghSecret = "gh_dedupe_secret";
+      const ghBody = JSON.stringify({ ref: "refs/heads/main" });
+      const ghSig = `sha256=${bytesToHex(await computeHmacSha256(ghSecret, ghBody))}`;
+      const send = (delivery: string) =>
+        verifyWebhook(
+          "github",
+          {
+            headers: {
+              "x-hub-signature-256": ghSig,
+              "x-github-delivery": delivery,
+            },
+            body: ghBody,
+          },
+          ghSecret,
+          { dedupeStore },
+        );
+      expect((await send("guid-1")).valid).toBe(true);
+      expect((await send("guid-2")).code).toBe(
+        WebhookErrorCode.DUPLICATE_EVENT,
+      );
     });
 
     it("should support explicit eventId option override", async () => {

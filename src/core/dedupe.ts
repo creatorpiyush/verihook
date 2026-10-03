@@ -1,4 +1,5 @@
 import { computeSha256 } from "./crypto.js";
+import { parseEvent, readString } from "./event.js";
 import {
   DedupeStore,
   MemoryDedupeStoreOptions,
@@ -83,97 +84,55 @@ export class MemoryDedupeStore implements DedupeStore {
   }
 }
 
+// Headers whose event ID the provider's signature covers. GitLab's token mode signs
+// nothing, but whoever holds its static token can send any request anyway.
+const SIGNED_ID_HEADERS: Partial<Record<ProviderName, readonly string[]>> = {
+  svix: ["svix-id"],
+  resend: ["svix-id"],
+  clerk: ["svix-id"],
+  gitlab: ["webhook-id", "idempotency-key"],
+  paypal: ["paypal-transmission-id"],
+  twitch: ["twitch-eventsub-message-id"],
+};
+
 /**
- * Extracts provider-specific event ID from normalized headers or JSON body payload,
- * falling back to SHA-256 payload digest.
+ * Extracts the event ID used as the dedupe key. It only reads data the provider's
+ * signature covers: a signed ID header, an ID in the signed body, or else a SHA-256
+ * digest of the body. Unsigned headers (e.g. `x-github-delivery`) are never used,
+ * because a client could change them to slip a replayed webhook past the store.
  */
 export async function extractEventId(
   provider: ProviderName,
   req: NormalizedWebhookRequest,
 ): Promise<string> {
-  const headers = req.headers;
-
-  // 1. Direct header extractions
-  if (headers["svix-id"]) {
-    return headers["svix-id"];
-  }
-  if (headers["x-github-delivery"]) {
-    return headers["x-github-delivery"];
-  }
-  if (headers["x-shopify-webhook-id"]) {
-    return headers["x-shopify-webhook-id"];
-  }
-  if (headers["paypal-transmission-id"]) {
-    return headers["paypal-transmission-id"];
-  }
-  if (headers["twitch-eventsub-message-id"]) {
-    return headers["twitch-eventsub-message-id"];
-  }
-  // GitLab: stable across retries; Standard Webhooks (GitLab signing tokens).
-  if (headers["idempotency-key"]) {
-    return headers["idempotency-key"];
-  }
-  if (headers["webhook-id"]) {
-    return headers["webhook-id"];
+  // 1. Signed ID headers for this provider
+  for (const name of SIGNED_ID_HEADERS[provider] ?? []) {
+    const value = req.headers[name];
+    if (value) return value;
   }
 
-  // 2. Parse JSON body for common ID properties
-  if (req.rawBody) {
-    try {
-      const parsed = JSON.parse(req.rawBody);
-      if (parsed && typeof parsed === "object") {
-        if (typeof parsed.id === "string" && parsed.id) {
-          return parsed.id;
-        }
-        if (typeof parsed.event_id === "string" && parsed.event_id) {
-          return parsed.event_id;
-        }
-        if (typeof parsed.msg_id === "string" && parsed.msg_id) {
-          return parsed.msg_id;
-        }
-        // Mailgun recommends rejecting reused signature tokens.
-        if (
-          parsed.signature &&
-          typeof parsed.signature === "object" &&
-          typeof parsed.signature.token === "string" &&
-          parsed.signature.token
-        ) {
-          return parsed.signature.token;
-        }
-        if (
-          typeof parsed.notificationId === "string" &&
-          parsed.notificationId
-        ) {
-          return parsed.notificationId;
-        }
-        if (
-          Array.isArray(parsed.messages) &&
-          parsed.messages[0] &&
-          typeof parsed.messages[0].id === "string"
-        ) {
-          return parsed.messages[0].id;
-        }
-      }
-    } catch {
-      // Non-JSON body
-    }
+  const parsed = req.rawBody ? parseEvent(req) : undefined;
+
+  // 2. Mailgun signs only `timestamp + token`, so its token is the one signed ID
+  // (Mailgun recommends rejecting reused tokens).
+  if (provider === "mailgun") {
+    const token =
+      readString(parsed, "signature", "token") ?? readString(parsed, "token");
+    if (token) return token;
   }
 
-  // 3. Provider signature fallback header
-  const signatureHeader =
-    headers["stripe-signature"] ||
-    headers["x-hub-signature-256"] ||
-    headers["x-slack-signature"] ||
-    headers["paddle-signature"] ||
-    headers["x-pagerduty-signature"] ||
-    headers["x-webflow-signature"] ||
-    headers["x-twilio-signature"];
-
-  if (signatureHeader) {
-    return signatureHeader;
+  // 3. Common ID properties in the signed JSON body
+  if (parsed && typeof parsed === "object") {
+    const id =
+      readString(parsed, "id") ??
+      readString(parsed, "event_id") ??
+      readString(parsed, "msg_id") ??
+      readString(parsed, "notificationId") ??
+      readString(parsed, "messages", "0", "id");
+    if (id) return id;
   }
 
-  // 4. SHA-256 fallback digest over provider + raw body
+  // 4. SHA-256 digest over provider + raw body
   const hashBytes = await computeSha256(`${provider}:${req.rawBody || ""}`);
   return bytesToHex(hashBytes);
 }

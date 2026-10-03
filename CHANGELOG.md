@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CodeQL static analysis on pull requests, on `main` and weekly.
 - Dependabot for npm (root and example apps) and GitHub Actions.
 
+### Security
+- The dedupe key now comes only from data the provider's signature covers: a signed ID header (`svix-id` for Svix/Resend/Clerk, `webhook-id`/`idempotency-key` for GitLab, `paypal-transmission-id`, `twitch-eventsub-message-id`), Mailgun's signed token, an ID in the signed body, or else a SHA-256 digest of the body. Before, any request could carry an unsigned header such as `svix-id` or `x-github-delivery`, and changing it let a replayed webhook pass `dedupeStore`. GitHub and Shopify deliveries without a body ID are now keyed on the body digest.
+
 ### Changed
 - Example apps upgraded to current majors (Next.js 16, React 19, Express 5, Fastify 5, `@hono/node-server` 2), clearing the advisories in their lockfiles. The Next.js route awaits `params`, as Next.js 15+ requires.
 - vitest 4.1.11 fixes the moderate dev-only advisory in `@vitest/mocker`. `npm audit` now reports no vulnerabilities.
