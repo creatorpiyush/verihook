@@ -167,6 +167,18 @@ From the command line, \`npx verihook simulate ${p.id} --url http://localhost:30
 See [Testing your handlers](../../guides/testing/) for supertest and Fetch \`Request\` examples.`;
 }
 
+/**
+ * Escapes a table cell. GFM unescapes `\|` even inside code spans, but no other
+ * escape works there, so a backslash can't be written safely in a cell that is
+ * mostly code. Reject it rather than render it wrong.
+ */
+function escapeCell(value, id) {
+  if (value.includes("\\")) {
+    throw new Error(`${id}: table values can't contain a backslash: ${value}`);
+  }
+  return value.replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
+}
+
 function page(p) {
   const tabs = frameworkSnippets(p)
     .map(
@@ -187,7 +199,7 @@ function page(p) {
   const table = [
     "| | |",
     "| :--- | :--- |",
-    ...rows.map(([k, v]) => `| ${k} | ${v.replace(/\|/g, "\\|")} |`),
+    ...rows.map(([k, v]) => `| ${k} | ${escapeCell(v, p.id)} |`),
   ].join("\n");
   const notes = p.notes.length
     ? `## Things to know\n\n${p.notes.map((n) => `- ${n}`).join("\n")}\n`
