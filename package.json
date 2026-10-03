@@ -373,7 +373,7 @@
     "@nestjs/platform-express": "12.1.2",
     "@octokit/webhooks-methods": "6.0.0",
     "@size-limit/preset-small-lib": "14.1.0",
-    "@types/node": "20.19.43",
+    "@types/node": "26.6.3",
     "@vitest/coverage-v8": "4.1.11",
     "fast-check": "4.10.2",
     "fastify": "5.12.5",
