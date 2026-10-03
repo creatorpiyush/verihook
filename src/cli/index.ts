@@ -622,8 +622,9 @@ function simulationSample(
       };
     case "adyen":
       return {
+        // Adyen HMAC keys are hex; this placeholder is not a real key.
         secret:
-          "44782DEF547AAA06C910C43932B1EB0C71FC68D9D0C057550C48EC2ACF6BA056",
+          "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
         payload: {
           live: "false",
           notificationItems: [
