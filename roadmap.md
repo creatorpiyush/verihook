@@ -148,6 +148,13 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **USA**: Authorize.net (`authorizenet`), Recurly (`recurly`).
 - Each provider ships with a `verify*` shortcut, a typed event, `signWebhook()` / `npx verihook simulate` support and known-good test vectors.
 
+## 11. Developer Tools & SaaS Providers (v1.13.0) — ✅ Completed
+
+- **Code hosting & deploys**: GitLab (`gitlab`, signing tokens and secret tokens), Bitbucket (`bitbucket`), Vercel (`vercel`), Sentry (`sentry`).
+- **Messaging & email**: Twitch EventSub (`twitch`), Telegram (`telegram`), Postmark (`postmark`), SendGrid (`sendgrid`, ECDSA P-256), Mailgun (`mailgun`).
+- **CRM, support & forms**: HubSpot (`hubspot`, v1/v2/v3), Intercom (`intercom`), Calendly (`calendly`), Typeform (`typeform`).
+- New `verifyEcdsaP256Sha256()` helper; GitLab signing tokens share the Svix / Standard Webhooks check.
+
 ---
 
 ## Priority & Phasing Summary
@@ -162,5 +169,5 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **Phase 8 (v1.10.0)**: Add **typed events (`result.event`, `result.eventType`) & contributor on-ramp**. ✅
 - **Phase 9 (v1.11.0)**: Add **framework adapters (Fastify, Hono, h3/Nuxt, SvelteKit, Remix, Astro, AWS Lambda, NestJS)**. ✅
 - **Phase 10 (v1.12.0)**: Add **regional payment providers (Cashfree, PhonePe, Mollie, Adyen, Checkout.com, Authorize.net, Recurly)**. ✅
-- **Phase 11 (v1.13.0)**: Add **developer tools & SaaS providers (GitLab, Bitbucket, Vercel, Sentry, Twitch EventSub, Telegram, Postmark, SendGrid, Mailgun, HubSpot, Intercom, Calendly, Typeform)**. ⬜
+- **Phase 11 (v1.13.0)**: Add **developer tools & SaaS providers (GitLab, Bitbucket, Vercel, Sentry, Twitch EventSub, Telegram, Postmark, SendGrid, Mailgun, HubSpot, Intercom, Calendly, Typeform)**. ✅
 
