@@ -26,6 +26,46 @@
       "import": "./dist/testing.mjs",
       "require": "./dist/testing.js"
     },
+    "./fastify": {
+      "types": "./dist/fastify.d.ts",
+      "import": "./dist/fastify.mjs",
+      "require": "./dist/fastify.js"
+    },
+    "./hono": {
+      "types": "./dist/hono.d.ts",
+      "import": "./dist/hono.mjs",
+      "require": "./dist/hono.js"
+    },
+    "./h3": {
+      "types": "./dist/h3.d.ts",
+      "import": "./dist/h3.mjs",
+      "require": "./dist/h3.js"
+    },
+    "./sveltekit": {
+      "types": "./dist/sveltekit.d.ts",
+      "import": "./dist/sveltekit.mjs",
+      "require": "./dist/sveltekit.js"
+    },
+    "./remix": {
+      "types": "./dist/remix.d.ts",
+      "import": "./dist/remix.mjs",
+      "require": "./dist/remix.js"
+    },
+    "./astro": {
+      "types": "./dist/astro.d.ts",
+      "import": "./dist/astro.mjs",
+      "require": "./dist/astro.js"
+    },
+    "./lambda": {
+      "types": "./dist/lambda.d.ts",
+      "import": "./dist/lambda.mjs",
+      "require": "./dist/lambda.js"
+    },
+    "./nestjs": {
+      "types": "./dist/nestjs.d.ts",
+      "import": "./dist/nestjs.mjs",
+      "require": "./dist/nestjs.js"
+    },
     "./package.json": "./package.json"
   },
   "bin": {
@@ -80,7 +120,19 @@
     "hmac",
     "ed25519",
     "security",
-    "typescript"
+    "typescript",
+    "fastify",
+    "hono",
+    "nuxt",
+    "h3",
+    "sveltekit",
+    "remix",
+    "react-router",
+    "astro",
+    "aws-lambda",
+    "nestjs",
+    "express",
+    "nextjs"
   ],
   "author": "Piyush Anand",
   "license": "MIT",
@@ -96,9 +148,17 @@
     "access": "public"
   },
   "devDependencies": {
+    "@nestjs/common": "12.1.2",
+    "@nestjs/core": "12.1.2",
+    "@nestjs/platform-express": "12.1.2",
     "@types/node": "20.19.43",
     "@vitest/coverage-v8": "4.1.10",
+    "fastify": "5.12.5",
+    "h3": "1.15.11",
+    "hono": "4.13.12",
     "prettier": "3.9.6",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
     "tsup": "8.5.1",
     "typescript": "5.9.3",
     "vitest": "4.1.10"

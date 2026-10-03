@@ -5,6 +5,27 @@ All notable changes to the `verihook` project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- 🧩 **Framework adapters**: new subpath exports, each with no runtime dependency on its framework:
+  - `verihook/fastify`: `verihookFastify()` `preHandler` hook, plus the `verihookRawBody` plugin. The plugin keeps `request.rawBody` and still parses JSON and form bodies.
+  - `verihook/hono`: `verihookHono()` middleware. It sets `c.get("verihook")`; type it with `VerihookVariables<TEvent>`.
+  - `verihook/h3`: `createWebhookHandler()` for Nuxt / Nitro / h3 v1 and v2.
+  - `verihook/sveltekit`, `verihook/remix` (also React Router), `verihook/astro`: `createWebhookHandler()` route handlers.
+  - `verihook/lambda`: `createWebhookHandler()` for API Gateway REST (v1), HTTP API (v2) and Function URLs. It decodes base64 bodies and rebuilds the signed URL for Twilio and Square.
+  - `verihook/nestjs`: `createVerihookGuard()`. It uses Nest's `rawBody: true` and works on the Express and Fastify platforms; pass an optional `exceptionFactory`.
+- All adapters share the Express/Next.js contract:
+  - 401 on failure, or `onError`;
+  - 200 `{ received: true, duplicate: true }` for duplicates;
+  - 413 above `maxBodySize`;
+  - a generic 500 on exceptions;
+  - the dedupe key is released when your handler throws or responds `>= 500`.
+
+### Changed
+- `verihook/next` now runs on the shared Web adapter core (`src/middleware/shared.ts`). Behaviour is unchanged.
+- The Fastify and Hono examples use the new adapters.
+
 ## [1.10.0] - 2026-10-03
 
 ### Added

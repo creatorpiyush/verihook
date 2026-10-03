@@ -21,7 +21,7 @@ No more hunting down bespoke HMAC code snippets for every service or installing 
 ## Features
 
 - ⚡ **Zero Runtime Dependencies**: Powered by standard Web Crypto API (`crypto.subtle`) with Node.js fallback.
-- 🚀 **1-Line Framework Middlewares**: Native Express middleware (`verihookExpress`) and Next.js Route Handler factory (`createWebhookHandler`).
+- 🚀 **1-Line Framework Adapters**: Express, Next.js, Fastify, Hono, NestJS, Nuxt/h3, SvelteKit, Remix/React Router, Astro and AWS Lambda, each a subpath import (`verihook/fastify`, ...). They share the same raw-body handling, size limits and duplicate/retry semantics.
 - 🛡️ **Hardened & Secure**: Built-in SSRF origin protection, unparsed payload stream byte limits (`maxBodySize`), and standard HTTP security headers (`nosniff`, `DENY`).
 - 🌐 **Edge Ready**: Runs anywhere — Node.js, Vercel Edge, Cloudflare Workers, Deno, Bun, Next.js, Hono, Express, Fastify.
 - 🔐 **Timing-Safe**: Protects against side-channel timing attacks out of the box.
@@ -370,26 +370,118 @@ app.post(
 );
 ```
 
-### Hono / Cloudflare Workers
+### Hono / Cloudflare Workers / Bun / Deno
 
 ```ts
 import { Hono } from 'hono';
-import { verifyWebhook } from 'verihook';
+import { verihookHono, type VerihookVariables } from 'verihook/hono';
+import type { StripeEvent } from 'verihook';
 
-const app = new Hono();
+const app = new Hono<{ Bindings: { STRIPE_SECRET: string }; Variables: VerihookVariables<StripeEvent> }>();
 
-app.post('/webhook', async (c) => {
-  const result = await verifyWebhook('shopify', c.req.raw, c.env.SHOPIFY_SECRET);
-
-  if (!result.valid) {
-    return c.json({ error: result.reason }, 401);
-  }
-
-  return c.json({ status: 'ok' });
+app.post('/webhooks/stripe', verihookHono('stripe', (c) => c.env.STRIPE_SECRET), (c) => {
+  const { event, eventType } = c.get('verihook'); // the body is still readable with c.req.json()
+  return c.json({ received: true });
 });
-
-export default app;
 ```
+
+### Fastify
+
+Fastify parses JSON before your route runs, so register `verihookRawBody` in the scope of your webhook routes. It keeps `request.rawBody` and still parses JSON and form bodies into `request.body`.
+
+```ts
+import Fastify from 'fastify';
+import { verihookFastify, verihookRawBody, type VerihookFastifyRequest } from 'verihook/fastify';
+import type { StripeEvent } from 'verihook';
+
+const app = Fastify();
+await app.register(verihookRawBody);
+
+app.post('/webhooks/stripe', { preHandler: verihookFastify('stripe', process.env.STRIPE_SECRET!) }, async (request) => {
+  const { event } = (request as typeof request & VerihookFastifyRequest<StripeEvent>).verihook!;
+  return { received: true };
+});
+```
+
+### NestJS
+
+Create the app with `rawBody: true` so Nest keeps the raw body, then guard the route. Works on the Express and Fastify platforms.
+
+```ts
+// main.ts
+const app = await NestFactory.create(AppModule, { rawBody: true });
+
+// webhooks.controller.ts
+import { createVerihookGuard, type VerihookNestRequest } from 'verihook/nestjs';
+
+@Post('webhooks/stripe')
+@UseGuards(createVerihookGuard('stripe', process.env.STRIPE_SECRET!))
+handle(@Req() req: Request & VerihookNestRequest<StripeEvent>) {
+  const { event } = req.verihook!;
+}
+```
+
+On failure the guard sends the reply itself. To let your exception filters shape it, pass `exceptionFactory: (result) => new UnauthorizedException(result.reason)`.
+
+### Nuxt / Nitro / h3
+
+```ts
+// server/api/webhooks/stripe.post.ts
+import { createWebhookHandler } from 'verihook/h3';
+
+export default defineEventHandler(
+  createWebhookHandler('stripe', process.env.STRIPE_SECRET!, async (payload, result, event) => {
+    // result.event is a StripeEvent
+  }),
+);
+```
+
+Works with h3 v1 (Nuxt 3) and h3 v2. `readBody(event)` still works inside the handler.
+
+### SvelteKit, Remix / React Router, Astro
+
+Each one exports `createWebhookHandler(provider, secret, handler, options?)`. The handler receives `(payload, result, frameworkContext)`. A secret function receives the same context (for example, platform env bindings).
+
+```ts
+// SvelteKit: src/routes/webhooks/github/+server.ts
+import { createWebhookHandler } from 'verihook/sveltekit';
+export const POST = createWebhookHandler('github', env.GITHUB_SECRET, async (payload, result) => { /* ... */ });
+
+// Remix / React Router: app/routes/webhooks.github.ts
+import { createWebhookHandler } from 'verihook/remix';
+export const action = createWebhookHandler('github', process.env.GITHUB_SECRET!, async (payload, result) => { /* ... */ });
+
+// Astro: src/pages/api/webhooks/github.ts (server-rendered route)
+import { createWebhookHandler } from 'verihook/astro';
+export const prerender = false;
+export const POST = createWebhookHandler('github', import.meta.env.GITHUB_SECRET, async (payload, result) => { /* ... */ });
+```
+
+### AWS Lambda (API Gateway REST v1, HTTP API v2, Function URLs)
+
+```ts
+import { createWebhookHandler } from 'verihook/lambda';
+
+export const handler = createWebhookHandler('stripe', process.env.STRIPE_SECRET!, async (payload, result, event, context) => {
+  // return nothing for 200 { received: true }, or your own { statusCode, headers, body }
+});
+```
+
+Base64 bodies are decoded before verification. For providers that sign the URL (Twilio, Square), the URL is rebuilt from the `Host` header and the request path including the stage. Behind a custom domain with a base-path mapping, pass `options.url`.
+
+### Shared adapter behaviour
+
+Every adapter (`verihook/express`, `/next`, `/fastify`, `/hono`, `/h3`, `/sveltekit`, `/remix`, `/astro`, `/lambda`, `/nestjs`) behaves the same way:
+
+| Situation | Response |
+| :--- | :--- |
+| Invalid / missing / expired signature | `401 { error, code }`, unless you pass `onError` (`exceptionFactory` for NestJS) |
+| Duplicate event (`dedupeStore`) | `200 { received: true, duplicate: true }`, so the provider stops retrying |
+| Body over `maxBodySize` (default 2MB) | `413 { code: "PAYLOAD_TOO_LARGE" }` |
+| Exception during verification | `500` with a generic message. Details go to `onError` and telemetry only. |
+| Your handler throws or responds `>= 500` | The dedupe key is released, so the provider's retry is processed |
+
+Adapters have no runtime dependency on their framework.
 
 ---
 

@@ -13,7 +13,7 @@ This document details the architectural design, security mechanisms, request nor
 ### Core Objectives
 1. **Zero External Runtime Dependencies**: Powered by native Web Crypto API (`crypto.subtle`) with Node.js `node:crypto` fallback.
 2. **Hardened Security**: Multi-layered defense including constant-time timing-safe equality checks, SSRF origin validation, unparsed stream payload byte limits (`maxBodySize`), and standard HTTP security headers (`nosniff`, `DENY`).
-3. **Universal Framework Portability**: Seamlessly processes standard Fetch API `Request` objects, Node.js HTTP/Express `req`, Fastify, Next.js App Router, Hono, and Cloudflare Workers.
+3. **Universal Framework Portability**: Seamlessly processes standard Fetch API `Request` objects, Node.js HTTP/Express `req`, Fastify, Next.js App Router, Hono, Cloudflare Workers, and AWS Lambda events, with first-class adapters for each major framework.
 4. **Local Developer Toolchain**: Includes a CLI binary for simulating signed webhooks (`npx verihook simulate`) and a zero-dependency live local relay proxy (`npx verihook listen`) for real-time local webhook inspection and forwarding.
 5. **Side-Channel Timing Protection**: Enforces constant-time string comparisons across all provider signature verification logic.
 6. **Strict Type Safety**: Completely eliminates `any` types in favor of strict `unknown` guards, explicit interfaces, and zero-dependency boundary validation schemas.
@@ -199,6 +199,12 @@ All verifiers assign an explicit code from `WebhookErrorCode` to the `Verificati
 #### 2. Next.js Route Handler Factory (`createWebhookHandler`)
 - **Location**: `verihook/next` (`src/middleware/next.ts`).
 - **Behavior**: Clones Web API `Request` objects, verifies signature, executes handler, and returns `Response` objects containing standard security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`).
+
+#### 3. Shared adapter core (`src/middleware/shared.ts`)
+- **Web-standard adapters**: `verihook/next`, `/sveltekit`, `/remix`, `/astro` and `/h3` are thin wrappers over `createWebAdapter()`. Each passes a function that takes the Fetch `Request` out of the framework's handler argument. h3 v1 (Nuxt 3) has no Fetch `Request`, so one is rebuilt from `event.node.req`. The buffered body is left on `req.rawBody` so `readBody(event)` still works.
+- **Middleware-style adapters**: `verihook/hono` (middleware, `c.get("verihook")`), `/fastify` (`preHandler` + the `verihookRawBody` parser plugin), `/nestjs` (guard; reads Nest's `rawBody: true`) and `/lambda` (API Gateway v1/v2 and Function URL events, base64 decoding, signed-URL reconstruction).
+- **Shared contract**: Replies and helpers are shared: 401 on failure, 200 for duplicates, 413 above `maxBodySize`, and a generic 500 on exceptions. When the downstream handler throws or responds `>= 500`, `releaseDedupeKey()` runs.
+- **No framework imports**: Adapters type against structural `*Like` interfaces. Frameworks are dev dependencies only, used by the integration tests in `tests/adapters/` and the type checks in `tests/types/adapters.ts`.
 
 ---
 

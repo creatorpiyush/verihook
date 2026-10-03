@@ -90,7 +90,33 @@ Promise.all([
   }
 });
 "
-echo -e "${GREEN}  ✓ ESM module import verified!${NC}\n"
+echo -e "${GREEN}  ✓ ESM module import verified!${NC}"
+
+node -e "
+const adapters = {
+  fastify: 'verihookFastify',
+  hono: 'verihookHono',
+  h3: 'createWebhookHandler',
+  sveltekit: 'createWebhookHandler',
+  remix: 'createWebhookHandler',
+  astro: 'createWebhookHandler',
+  lambda: 'createWebhookHandler',
+  nestjs: 'createVerihookGuard',
+};
+Promise.all(
+  Object.entries(adapters).map(async ([name, fn]) => {
+    const cjs = require('./dist/' + name + '.js');
+    const esm = await import('./dist/' + name + '.mjs');
+    if (typeof cjs[fn] !== 'function' || typeof esm[fn] !== 'function') {
+      throw new Error('Missing ' + fn + ' in verihook/' + name);
+    }
+  }),
+).catch((err) => {
+  console.error(err.message);
+  process.exit(1);
+});
+"
+echo -e "${GREEN}  ✓ Framework adapter subpath exports verified!${NC}\n"
 
 echo -e "${GREEN}==================================================${NC}"
 echo -e "${GREEN}🎉 ALL END-TO-END TESTS PASSED SUCCESSFULLY!${NC}"

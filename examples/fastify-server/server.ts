@@ -1,44 +1,32 @@
 import Fastify from 'fastify';
-import { verifyWebhook } from 'verihook';
+import { MemoryDedupeStore } from 'verihook';
+import { verihookFastify, verihookRawBody, type VerihookFastifyRequest } from 'verihook/fastify';
 
 const fastify = Fastify({ logger: true });
+const dedupeStore = new MemoryDedupeStore();
 
-// Capture raw body string for Webhook signature verification
-fastify.addContentTypeParser('*', { parseAs: 'string' }, (_req, body, done) => {
-  done(null, body);
-});
+// Keep the raw body for signature verification. JSON and form bodies are still parsed into request.body.
+await fastify.register(verihookRawBody);
 
-fastify.post('/webhooks/:provider', async (request, reply) => {
-  const { provider } = request.params as { provider: string };
-  const secret = process.env.WEBHOOK_SECRET || 'secret123';
+for (const provider of ['stripe', 'github', 'shopify', 'slack'] as const) {
+  const secret = process.env[`${provider.toUpperCase()}_WEBHOOK_SECRET`] || process.env.WEBHOOK_SECRET || 'secret123';
 
-  // Pass Fastify request directly to verihook
-  const result = await verifyWebhook(provider, {
-    headers: request.headers as Record<string, string>,
-    rawBody: request.body as string,
-    url: request.url,
-  }, secret);
+  fastify.post(
+    `/webhooks/${provider}`,
+    // Invalid signatures get a 401 and duplicates a 200 before the handler runs.
+    { preHandler: verihookFastify(provider, secret, { dedupeStore }) },
+    async (request) => {
+      const { eventType, event } = (request as typeof request & VerihookFastifyRequest).verihook!;
+      request.log.info({ provider, eventType }, 'verified webhook');
+      return { success: true, provider, eventType, payload: event };
+    },
+  );
+}
 
-  if (!result.valid) {
-    return reply.status(401).send({ error: result.reason });
-  }
-
-  const payload = JSON.parse(request.body as string);
-  return reply.send({
-    success: true,
-    provider: result.provider,
-    payload,
-  });
-});
-
-const start = async () => {
-  try {
-    await fastify.listen({ port: 3000 });
-    console.log('🚀 Fastify verihook server listening on http://localhost:3000');
-  } catch (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
-};
-
-start();
+try {
+  await fastify.listen({ port: 3000 });
+  console.log('🚀 Fastify verihook server listening on http://localhost:3000');
+} catch (err) {
+  fastify.log.error(err);
+  process.exit(1);
+}
