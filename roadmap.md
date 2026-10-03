@@ -155,6 +155,13 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **CRM, support & forms**: HubSpot (`hubspot`, v1/v2/v3), Intercom (`intercom`), Calendly (`calendly`), Typeform (`typeform`).
 - New `verifyEcdsaP256Sha256()` helper; GitLab signing tokens share the Svix / Standard Webhooks check.
 
+## 12. Trust & Performance (v1.14.0) — ✅ Completed
+
+- **Per-provider entry points**: `verihook/stripe`, `verihook/github`, ... bundle a single verifier (~4 kB min + brotli instead of ~10 kB). `"sideEffects": false` and chunked builds cut the published package from 1.7 MB to ~0.35 MB.
+- **Bundle size budgets** checked in CI with size-limit.
+- **Cross-SDK conformance tests** against the official Stripe, Octokit, Svix and Twilio SDKs, in both directions.
+- **Supply chain**: coverage badge generated in CI, OpenSSF Scorecard, GitHub Actions pinned to commit SHAs, npm provenance.
+
 ## Future Plans: More Regional Payment Providers 🗓️
 
 Support for these providers is planned for a future release:
@@ -182,4 +189,5 @@ Each will ship like the v1.12.0 providers: a `verify*` shortcut, a typed event, 
 - **Phase 9 (v1.11.0)**: Add **framework adapters (Fastify, Hono, h3/Nuxt, SvelteKit, Remix, Astro, AWS Lambda, NestJS)**. ✅
 - **Phase 10 (v1.12.0)**: Add **regional payment providers (Cashfree, PhonePe, Mollie, Adyen, Checkout.com, Authorize.net, Recurly)**. ✅
 - **Phase 11 (v1.13.0)**: Add **developer tools & SaaS providers (GitLab, Bitbucket, Vercel, Sentry, Twitch EventSub, Telegram, Postmark, SendGrid, Mailgun, HubSpot, Intercom, Calendly, Typeform)**. ✅
+- **Phase 12 (v1.14.0)**: Add **per-provider entry points, bundle size budgets, cross-SDK conformance tests and supply-chain hardening**. ✅
 
