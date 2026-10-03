@@ -1,6 +1,6 @@
 {
   "name": "verihook",
-  "version": "1.14.1",
+  "version": "1.14.2",
   "description": "Universal typed webhook verifier for Stripe, GitHub, Shopify, Slack, Twilio, Svix, Meta, WhatsApp, Discord, Twitter, PayPal, LemonSqueezy, Paddle, PagerDuty, Webflow, WorkOS, Linear, Razorpay, Cashfree, PhonePe, Mollie, Adyen, Checkout.com, Authorize.net, Recurly, GitLab, Bitbucket, Vercel, Sentry, Twitch, Telegram, Postmark, SendGrid, Mailgun, HubSpot, Intercom, Calendly, Typeform, Zoom, and custom providers.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
