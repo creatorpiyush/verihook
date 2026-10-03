@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **JSR package** (`jsr:@verihook/verihook`) for Deno, published from the same tag as npm. CI runs a Deno smoke test without permissions and a `deno publish --dry-run`.
 - `ProviderVerifyFunction<P>` type for the provider shortcuts (`verifyStripe`, ...), which now have explicit types.
 
+### Changed
+- The README is now a short landing page; details moved to the docs site. CONTRIBUTING and the PR template ask for a docs entry with each new provider.
+
 ### Fixed
 - Deno: verification threw `NotCapable: Requires env access to "NODE_ENV"` unless the script ran with `--allow-env`. verihook now reads `NODE_ENV` only when env access is already granted, so it never fails or prompts.
 

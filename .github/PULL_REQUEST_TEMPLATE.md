@@ -18,7 +18,7 @@
 - [ ] `verify<Provider>` shortcut exported, event type added to `ProviderEventMap`
 - [ ] Signing case in `src/testing/sign.ts` (or a clear error if it can't be signed locally), CLI sample payload, header in `diagnostics.ts`
 - [ ] Tests: valid, wrong secret, modified body, missing headers, expired timestamp, known-good vector from the docs or SDK
-- [ ] README table, ARCHITECTURE matrix, CHANGELOG `[Unreleased]`
+- [ ] Docs entry in `docs/src/data/providers.mjs`, README table, ARCHITECTURE matrix, CHANGELOG `[Unreleased]`
 
 ## Checklist
 
