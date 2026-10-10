@@ -1,6 +1,10 @@
 import crypto from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { verifyWebhook, WebhookErrorCode } from "../src/index.js";
+import {
+  MemoryDedupeStore,
+  verifyWebhook,
+  WebhookErrorCode,
+} from "../src/index.js";
 import { SIGNABLE_PROVIDERS, signWebhook } from "../src/testing/sign.js";
 
 const secret = "strict_secret";
@@ -86,7 +90,12 @@ describe("strict mode", () => {
         provider as never,
         { headers: hook.headers, body: hook.body, url: hook.url },
         hook.secret,
-        { ...hook.verifyOptions, strict: true },
+        {
+          ...hook.verifyOptions,
+          strict: true,
+          // Mailgun's event data isn't signed: strict mode requires a store.
+          dedupeStore: new MemoryDedupeStore(),
+        },
       );
       expect(result.valid, `${provider}: ${result.reason}`).toBe(true);
     }

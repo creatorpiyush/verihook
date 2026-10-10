@@ -163,6 +163,40 @@ describe("Replay Protection & Deduplication Store", () => {
       expect(form).toBe("mg_form_token");
     });
 
+    it("keys Adyen item-mode notifications on signed fields only", async () => {
+      const item = {
+        pspReference: "P1",
+        merchantAccountCode: "M",
+        merchantReference: "R",
+        amount: { value: 1000, currency: "EUR" },
+        eventCode: "AUTHORISATION",
+        success: "true",
+        additionalData: { hmacSignature: "x" },
+      };
+      const body = (extra: object, itemExtra: object = {}) =>
+        JSON.stringify({
+          live: "false",
+          ...extra,
+          notificationItems: [
+            { NotificationRequestItem: { ...item, ...itemExtra } },
+          ],
+        });
+      const key = (rawBody: string, headers = {}) =>
+        extractEventId("adyen", { headers, rawBody });
+
+      const original = await key(body({}));
+      // Unsigned fields and an unsigned top-level `id` don't change the key.
+      expect(await key(body({ id: "attacker", x: 1 }, { reason: "x" }))).toBe(
+        original,
+      );
+      // A different signed field does.
+      expect(await key(body({}, { eventCode: "CAPTURE" }))).not.toBe(original);
+      // Header mode signs the whole body: the body hash keeps changes apart.
+      expect(await key(body({ x: 1 }), { hmacsignature: "s" })).not.toBe(
+        await key(body({}), { hmacsignature: "s" }),
+      );
+    });
+
     it("should fallback to SHA-256 hash when no header or JSON ID is present", async () => {
       const id = await extractEventId("generic", {
         headers: {},

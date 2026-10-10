@@ -68,7 +68,7 @@ The provider signs the URL (Twilio, Square, HubSpot) and verihook couldn't build
 
 ## WEAK_SCHEME
 
-`options.strict` is on and the request used a provider's weaker fallback scheme (HubSpot v1/v2, a GitLab secret token, Webflow or Linear without a timestamp, a GitHub or Meta SHA-1 header, Paddle's legacy `h`). The reason names what is required. Switch the webhook to the stronger scheme in the provider's settings, or turn `strict` off for that endpoint. See [Strict mode](../guides/dedupe/#strict-mode).
+`options.strict` is on and the request used a provider's weaker fallback scheme (HubSpot v1/v2, a GitLab secret token, Webflow or Linear without a timestamp, a GitHub or Meta SHA-1 header, Paddle's legacy `h`), or Mailgun was verified without a `dedupeStore`. The reason names what is required. Switch the webhook to the stronger scheme in the provider's settings, or turn `strict` off for that endpoint. See [Strict mode](../guides/dedupe/#strict-mode).
 
 ## DUPLICATE_EVENT
 

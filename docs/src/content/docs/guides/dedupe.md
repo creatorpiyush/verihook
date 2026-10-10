@@ -38,8 +38,9 @@ The key only uses data covered by the provider's signature, so an attacker can't
 
 1. a signed ID header: `svix-id` (Svix, Resend, Clerk), `webhook-id` or `idempotency-key` (GitLab), `paypal-transmission-id`, `twitch-eventsub-message-id`;
 2. Mailgun's signed `token`;
-3. an ID in the signed body: `id`, `event_id`, `msg_id`, `notificationId`, or a WhatsApp message ID;
-4. otherwise a SHA-256 of the body.
+3. for Adyen standard webhooks, a SHA-256 of each item's signed fields (the rest of the body isn't signed);
+4. an ID in the signed body: `id`, `event_id`, `msg_id`, `notificationId`, or a WhatsApp message ID;
+5. otherwise a SHA-256 of the body.
 
 Override it with `options.eventId` if you know better.
 
@@ -103,6 +104,7 @@ const result = await verifyWebhook('hubspot', request, secret, { strict: true })
 | Linear | `webhookTimestamp` in the body | bodies without it |
 | GitHub, Meta | `x-hub-signature-256` | SHA-1 `x-hub-signature` alone |
 | Paddle | `h1` | legacy `h` alone |
+| Mailgun | a `dedupeStore` (the event data isn't signed, only the single-use `token`) | any request without one |
 
 Other providers have a single scheme, so strict mode changes nothing for them: Telegram, Postmark and PhonePe authenticate with a static token, Twilio and Intercom with HMAC-SHA1.
 

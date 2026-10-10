@@ -22,8 +22,8 @@ The `secret` may be a string or an array of strings for [secret rotation](../../
 | `maxBodySize` | 2 MB | Largest body read from a stream, in bytes: by an adapter (larger bodies get `413`) or by `verifyWebhook` given a Fetch `Request` (fails with `PAYLOAD_TOO_LARGE`). |
 | `onVerify` / `log` | | Called after every verification with a telemetry event. |
 | `headerName` | | `generic` only: the signature header. |
-| `algorithm` | `sha256` | `generic` only: `sha256`, `sha1` or `sha512`. |
-| `encoding` | `hex` | `generic` only: `hex`, `base64` or `prefix-hex`. |
+| `algorithm` | `sha256` | `generic` only: `sha256`, `sha1` or `sha512`. Other values fail verification. |
+| `encoding` | `hex` | `generic` only: `hex`, `base64` or `prefix-hex`. Other values fail verification. |
 
 Adapters also take `onError` (`exceptionFactory` for NestJS) to replace the default failure response.
 

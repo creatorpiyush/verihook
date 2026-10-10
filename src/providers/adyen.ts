@@ -46,7 +46,8 @@ export function adyenSigningString(item: Item): string {
     .join(":");
 }
 
-function notificationItems(event: unknown): Item[] | undefined {
+/** The `NotificationRequestItem`s of a standard notification, if any. */
+export function notificationItems(event: unknown): Item[] | undefined {
   const items = (event as Item | null)?.notificationItems;
   if (!Array.isArray(items)) return undefined;
   return items.map(

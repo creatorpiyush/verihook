@@ -529,6 +529,7 @@ export async function GET(request: Request) {
     notes: [
       "Every item in a batch must verify, or the whole request is rejected.",
       "Standard webhooks sign only `pspReference`, `originalReference`, `merchantAccountCode`, `merchantReference`, `amount`, `eventCode` and `success`. Other fields in `result.event` (`additionalData`, `reason`, `paymentMethod`, ...) are not covered by the signature: don't trust them for decisions, or confirm them with Adyen's API.",
+      "Standard webhooks carry no timestamp. With a dedupe store, the key is built from the signed fields only, so changing an unsigned field doesn't get a replay past the store.",
       "Adyen expects `[accepted]` as the response body for standard webhooks.",
     ],
     testSecret: "0123456789abcdef0123456789abcdef",
@@ -748,7 +749,7 @@ export const POST = createWebhookHandler('twitch', process.env.TWITCH_EVENTSUB_S
     tolerance: "300 seconds",
     eventType: "`event-data.event`, e.g. `delivered`",
     notes: [
-      "The signature authenticates the sender but doesn't cover the event data. With a dedupe store, the `token` is used as the event ID, as Mailgun recommends.",
+      "The signature authenticates the sender but doesn't cover the event data: anyone who sees one signed request can resend its signature with other event data for 5 minutes. Use a dedupe store: the `token` is then the event ID, so a signature works once, as Mailgun recommends. Strict mode requires one, and a warning is printed outside production without one.",
     ],
     testSecret: "mailgun_signing_key",
     docs: "https://documentation.mailgun.com/docs/mailgun/user-manual/webhooks/securing-webhooks",

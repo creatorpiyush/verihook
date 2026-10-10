@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **Adyen**: with a dedupe store, standard (item) notifications are now keyed on their signed fields only. The key used to be a hash of the whole body, or an unsigned top-level `id`, so a captured notification with an unsigned field changed was accepted again.
+- **Mailgun**: the signature covers only `timestamp` and `token`, not the event data, so a captured signature can carry other event data for 5 minutes. `strict: true` now requires a `dedupeStore` (failing with `WEAK_SCHEME` without one), and a warning is printed once outside production when there is none.
+- **Generic**: an unknown `algorithm` or `encoding` (e.g. `"HEX"`, `"base64url"`) left the expected signature empty, so a signature header that trimmed to nothing (e.g. a non-breaking space) verified. Unknown values now fail verification, and so does an empty signature.
+
 ## [1.21.0] - 2026-10-10
 
 ### Added
