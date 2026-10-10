@@ -192,6 +192,11 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **`{ strict: true }`** accepts only each provider's strongest scheme; fallbacks (HubSpot v1/v2, GitLab secret tokens, timestamp-less Webflow/Linear, SHA-1-only GitHub/Meta, Paddle `h`) fail with `WEAK_SCHEME`.
 - **`result.timestampVerified`** shows which webhooks rely on a dedupe store alone for replay protection.
 
+## 19. Webhook Producers (v1.21.0) — ✅ Completed
+
+- **`verihook/send`**: sign and send webhooks with Standard Webhooks (`generateWebhookSecret`, `signOutgoingWebhook`, `sendWebhook` with timeout, no redirects and an SSRF host guard).
+- **`standard-webhooks` provider** so receivers verify them with verihook.
+
 ## Future Plans: More Regional Payment Providers 🗓️
 
 Support for these providers is planned for a future release:

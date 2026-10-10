@@ -10,11 +10,11 @@ We actively maintain and provide security patches for the following versions of 
 
 | Version | Supported | Security Notes |
 | :--- | :--- | :--- |
-| `1.20.x` | :white_check_mark: | Current release family. Actively maintained. Adds strict mode: HubSpot users should enable `{ strict: true }` to close a v3→v1 signature downgrade that bypasses the replay window. |
-| `1.16.x` – `1.19.x` | :x: | Superseded by `1.20.x` (drop-in upgrade). `1.19.0` signs PayPal in `verihook/testing`, `1.18.0` added `RedisDedupeStore`, `1.17.0` secret rotation. `1.16.0` added replay windows for PayPal and Linear, a body-size limit in `verifyWebhook`, and a 24-hour default dedupe TTL. |
-| `1.8.x` – `1.15.x` | :x: | Superseded by `1.20.x` (no API changes; see the 1.16.0 changelog for new defaults). Versions before `1.14.1` are affected by a `dedupeStore` replay bypass via unsigned ID headers. |
-| `1.7.x` | :x: | Affected by PayPal signature forgery via HMAC fallback. Upgrade to latest `1.20.x`. |
-| `< 1.7.0` | :x: | Legacy release (also affected by the PayPal issue). Upgrade to latest `1.20.x`. |
+| `1.21.x` | :white_check_mark: | Current release family. Actively maintained. Adds `verihook/send` (outbound signing, SSRF-guarded) and the `standard-webhooks` provider. |
+| `1.16.x` – `1.20.x` | :x: | Superseded by `1.21.x` (drop-in upgrade). `1.20.0` added strict mode: HubSpot users should enable `{ strict: true }` to close a v3→v1 signature downgrade that bypasses the replay window. `1.19.0` signs PayPal in `verihook/testing`, `1.18.0` added `RedisDedupeStore`, `1.17.0` secret rotation. `1.16.0` added replay windows for PayPal and Linear, a body-size limit in `verifyWebhook`, and a 24-hour default dedupe TTL. |
+| `1.8.x` – `1.15.x` | :x: | Superseded by `1.21.x` (no API changes; see the 1.16.0 changelog for new defaults). Versions before `1.14.1` are affected by a `dedupeStore` replay bypass via unsigned ID headers. |
+| `1.7.x` | :x: | Affected by PayPal signature forgery via HMAC fallback. Upgrade to latest `1.21.x`. |
+| `< 1.7.0` | :x: | Legacy release (also affected by the PayPal issue). Upgrade to latest `1.21.x`. |
 
 ---
 
