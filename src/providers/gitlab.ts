@@ -19,6 +19,7 @@ import {
   VerifyWebhookOptions,
   WebhookErrorCode,
 } from "../core/types.js";
+import { weakScheme } from "../utils/strict.js";
 import { verifySvixStyle } from "./svix.js";
 
 export const gitlabVerifier: ProviderVerifier = {
@@ -36,6 +37,12 @@ export const gitlabVerifier: ProviderVerifier = {
     }
 
     const token = req.headers["x-gitlab-token"];
+    if (token && options?.strict) {
+      return weakScheme(
+        "gitlab",
+        'The "x-gitlab-token" secret token signs nothing; use a signing token ("webhook-signature")',
+      );
+    }
     if (!token) {
       return {
         valid: false,

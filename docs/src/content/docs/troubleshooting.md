@@ -66,6 +66,10 @@ The secret is empty or missing, usually an unset environment variable. Check tha
 
 The provider signs the URL (Twilio, Square, HubSpot) and verihook couldn't build it. Pass a Fetch `Request`, an absolute `url`, or `options.url`.
 
+## WEAK_SCHEME
+
+`options.strict` is on and the request used a provider's weaker fallback scheme (HubSpot v1/v2, a GitLab secret token, Webflow or Linear without a timestamp, a GitHub or Meta SHA-1 header, Paddle's legacy `h`). The reason names what is required. Switch the webhook to the stronger scheme in the provider's settings, or turn `strict` off for that endpoint. See [Strict mode](../guides/dedupe/#strict-mode).
+
 ## DUPLICATE_EVENT
 
 A `dedupeStore` has already seen this event within its TTL. This is expected when providers retry. Respond `2xx` so the provider stops; the adapters respond `200 { received: true, duplicate: true }`. See [Deduplication](../guides/dedupe/).

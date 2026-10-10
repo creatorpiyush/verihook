@@ -86,3 +86,34 @@ const store: DedupeStore = {
 Implement `delete` whenever you can: without it, a delivery whose handler failed is acked as a duplicate when the provider retries it, and the event is lost.
 
 Ready-made examples are in the repository: [Upstash Redis](https://github.com/creatorpiyush/verihook/blob/main/examples/dedupe-stores/upstash-redis.ts) for edge runtimes and [Cloudflare Workers KV](https://github.com/creatorpiyush/verihook/blob/main/examples/dedupe-stores/cloudflare-kv.ts).
+
+## Strict mode
+
+Some providers have a stronger scheme and accept a weaker fallback, and the fallback can drop replay protection. HubSpot, for example, sends its old v1/v2 signature next to v3 for compatibility: a captured request with the v3 headers stripped still verifies through v1/v2, which has no timestamp. `strict: true` accepts only the strongest scheme:
+
+```ts
+const result = await verifyWebhook('hubspot', request, secret, { strict: true });
+```
+
+| Provider | Required in strict mode | Rejected with `WEAK_SCHEME` |
+| :--- | :--- | :--- |
+| HubSpot | v3 (`X-HubSpot-Signature-v3`) | v1 / v2 |
+| GitLab | signing token (`webhook-signature`) | secret token (`X-Gitlab-Token`) |
+| Webflow | `x-webflow-timestamp` | body-only signatures |
+| Linear | `webhookTimestamp` in the body | bodies without it |
+| GitHub, Meta | `x-hub-signature-256` | SHA-1 `x-hub-signature` alone |
+| Paddle | `h1` | legacy `h` alone |
+
+Other providers have a single scheme, so strict mode changes nothing for them: Telegram, Postmark and PhonePe authenticate with a static token, Twilio and Intercom with HMAC-SHA1.
+
+## Which endpoints rely on dedupe alone
+
+Valid results carry `timestampVerified`: `true` when a signed timestamp was checked against `tolerance`, `false` when nothing limits a replay. It is in the telemetry event too, so you can find the endpoints that need a dedupe store:
+
+```ts
+import { setGlobalLogger } from 'verihook';
+
+setGlobalLogger((event) => {
+  if (event.valid && !event.timestampVerified) metrics.increment('webhooks.no_replay_window', { provider: event.provider });
+});
+```

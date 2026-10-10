@@ -10,6 +10,7 @@ import {
   VerifyWebhookOptions,
   WebhookErrorCode,
 } from "../core/types.js";
+import { weakScheme } from "../utils/strict.js";
 import { bytesToHex } from "../utils/encoding.js";
 import { readString } from "../core/event.js";
 
@@ -19,7 +20,7 @@ export const metaVerifier: ProviderVerifier = {
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,
-    _options?: VerifyWebhookOptions,
+    options?: VerifyWebhookOptions,
   ): Promise<VerificationResult> {
     const sig256 = req.headers["x-hub-signature-256"];
     const sig1 = req.headers["x-hub-signature"];
@@ -53,6 +54,13 @@ export const metaVerifier: ProviderVerifier = {
     }
 
     // SHA-1 is only a fallback for requests that carry no SHA-256 signature.
+    if (sig1 && !sig256 && options?.strict) {
+      return weakScheme(
+        "meta",
+        'Only the SHA-1 "x-hub-signature" header was sent; "x-hub-signature-256" is required',
+      );
+    }
+
     if (sig1 && !sig256) {
       const cleanSig1 = sig1.startsWith("sha1=") ? sig1.slice(5) : sig1;
       const hmac1 = await computeHmacSha1(secret, req.rawBody);

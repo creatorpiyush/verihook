@@ -6,6 +6,7 @@ import {
   VerifyWebhookOptions,
   WebhookErrorCode,
 } from "../core/types.js";
+import { weakScheme } from "../utils/strict.js";
 import { bytesToHex } from "../utils/encoding.js";
 
 import { toEpochSeconds } from "../utils/timestamp.js";
@@ -31,6 +32,13 @@ export const webflowVerifier: ProviderVerifier = {
 
     const timestampStr = req.headers["x-webflow-timestamp"];
     let timestamp: number | undefined;
+
+    if (options?.strict && !/^\d+$/.test(timestampStr ?? "")) {
+      return weakScheme(
+        "webflow",
+        'Missing or invalid "x-webflow-timestamp" header; a signed timestamp is required',
+      );
+    }
 
     if (timestampStr) {
       const rawTimestamp = parseInt(timestampStr, 10);

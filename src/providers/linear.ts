@@ -6,6 +6,7 @@ import {
   VerifyWebhookOptions,
   WebhookErrorCode,
 } from "../core/types.js";
+import { weakScheme } from "../utils/strict.js";
 import { bytesToHex } from "../utils/encoding.js";
 import { toEpochSeconds } from "../utils/timestamp.js";
 
@@ -47,6 +48,12 @@ export const linearVerifier: ProviderVerifier = {
       rawTimestamp = undefined;
     }
     if (typeof rawTimestamp !== "number" || !Number.isFinite(rawTimestamp)) {
+      if (options?.strict) {
+        return weakScheme(
+          "linear",
+          'The body has no "webhookTimestamp"; a signed timestamp is required',
+        );
+      }
       return { valid: true, provider: "linear" };
     }
 

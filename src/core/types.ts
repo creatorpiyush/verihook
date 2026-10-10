@@ -180,6 +180,15 @@ export interface VerifyWebhookOptions {
    * If omitted, `verihook` automatically extracts provider event ID or computes a hash fallback.
    */
   eventId?: string;
+
+  /**
+   * Accept only each provider's strongest signature scheme. Fallbacks that drop
+   * replay protection or use SHA-1 fail with `WEAK_SCHEME`: HubSpot v1/v2, GitLab
+   * secret tokens, Webflow and Linear without a timestamp, GitHub and Meta SHA-1
+   * headers, Paddle's legacy `h`. Providers with a single scheme are unaffected.
+   * @default false
+   */
+  strict?: boolean;
 }
 
 export interface WebhookVerificationEvent {
@@ -220,6 +229,14 @@ export interface WebhookVerificationEvent {
   timestamp?: number;
 
   /**
+   * Set on valid results: `true` when a signed timestamp was checked against
+   * `tolerance`, `false` when nothing limits a replay (no timestamp, or
+   * `tolerance: 0`). With `false`, a `dedupeStore` is the only replay protection.
+   * Custom providers must return `timestamp` only after checking it.
+   */
+  timestampVerified?: boolean;
+
+  /**
    * Verification execution duration in milliseconds.
    */
   durationMs: number;
@@ -249,6 +266,7 @@ export enum WebhookErrorCode {
   PAYLOAD_TOO_LARGE = "PAYLOAD_TOO_LARGE",
   UNSUPPORTED_PROVIDER = "UNSUPPORTED_PROVIDER",
   DUPLICATE_EVENT = "DUPLICATE_EVENT",
+  WEAK_SCHEME = "WEAK_SCHEME",
   UNKNOWN_ERROR = "UNKNOWN_ERROR",
 }
 
@@ -285,6 +303,14 @@ export interface VerificationResult<TEvent = unknown> {
    * Extracted webhook timestamp if applicable (Unix epoch in seconds).
    */
   timestamp?: number;
+
+  /**
+   * Set on valid results: `true` when a signed timestamp was checked against
+   * `tolerance`, `false` when nothing limits a replay (no timestamp, or
+   * `tolerance: 0`). With `false`, a `dedupeStore` is the only replay protection.
+   * Custom providers must return `timestamp` only after checking it.
+   */
+  timestampVerified?: boolean;
 
   /**
    * Preserved raw Error instance if an unexpected exception was caught during verification.

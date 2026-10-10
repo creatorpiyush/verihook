@@ -58,6 +58,7 @@ export const providers = [
     notes: [
       "GitHub sends a `ping` event when you create the webhook. Return 2xx for it.",
       "GitHub doesn't sign the `x-github-delivery` header, so a dedupe store keys GitHub events on a SHA-256 of the signed body instead. A redelivered event has the same body and is detected as a duplicate.",
+      "With `{ strict: true }`, only `x-hub-signature-256` is accepted; a request with just the SHA-1 header fails with `WEAK_SCHEME`.",
     ],
     testSecret: "github_test_secret",
     docs: "https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries",
@@ -187,6 +188,7 @@ export const providers = [
     eventType: "the body's `object`, e.g. `whatsapp_business_account`",
     notes: [
       "`'meta'`, `'whatsapp'`, `'facebook'` and `'instagram'` are the same verifier, so `verifyMeta` and `verifyWhatsApp` are interchangeable.",
+      "With `{ strict: true }`, only `x-hub-signature-256` is accepted; a request with just the SHA-1 header fails with `WEAK_SCHEME`.",
     ],
     handshake: `Meta checks the URL with a GET request before sending events. Answer it with \`verifyMetaChallenge\`:
 
@@ -379,6 +381,9 @@ export async function GET(request: Request) {
     tolerance: "60 seconds",
     notes: [
       "The timestamp is the signed body's `webhookTimestamp`, as Linear recommends. Bodies without it (e.g. hand-made test payloads) skip the check.",
+      "With `{ strict: true }`, only `h1` signatures are accepted (not the legacy `h`).",
+      "Without `x-webflow-timestamp`, the signature covers only the body and has no replay window. `{ strict: true }` rejects such requests with `WEAK_SCHEME`.",
+      "`{ strict: true }` rejects bodies without `webhookTimestamp` with `WEAK_SCHEME`.",
     ],
     testSecret: "linear_test_secret",
     docs: "https://linear.app/developers/webhooks",
@@ -575,6 +580,7 @@ export async function GET(request: Request) {
     eventType: "the body's `object_kind`, or the `x-gitlab-event` header",
     notes: [
       "Prefer the signing token: the secret token is sent in plain text and doesn't protect against replays.",
+      "`{ strict: true }` accepts only signing tokens; a secret token (`x-gitlab-token`) fails with `WEAK_SCHEME`.",
     ],
     testSecret: "gitlab_secret_token",
     docs: "https://docs.gitlab.com/user/project/integrations/webhooks/",
@@ -741,6 +747,7 @@ export const POST = createWebhookHandler('twitch', process.env.TWITCH_EVENTSUB_S
     eventType: "the first event's `subscriptionType`, e.g. `contact.creation`",
     notes: [
       "v2 and v3 sign the public URL. Behind a proxy, forward `x-forwarded-proto` and `x-forwarded-host`, or pass `{ url }`.",
+      "HubSpot also sends the older v1/v2 `X-HubSpot-Signature` next to v3, for compatibility. A captured request with the v3 headers stripped still verifies through v1/v2, which has no timestamp. Use `{ strict: true }` to require v3.",
     ],
     testSecret: "hubspot_client_secret",
     docs: "https://developers.hubspot.com/docs/apps/legacy-apps/authentication/validating-requests",

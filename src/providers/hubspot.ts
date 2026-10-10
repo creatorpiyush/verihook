@@ -26,6 +26,7 @@ import {
   VerifyWebhookOptions,
   WebhookErrorCode,
 } from "../core/types.js";
+import { weakScheme } from "../utils/strict.js";
 import { bytesToBase64, bytesToHex } from "../utils/encoding.js";
 import { resolveSignedUrl } from "../utils/request-url.js";
 import { toEpochSeconds } from "../utils/timestamp.js";
@@ -150,6 +151,14 @@ export const hubspotVerifier: ProviderVerifier = {
     const version = (
       req.headers["x-hubspot-signature-version"] || "v1"
     ).toLowerCase();
+    // HubSpot sends v1/v2 next to v3 for compatibility, so a request without v3
+    // may be a captured one with the timestamped v3 headers stripped.
+    if (options?.strict) {
+      return weakScheme(
+        "hubspot",
+        `HubSpot ${version} signature has no timestamp; "x-hubspot-signature-v3" is required`,
+      );
+    }
     let source: string;
     let url: string | undefined;
     if (version === "v2") {
