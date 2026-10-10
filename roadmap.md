@@ -187,6 +187,11 @@ Expand the CLI toolchain into a live local developer relay proxy:
 
 - **PayPal in `verihook/testing` and `npx verihook simulate`**: signed with a local RSA key whose public key is returned as the secret, so all 46 built-in providers can be signed in tests.
 
+## 18. Strict Mode (v1.20.0) — ✅ Completed
+
+- **`{ strict: true }`** accepts only each provider's strongest scheme; fallbacks (HubSpot v1/v2, GitLab secret tokens, timestamp-less Webflow/Linear, SHA-1-only GitHub/Meta, Paddle `h`) fail with `WEAK_SCHEME`.
+- **`result.timestampVerified`** shows which webhooks rely on a dedupe store alone for replay protection.
+
 ## Future Plans: More Regional Payment Providers 🗓️
 
 Support for these providers is planned for a future release:
