@@ -10,6 +10,7 @@ import {
   VerifyWebhookOptions,
   WebhookErrorCode,
 } from "../core/types.js";
+import { weakScheme } from "../utils/strict.js";
 import { bytesToHex } from "../utils/encoding.js";
 
 export const githubVerifier: ProviderVerifier = {
@@ -18,7 +19,7 @@ export const githubVerifier: ProviderVerifier = {
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,
-    _options?: VerifyWebhookOptions,
+    options?: VerifyWebhookOptions,
   ): Promise<VerificationResult> {
     const sig256 = req.headers["x-hub-signature-256"];
     const sig1 = req.headers["x-hub-signature"];
@@ -56,6 +57,12 @@ export const githubVerifier: ProviderVerifier = {
     }
 
     if (sig1) {
+      if (options?.strict) {
+        return weakScheme(
+          "github",
+          'Only the SHA-1 "x-hub-signature" header was sent; "x-hub-signature-256" is required',
+        );
+      }
       const trimmed = sig1.trim();
       const cleanSig = trimmed.startsWith("sha1=") ? trimmed.slice(5) : trimmed;
       const expectedBytes = await computeHmacSha1(secret, req.rawBody);

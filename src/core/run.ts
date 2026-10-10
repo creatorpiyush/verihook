@@ -33,6 +33,7 @@ function dispatchTelemetry(
     hint: result.hint,
     eventType: result.eventType,
     timestamp: result.timestamp,
+    timestampVerified: result.timestampVerified,
     durationMs,
     attemptedAt,
     error: result.error,
@@ -130,7 +131,12 @@ export async function runVerification(
       if (result.valid) {
         const event = parseEvent(normalizedReq);
         const eventType = resolveEventType(verifier, event, normalizedReq);
-        result = { ...result, event, eventType };
+        // Verifiers only return `timestamp` after checking it against the
+        // tolerance, which `tolerance <= 0` turns off.
+        const timestampVerified =
+          result.timestamp !== undefined &&
+          !(options?.tolerance !== undefined && options.tolerance <= 0);
+        result = { ...result, event, eventType, timestampVerified };
       }
 
       if (result.valid && options?.dedupeStore) {

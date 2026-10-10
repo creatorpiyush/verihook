@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Strict mode** (`{ strict: true }`): accept only each provider's strongest signature scheme. Weaker fallbacks fail with the new `WEAK_SCHEME` code: HubSpot v1/v2, GitLab secret tokens, Webflow and Linear without a timestamp, GitHub and Meta SHA-1-only requests, Paddle's legacy `h`. Off by default. HubSpot sends v1/v2 next to v3, so without strict mode a captured request with its v3 headers stripped verifies with no replay window; HubSpot users should turn it on.
+- `result.timestampVerified` (and on the telemetry event): `true` when a signed timestamp was checked against `tolerance`, `false` when a replay is only stopped by a dedupe store.
+
 ## [1.19.0] - 2026-10-10
 
 ### Added

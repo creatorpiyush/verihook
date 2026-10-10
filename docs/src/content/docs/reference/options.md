@@ -18,6 +18,7 @@ The `secret` may be a string or an array of strings for [secret rotation](../../
 | `dedupeStore` | | Rejects repeated events with `DUPLICATE_EVENT`. See [Deduplication](../../guides/dedupe/). |
 | `dedupeTtlMs` | `86400000` (24 h) | How long a dedupe key is remembered, in milliseconds. Providers without a signed timestamp can be replayed once the key expires, so keep it long. |
 | `eventId` | extracted | Overrides the dedupe key. |
+| `strict` | `false` | Accept only each provider's strongest scheme. Weaker fallbacks fail with `WEAK_SCHEME`. See [Strict mode](../../guides/dedupe/#strict-mode). |
 | `maxBodySize` | 2 MB | Largest body read from a stream, in bytes: by an adapter (larger bodies get `413`) or by `verifyWebhook` given a Fetch `Request` (fails with `PAYLOAD_TOO_LARGE`). |
 | `onVerify` / `log` | | Called after every verification with a telemetry event. |
 | `headerName` | | `generic` only: the signature header. |

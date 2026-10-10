@@ -6,6 +6,7 @@ import {
   VerifyWebhookOptions,
   WebhookErrorCode,
 } from "../core/types.js";
+import { weakScheme } from "../utils/strict.js";
 import { bytesToHex } from "../utils/encoding.js";
 
 import { toEpochSeconds } from "../utils/timestamp.js";
@@ -29,6 +30,7 @@ export const paddleVerifier: ProviderVerifier = {
 
     let timestampStr = "";
     const signatures: string[] = [];
+    const legacy: string[] = [];
 
     const parts = signatureHeader.split(";");
     for (const part of parts) {
@@ -40,8 +42,20 @@ export const paddleVerifier: ProviderVerifier = {
         if (k === "ts" && v) timestampStr = v;
         // Paddle sends `h1`; several are sent while a secret is being rotated.
         // `h` is accepted too, for fixtures signed by verihook before 1.14.2.
-        if ((k === "h1" || k === "h") && v) signatures.push(v.toLowerCase());
+        if (k === "h1" && v) signatures.push(v.toLowerCase());
+        if (k === "h" && v) legacy.push(v.toLowerCase());
       }
+    }
+
+    if (options?.strict) {
+      if (signatures.length === 0 && legacy.length > 0) {
+        return weakScheme(
+          "paddle",
+          'Only the legacy "h" signature was sent; Paddle Billing sends "h1"',
+        );
+      }
+    } else {
+      signatures.push(...legacy);
     }
 
     if (!timestampStr || signatures.length === 0) {
