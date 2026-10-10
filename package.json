@@ -387,7 +387,7 @@
     "svix": "2.6.1",
     "tsup": "8.5.1",
     "twilio": "6.1.2",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "vitest": "4.1.11"
   },
   "overrides": {
