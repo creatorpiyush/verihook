@@ -62,15 +62,20 @@ describe("CLI simulate produces verifiable webhooks", () => {
     expect(result.valid).toBe(true);
   });
 
-  it("refuses to simulate PayPal", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const fetchSpy = vi.spyOn(globalThis, "fetch");
-    await runCli(["simulate", "paypal"]);
-    expect(fetchSpy).not.toHaveBeenCalled();
-    expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining("cannot be simulated"),
+  it("paypal signs with a generated key and prints the key and webhook ID", async () => {
+    const sent = await simulateAndCapture(["paypal", "--secret", "WH-CLI"]);
+    const keyLog = sent.logs.find((l) => l.includes("PayPal public key"))!;
+    const publicKey = keyLog.slice(keyLog.indexOf("-----BEGIN"));
+    expect(
+      sent.logs.some((l) => l.endsWith("(options.webhookId): WH-CLI")),
+    ).toBe(true);
+    const result = await verifyWebhook(
+      "paypal",
+      { headers: sent.headers, body: sent.body },
+      publicKey,
+      { webhookId: "WH-CLI" },
     );
-    process.exitCode = 0;
+    expect(result.valid, result.reason).toBe(true);
   });
 
   it("keeps '=' characters inside --flag=value arguments", async () => {

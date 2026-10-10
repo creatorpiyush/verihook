@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **PayPal in `verihook/testing` and `npx verihook simulate`**: `signWebhook('paypal')` signs with a local RSA key (generated once per process, or `privateKey`) and returns the public key as `secret`, so every built-in provider can now be signed. `webhookId` sets the signed webhook ID (default `WH-TEST`). `simulate paypal` prints the key and webhook ID to configure your server with.
+- `SignedWebhook.verifyOptions`: options to pass to `verifyWebhook()` along with `secret`. Set for PayPal (`{ webhookId }`), `undefined` for other providers.
+
 ## [1.18.0] - 2026-10-10
 
 ### Added

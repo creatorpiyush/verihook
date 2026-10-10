@@ -37,8 +37,13 @@ describe("docs provider pages", () => {
         verify as (
           req: unknown,
           secret: string,
+          options?: unknown,
         ) => Promise<{ valid: boolean; reason?: string }>
-      )({ headers: hook.headers, body: hook.body, url: hook.url }, hook.secret);
+      )(
+        { headers: hook.headers, body: hook.body, url: hook.url },
+        hook.secret,
+        hook.verifyOptions,
+      );
       expect(result.valid, result.reason).toBe(true);
     },
   );

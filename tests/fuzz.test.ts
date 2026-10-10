@@ -106,6 +106,7 @@ describe("fuzz: signed webhooks", () => {
             provider as never,
             { headers: hook.headers, body: hook.body, url: hook.url },
             hook.secret,
+            hook.verifyOptions,
           );
           expect(result.valid, `${provider}: ${result.reason}`).toBe(true);
         },

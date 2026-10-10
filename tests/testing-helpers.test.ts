@@ -26,6 +26,7 @@ describe("signWebhook round-trips through verifyWebhook", () => {
       provider,
       { headers: hook.headers, body: hook.body, url: hook.url },
       hook.secret,
+      hook.verifyOptions,
     );
     expect(result.valid).toBe(true);
   });
@@ -43,6 +44,7 @@ describe("signWebhook round-trips through verifyWebhook", () => {
       provider,
       { headers: hook.headers, body: hook.body, url: hook.url },
       hook.secret,
+      hook.verifyOptions,
     );
     expect(result.valid).toBe(true);
   });
@@ -127,12 +129,6 @@ describe("signWebhook errors", () => {
   it("requires a secret for HMAC providers", async () => {
     await expect(signWebhook("stripe")).rejects.toThrow(
       /requires options.secret/,
-    );
-  });
-
-  it("refuses PayPal", async () => {
-    await expect(signWebhook("paypal", { secret: "x" })).rejects.toThrow(
-      /cannot be signed locally/,
     );
   });
 

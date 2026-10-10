@@ -409,7 +409,7 @@ Press Ctrl+C to stop listening.
 }
 
 // Default secrets and example payloads used by `simulate`.
-const KEY_PAIR_PROVIDERS = new Set(["discord", "sendgrid"]);
+const KEY_PAIR_PROVIDERS = new Set(["discord", "sendgrid", "paypal"]);
 
 function simulationSample(
   provider: string,
@@ -843,6 +843,15 @@ function simulationSample(
       };
     case "discord":
       return { payload: { type: 1, id: `interaction_${now}` } };
+    case "paypal":
+      return {
+        payload: {
+          id: `WH-${now}`,
+          event_type: eventType || "PAYMENT.CAPTURE.COMPLETED",
+          resource_type: "capture",
+          resource: { id: `CAP-${now}`, status: "COMPLETED" },
+        },
+      };
     default:
       return {
         secret: "secret_123",
@@ -903,14 +912,6 @@ Examples:
   const targetUrlObj = validateUrlForSsrf(rawTargetUrl, !!args.allowRemote);
   const targetUrl = targetUrlObj.toString();
 
-  if (provider === "paypal") {
-    console.error(
-      "❌ PayPal webhooks are signed with PayPal's private RSA key and cannot be simulated locally. Use the PayPal Developer Dashboard webhook simulator instead.",
-    );
-    process.exitCode = 1;
-    return;
-  }
-
   if (provider === "discord" && args.secret) {
     console.warn(
       "⚠️ Ignoring --secret for discord: simulation signs with a generated Ed25519 key pair.",
@@ -922,17 +923,27 @@ Examples:
   const signProvider = SIGNABLE_PROVIDERS.has(provider) ? provider : "generic";
   const signed = await signWebhook(signProvider, {
     ...sample,
-    // Discord and SendGrid sign with a private key; a throwaway pair is generated.
+    // Discord, SendGrid and PayPal sign with a private key; a throwaway pair is generated.
     secret: KEY_PAIR_PROVIDERS.has(provider)
       ? undefined
       : args.secret || sample.secret,
+    // PayPal's "secret" in verihook is the webhook ID, which is what gets signed.
+    ...(provider === "paypal" && args.secret ? { webhookId: args.secret } : {}),
     url: targetUrl,
   });
   const { headers, body: rawBody } = signed;
   // Twilio JSON webhooks carry the body hash in the signed URL.
   const sendUrl = signed.url;
 
-  if (KEY_PAIR_PROVIDERS.has(provider)) {
+  if (provider === "paypal") {
+    // The receiving server must pin this key: it isn't PayPal's certificate.
+    console.log(
+      `🔑 PayPal public key for verification (pass it as the secret):\n${signed.secret}`,
+    );
+    console.log(
+      `🆔 PayPal webhook ID (options.webhookId): ${signed.verifyOptions?.webhookId}`,
+    );
+  } else if (KEY_PAIR_PROVIDERS.has(provider)) {
     const label = provider === "discord" ? "Discord" : "SendGrid";
     console.log(`🔑 ${label} public key for verification: ${signed.secret}`);
   }
