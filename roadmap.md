@@ -197,6 +197,12 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **`verihook/send`**: sign and send webhooks with Standard Webhooks (`generateWebhookSecret`, `signOutgoingWebhook`, `sendWebhook` with timeout, no redirects and an SSRF host guard).
 - **`standard-webhooks` provider** so receivers verify them with verihook.
 
+## 20. Security Audit Fixes (v1.21.1) — ✅ Completed
+
+- **Adyen**: standard notifications are deduped on their signed fields only, so a replay with an unsigned field changed is caught.
+- **Mailgun**: `{ strict: true }` requires a dedupe store, since the event data isn't signed.
+- **Generic**: an unknown `algorithm` or `encoding` fails verification instead of matching an empty signature.
+
 ## Future Plans: More Regional Payment Providers 🗓️
 
 Support for these providers is planned for a future release:
