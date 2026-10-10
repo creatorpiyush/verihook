@@ -1,4 +1,3 @@
-import { releaseDedupeKey } from "../core/dedupe.js";
 import type { ResolveEvent } from "../core/event-types.js";
 import type {
   ProviderName,
@@ -18,6 +17,7 @@ import {
   type AdapterReply,
   type SecretResolver,
   type VerihookContext,
+  releaseDedupeOnFailure,
 } from "./shared.js";
 import { normalizeBody } from "../utils/normalize-request.js";
 
@@ -37,7 +37,7 @@ export interface FastifyReplyLike {
   headers(values: Record<string, string>): this;
   send(payload?: unknown): this;
   statusCode: number;
-  raw: { on(event: "finish", listener: () => void): unknown };
+  raw: { on(event: string, listener: () => void): unknown };
 }
 
 /** Fields the hook adds to the request. */
@@ -197,13 +197,12 @@ export function verihookFastify<
       request.verihook = toVerihookContext(provider, payload, result);
 
       // If the route fails, forget the event so the provider's retry is handled.
-      if (result.dedupeKey) {
-        reply.raw.on("finish", () => {
-          if (reply.statusCode >= 500) {
-            void releaseDedupeKey(result, options);
-          }
-        });
-      }
+      releaseDedupeOnFailure(
+        reply.raw,
+        result,
+        options,
+        () => reply.statusCode,
+      );
     } catch (err: unknown) {
       if (options?.onError) {
         return await options.onError(

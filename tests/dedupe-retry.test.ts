@@ -108,6 +108,38 @@ describe("dedupe retry semantics", () => {
     expect(next).toHaveBeenCalledWith();
   });
 
+  it("Express releases the event when the connection closes before a response", async () => {
+    const dedupeStore = new MemoryDedupeStore();
+    const middleware = verihookExpress("razorpay", secret, { dedupeStore });
+    const headers = await signedHeaders();
+
+    const dropped = mockRes();
+    await middleware({ headers, body }, dropped, vi.fn());
+    dropped.emit("close");
+    await Promise.resolve();
+
+    const retry = mockRes();
+    const next = vi.fn();
+    await middleware({ headers, body }, retry, next);
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  it("Express keeps the event when the response finished before close", async () => {
+    const dedupeStore = new MemoryDedupeStore();
+    const middleware = verihookExpress("razorpay", secret, { dedupeStore });
+    const headers = await signedHeaders();
+
+    const ok = mockRes();
+    await middleware({ headers, body }, ok, vi.fn());
+    ok.emit("finish");
+    ok.emit("close");
+    await Promise.resolve();
+
+    const dup = mockRes();
+    await middleware({ headers, body }, dup, vi.fn());
+    expect(dup.body).toEqual({ received: true, duplicate: true });
+  });
+
   it("Next.js handler acknowledges duplicates and releases on handler failure", async () => {
     const dedupeStore = new MemoryDedupeStore();
     const headers = await signedHeaders();

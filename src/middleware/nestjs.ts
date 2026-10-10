@@ -1,4 +1,3 @@
-import { releaseDedupeKey } from "../core/dedupe.js";
 import type {
   ProviderName,
   VerificationResult,
@@ -18,6 +17,7 @@ import {
   type AdapterReply,
   type SecretResolver,
   type VerihookContext,
+  releaseDedupeOnFailure,
 } from "./shared.js";
 
 /** The parts of an Express or Fastify request (as Nest passes it) the guard uses. */
@@ -71,12 +71,6 @@ function sendReply(res: any, { status, body }: AdapterReply): void {
   } else {
     throw new Error("[verihook] Unsupported Nest HTTP adapter response");
   }
-}
-
-/** Runs `listener` once the response is sent, on Express or Fastify. */
-function onFinish(res: any, listener: (statusCode: number) => void): void {
-  const raw = typeof res.on === "function" ? res : res.raw;
-  raw?.on?.("finish", () => listener(raw.statusCode ?? res.statusCode ?? 200));
 }
 
 /**
@@ -176,13 +170,15 @@ export function createVerihookGuard(
       const { result } = outcome;
 
       // If the route fails, forget the event so the provider's retry is handled.
-      if (result.dedupeKey) {
-        onFinish(res, (statusCode) => {
-          if (statusCode >= 500) {
-            void releaseDedupeKey(result, options);
-          }
-        });
-      }
+      // Express passes the Node response; Fastify wraps it in `reply.raw`.
+      const reply = res as any;
+      const raw = typeof reply.on === "function" ? reply : reply.raw;
+      releaseDedupeOnFailure(
+        raw,
+        result,
+        options,
+        () => raw?.statusCode ?? reply.statusCode ?? 200,
+      );
       return true;
     },
   };

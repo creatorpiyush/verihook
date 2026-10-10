@@ -9,14 +9,14 @@ sidebar:
 
 | Option | Default | Description |
 | :--- | :--- | :--- |
-| `tolerance` | `300` | Maximum age of the provider's timestamp, in seconds (180 for Calendly, 600 for Twitch). |
+| `tolerance` | `300` | Maximum age of the provider's timestamp, in seconds (60 for Linear, 180 for Calendly, 600 for Twitch, 3 days for PayPal). `0` disables the check. |
 | `now` | current time | Unix seconds to check timestamps against. Useful for fixed test fixtures. |
 | `url` | from the request | Public URL, for providers that sign it (Twilio, Square, HubSpot). Set it behind proxies that rewrite the host or path. |
 | `webhookId` | | PayPal webhook ID. |
 | `dedupeStore` | | Rejects repeated events with `DUPLICATE_EVENT`. See [Deduplication](../../guides/dedupe/). |
-| `dedupeTtlMs` | `300000` | How long a dedupe key is remembered, in milliseconds. |
+| `dedupeTtlMs` | `86400000` (24 h) | How long a dedupe key is remembered, in milliseconds. Providers without a signed timestamp can be replayed once the key expires, so keep it long. |
 | `eventId` | extracted | Overrides the dedupe key. |
-| `maxBodySize` | 2 MB | Largest body an adapter reads, in bytes. Larger bodies get `413`. |
+| `maxBodySize` | 2 MB | Largest body read from a stream, in bytes: by an adapter (larger bodies get `413`) or by `verifyWebhook` given a Fetch `Request` (fails with `PAYLOAD_TOO_LARGE`). |
 | `onVerify` / `log` | | Called after every verification with a telemetry event. |
 | `headerName` | | `generic` only: the signature header. |
 | `algorithm` | `sha256` | `generic` only: `sha256`, `sha1` or `sha512`. |

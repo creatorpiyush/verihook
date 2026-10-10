@@ -1,4 +1,3 @@
-import { releaseDedupeKey } from "../core/dedupe.js";
 import {
   WebhookErrorCode,
   type ProviderName,
@@ -6,6 +5,7 @@ import {
   type VerifyWebhookOptions,
 } from "../core/types.js";
 import { verifyWebhook } from "../core/verifier.js";
+import { releaseDedupeOnFailure } from "./shared.js";
 
 export interface ExpressRequestLike {
   headers?: Record<string, string | string[] | undefined>;
@@ -189,13 +189,7 @@ export function verihookExpress(
       (req as unknown as VerihookRequestAdditions).verifiedPayload = payload;
 
       // If downstream processing fails, forget the event so the provider's retry is handled.
-      if (result.dedupeKey && typeof res.on === "function") {
-        res.on("finish", () => {
-          if ((res.statusCode ?? 200) >= 500) {
-            void releaseDedupeKey(result, options);
-          }
-        });
-      }
+      releaseDedupeOnFailure(res, result, options);
 
       next();
     } catch (err: unknown) {

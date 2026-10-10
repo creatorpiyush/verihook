@@ -180,7 +180,7 @@ export const providers = [
     entry: "meta",
     env: "META_APP_SECRET",
     headers: ["x-hub-signature-256"],
-    scheme: "HMAC-SHA256 of the raw body, keyed with the app secret, sent as `sha256=<hex>`.",
+    scheme: "HMAC-SHA256 of the raw body, keyed with the app secret, sent as `sha256=<hex>`. The legacy SHA-1 `x-hub-signature` is accepted only when no SHA-256 signature is sent.",
     secret:
       "Your app's **App Secret**: in the Meta App Dashboard, open **App settings → Basic**. The verify token used in the setup handshake is a different value that you choose.",
     eventType: "the body's `object`, e.g. `whatsapp_business_account`",
@@ -277,7 +277,9 @@ export async function GET(request: Request) {
     secret:
       "The **Webhook ID** (not a secret): in the PayPal Developer Dashboard, open **Apps & Credentials**, select the app and find the ID in its webhooks list. Pass it as the secret or as `{ webhookId }`. To avoid fetching the certificate, pass the PEM certificate as the secret and the ID as `webhookId`.",
     eventType: "the body's `event_type`, e.g. `PAYMENT.CAPTURE.COMPLETED`",
+    tolerance: "3 days",
     notes: [
+      "The replay window covers PayPal's 3-day retry schedule. PayPal doesn't document whether retries keep the original `paypal-transmission-time`; if yours are re-signed, tighten it with `{ tolerance: 300 }`.",
       "Verification fetches PayPal's certificate from `paypal-cert-url` over HTTPS. Only PayPal API hosts are allowed, and certificates are cached in memory.",
       "Sandbox and live webhooks have different IDs.",
     ],
@@ -373,8 +375,9 @@ export async function GET(request: Request) {
     secret:
       "The webhook's **signing secret**: in Linear, open **Settings → API → Webhooks** and select the webhook.",
     eventType: "the body's `type`, e.g. `Issue`",
+    tolerance: "60 seconds",
     notes: [
-      "Linear also sends `webhookTimestamp` in the body. Check it if you need stricter replay protection.",
+      "The timestamp is the signed body's `webhookTimestamp`, as Linear recommends. Bodies without it (e.g. hand-made test payloads) skip the check.",
     ],
     testSecret: "linear_test_secret",
     docs: "https://linear.app/developers/webhooks",
@@ -498,6 +501,7 @@ export async function GET(request: Request) {
     eventType: "the first item's `eventCode`, e.g. `AUTHORISATION`",
     notes: [
       "Every item in a batch must verify, or the whole request is rejected.",
+      "Standard webhooks sign only `pspReference`, `originalReference`, `merchantAccountCode`, `merchantReference`, `amount`, `eventCode` and `success`. Other fields in `result.event` (`additionalData`, `reason`, `paymentMethod`, ...) are not covered by the signature: don't trust them for decisions, or confirm them with Adyen's API.",
       "Adyen expects `[accepted]` as the response body for standard webhooks.",
     ],
     testSecret: "0123456789abcdef0123456789abcdef",

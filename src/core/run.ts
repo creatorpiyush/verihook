@@ -1,6 +1,6 @@
 import { readNodeEnv } from "../utils/env.js";
 import { normalizeRequest } from "../utils/normalize-request.js";
-import { extractEventId } from "./dedupe.js";
+import { DEFAULT_DEDUPE_TTL_MS, extractEventId } from "./dedupe.js";
 import { diagnoseFailure, warnHintOnce } from "./diagnostics.js";
 import { parseEvent, resolveEventType } from "./event.js";
 import { getGlobalLogger } from "./logger.js";
@@ -100,7 +100,7 @@ export async function runVerification(
         reason: "Webhook secret is required",
       };
     } else {
-      const normalizedReq = await normalizeRequest(req);
+      const normalizedReq = await normalizeRequest(req, options?.maxBodySize);
       result = await verifier.verify(normalizedReq, secret || "", options);
 
       if (!result.valid && !result.hint) {
@@ -127,7 +127,7 @@ export async function runVerification(
         const eventId =
           options.eventId || (await extractEventId(provider, normalizedReq));
         const dedupeKey = `${provider}:${eventId}`;
-        const ttlMs = options.dedupeTtlMs ?? 300_000;
+        const ttlMs = options.dedupeTtlMs ?? DEFAULT_DEDUPE_TTL_MS;
         const isDuplicate = await options.dedupeStore.hasOrSet(
           dedupeKey,
           ttlMs,
