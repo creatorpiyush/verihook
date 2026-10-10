@@ -195,7 +195,7 @@ All verifiers assign an explicit code from `WebhookErrorCode` to the `Verificati
 
 #### 1. Express Middleware (`verihookExpress`)
 - **Location**: `verihook/express` (`src/middleware/express.ts`).
-- **Stream Limit Protection**: Buffers unparsed body streams with an explicit `maxBodySize` threshold (default 2MB = 2,097,152 bytes), terminating stream consumption and returning HTTP 413 Payload Too Large if exceeded.
+- **Stream Limit Protection**: Buffers unparsed body streams with an explicit `maxBodySize` threshold (default 2MB = 2,097,152 bytes), terminating stream consumption and returning HTTP 413 Payload Too Large if exceeded. `verifyWebhook` applies the same limit when given a Fetch `Request` and fails with `PAYLOAD_TOO_LARGE`.
 - **Security Headers**: Automatically sets `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY` on error responses.
 
 #### 2. Next.js Route Handler Factory (`createWebhookHandler`)
@@ -205,7 +205,7 @@ All verifiers assign an explicit code from `WebhookErrorCode` to the `Verificati
 #### 3. Shared adapter core (`src/middleware/shared.ts`)
 - **Web-standard adapters**: `verihook/next`, `/sveltekit`, `/remix`, `/astro` and `/h3` are thin wrappers over `createWebAdapter()`. Each passes a function that takes the Fetch `Request` out of the framework's handler argument. h3 v1 (Nuxt 3) has no Fetch `Request`, so one is rebuilt from `event.node.req`. The buffered body is left on `req.rawBody` so `readBody(event)` still works.
 - **Middleware-style adapters**: `verihook/hono` (middleware, `c.get("verihook")`), `/fastify` (`preHandler` + the `verihookRawBody` parser plugin), `/nestjs` (guard; reads Nest's `rawBody: true`) and `/lambda` (API Gateway v1/v2 and Function URL events, base64 decoding, signed-URL reconstruction).
-- **Shared contract**: Replies and helpers are shared: 401 on failure, 200 for duplicates, 413 above `maxBodySize`, and a generic 500 on exceptions. When the downstream handler throws or responds `>= 500`, `releaseDedupeKey()` runs.
+- **Shared contract**: Replies and helpers are shared: 401 on failure, 200 for duplicates, 413 above `maxBodySize`, and a generic 500 on exceptions. When the downstream handler throws or responds `>= 500`, or the client disconnects before a response (Node adapters), `releaseDedupeKey()` runs. Dedupe keys live 24 hours by default.
 - **No framework imports**: Adapters type against structural `*Like` interfaces. Frameworks are dev dependencies only, used by the integration tests in `tests/adapters/` and the type checks in `tests/types/adapters.ts`.
 
 ---
@@ -263,13 +263,13 @@ Both CLI commands enforce origin validation as a best-effort defense-in-depth me
 | **Meta / WhatsApp** | `x-hub-signature-256` | HMAC-SHA256 / Hex | `rawBody` (Supports GET handshake) | N/A |
 | **Discord** | `x-signature-ed25519` | Ed25519 / Hex | `${timestamp}${rawBody}` | ✅ Default 300s |
 | **Twitter / X** | `x-twitter-webhooks-signature` | HMAC-SHA256 / Base64 | `rawBody` (Supports GET CRC handshake) | N/A |
-| **PayPal** | `paypal-transmission-sig` | RSA-SHA256 / Base64 | `${transmissionId}|${time}|${webhookId}|${crc32}` | N/A |
+| **PayPal** | `paypal-transmission-sig` | RSA-SHA256 / Base64 | `${transmissionId}|${time}|${webhookId}|${crc32}` | ✅ Default 3 days |
 | **LemonSqueezy** | `x-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
 | **Paddle** | `paddle-signature` | HMAC-SHA256 / Hex | `${ts}:${rawBody}` | ✅ Default 300s |
 | **PagerDuty** | `x-pagerduty-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
 | **Webflow** | `x-webflow-signature` | HMAC-SHA256 / Hex | `${timestamp}:${rawBody}` or `rawBody` | ✅ Default 300s |
 | **WorkOS** | `workos-signature` | HMAC-SHA256 / Hex | `${timestamp}.${rawBody}` | ✅ Default 300s |
-| **Linear** | `linear-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
+| **Linear** | `linear-signature` | HMAC-SHA256 / Hex | `rawBody` | ✅ Default 60s (`webhookTimestamp` in body) |
 | **Razorpay** | `x-razorpay-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
 | **Square** | `x-square-hmacsha256-signature` | HMAC-SHA256 / Base64 | `url + rawBody` | N/A |
 | **Zoom** | `x-zm-signature` | HMAC-SHA256 / Hex | `v0:${timestamp}:${rawBody}` | ✅ Default 300s |

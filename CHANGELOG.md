@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-10-10
+
 ### Security
 - PayPal: `paypal-transmission-time` is signed but was never checked, so a captured webhook could be replayed forever. It is now checked against `options.tolerance`, defaulting to 3 days (PayPal's retry window). Pass `{ tolerance: 300 }` for a tighter window.
 - Linear: the signed body's `webhookTimestamp` is now checked, with a 60-second default window as Linear recommends. Bodies without it skip the check.
