@@ -178,6 +178,11 @@ Expand the CLI toolchain into a live local developer relay proxy:
 
 - **Rotate secrets without downtime**: every verify function and adapter accepts an array of secrets (`[NEW, OLD]`); the request is valid if any matches. New `WebhookSecret` type and a "Rotating secrets" guide.
 
+## 16. Shared Dedupe Store (v1.18.0) — ✅ Completed
+
+- **`RedisDedupeStore`** on your own ioredis, node-redis or Bun client: atomic `SET NX PX`, key release on handler failure, no new dependency.
+- Upstash and Cloudflare KV reference stores now implement `delete()`.
+
 ## Future Plans: More Regional Payment Providers 🗓️
 
 Support for these providers is planned for a future release:
