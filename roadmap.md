@@ -174,6 +174,10 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **Body-size limit** in `verifyWebhook` itself, with a new `PAYLOAD_TOO_LARGE` code.
 - **24-hour default dedupe TTL**, and the Node adapters release a key when the client disconnects.
 
+## 15. Secret Rotation (v1.17.0) — ✅ Completed
+
+- **Rotate secrets without downtime**: every verify function and adapter accepts an array of secrets (`[NEW, OLD]`); the request is valid if any matches. New `WebhookSecret` type and a "Rotating secrets" guide.
+
 ## Future Plans: More Regional Payment Providers 🗓️
 
 Support for these providers is planned for a future release:
