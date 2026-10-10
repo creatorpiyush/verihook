@@ -10,11 +10,11 @@ We actively maintain and provide security patches for the following versions of 
 
 | Version | Supported | Security Notes |
 | :--- | :--- | :--- |
-| `1.17.x` | :white_check_mark: | Current release family. Actively maintained. Adds secret rotation (an array of secrets). |
-| `1.16.x` | :x: | Superseded by `1.17.x` (drop-in upgrade). `1.16.0` added replay windows for PayPal and Linear, a body-size limit in `verifyWebhook`, and a 24-hour default dedupe TTL. |
-| `1.8.x` – `1.15.x` | :x: | Superseded by `1.17.x` (no API changes; see the 1.16.0 changelog for new defaults). Versions before `1.14.1` are affected by a `dedupeStore` replay bypass via unsigned ID headers. |
-| `1.7.x` | :x: | Affected by PayPal signature forgery via HMAC fallback. Upgrade to latest `1.17.x`. |
-| `< 1.7.0` | :x: | Legacy release (also affected by the PayPal issue). Upgrade to latest `1.17.x`. |
+| `1.18.x` | :white_check_mark: | Current release family. Actively maintained. Adds `RedisDedupeStore`. |
+| `1.16.x` – `1.17.x` | :x: | Superseded by `1.18.x` (drop-in upgrade). `1.17.0` added secret rotation. `1.16.0` added replay windows for PayPal and Linear, a body-size limit in `verifyWebhook`, and a 24-hour default dedupe TTL. |
+| `1.8.x` – `1.15.x` | :x: | Superseded by `1.18.x` (no API changes; see the 1.16.0 changelog for new defaults). Versions before `1.14.1` are affected by a `dedupeStore` replay bypass via unsigned ID headers. |
+| `1.7.x` | :x: | Affected by PayPal signature forgery via HMAC fallback. Upgrade to latest `1.18.x`. |
+| `< 1.7.0` | :x: | Legacy release (also affected by the PayPal issue). Upgrade to latest `1.18.x`. |
 
 ---
 

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-10-10
+
 ### Added
 - **`RedisDedupeStore`**: a shared dedupe store on your own Redis client (ioredis, node-redis v4+ or Bun's `RedisClient`), with no new dependency. Atomic `SET NX PX` per event, `delete()` so the adapters release keys on handler failure, `keyPrefix` option. Redis errors fail verification so the provider retries.
 
