@@ -183,6 +183,10 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **`RedisDedupeStore`** on your own ioredis, node-redis or Bun client: atomic `SET NX PX`, key release on handler failure, no new dependency.
 - Upstash and Cloudflare KV reference stores now implement `delete()`.
 
+## 17. Sign Every Provider (v1.19.0) — ✅ Completed
+
+- **PayPal in `verihook/testing` and `npx verihook simulate`**: signed with a local RSA key whose public key is returned as the secret, so all 46 built-in providers can be signed in tests.
+
 ## Future Plans: More Regional Payment Providers 🗓️
 
 Support for these providers is planned for a future release:
