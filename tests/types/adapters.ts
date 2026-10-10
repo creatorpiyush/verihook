@@ -76,3 +76,15 @@ export function lambdaChecks() {
 export function nestChecks() {
   UseGuards(createVerihookGuard("stripe", "s"));
 }
+
+export function secretRotationChecks() {
+  // Arrays (also readonly / `as const`) and resolvers returning them are accepted.
+  const secrets = ["whsec_new", "whsec_old"] as const;
+  const app = new Hono<{ Bindings: { NEW: string; OLD: string } }>();
+  app.post(
+    "/webhooks/stripe",
+    verihookHono("stripe", (c) => [c.env.NEW, c.env.OLD]),
+  );
+  lambdaHandler("stripe", secrets, () => undefined);
+  UseGuards(createVerihookGuard("stripe", async () => ["a", "b"]));
+}

@@ -7,6 +7,8 @@ sidebar:
 
 `verifyWebhook(provider, request, secret, options?)`, the shortcuts (`verifyStripe`, ...) and every adapter accept these options.
 
+The `secret` may be a string or an array of strings for [secret rotation](../../guides/secret-rotation/); the request is valid if any of them matches.
+
 | Option | Default | Description |
 | :--- | :--- | :--- |
 | `tolerance` | `300` | Maximum age of the provider's timestamp, in seconds (60 for Linear, 180 for Calendly, 600 for Twitch, 3 days for PayPal). `0` disables the check. |

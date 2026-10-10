@@ -3,6 +3,7 @@ import {
   type ProviderName,
   type VerificationResult,
   type VerifyWebhookOptions,
+  type WebhookSecret,
 } from "../core/types.js";
 import { verifyWebhook } from "../core/verifier.js";
 import { releaseDedupeOnFailure } from "./shared.js";
@@ -29,7 +30,7 @@ export interface ExpressResponseLike {
 export type ExpressNextLike = (err?: unknown) => void;
 
 export type SecretResolver<Req = ExpressRequestLike> =
-  string | ((req: Req) => string | Promise<string>);
+  WebhookSecret | ((req: Req) => WebhookSecret | Promise<WebhookSecret>);
 
 export interface VerihookExpressOptions extends VerifyWebhookOptions {
   /**

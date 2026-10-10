@@ -340,6 +340,12 @@ export interface ProviderVerifier {
 }
 
 /**
+ * A webhook secret, or several during a rotation: verification passes if any
+ * of them matches, tried in order.
+ */
+export type WebhookSecret = string | readonly string[];
+
+/**
  * A provider's verify function (`verifyStripe`, ...). `result.event` is typed for
  * the provider unless you pass your own event type.
  */
@@ -347,6 +353,6 @@ export type ProviderVerifyFunction<P extends ProviderName> = <
   TEvent = EventFor<P>,
 >(
   req: WebhookRequestInput,
-  secret: string,
+  secret: WebhookSecret,
   opts?: VerifyWebhookOptions,
 ) => Promise<VerificationResult<TEvent>>;

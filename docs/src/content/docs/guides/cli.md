@@ -2,7 +2,7 @@
 title: CLI
 description: Send signed test webhooks to your local server with npx verihook simulate, and inspect live webhooks with the verihook listen relay.
 sidebar:
-  order: 6
+  order: 7
 ---
 
 The `verihook` CLI comes with the package. Run it with `npx verihook`.
