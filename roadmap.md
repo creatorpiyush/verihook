@@ -168,6 +168,12 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **JSR package** (`jsr:@verihook/verihook`) for Deno, published with every npm release.
 - **README** shortened to a landing page that links to the docs.
 
+## 14. Replay Hardening (v1.16.0) — ✅ Completed
+
+- **Replay windows** for PayPal (signed transmission time, 3-day default) and Linear (signed `webhookTimestamp`, 60 s).
+- **Body-size limit** in `verifyWebhook` itself, with a new `PAYLOAD_TOO_LARGE` code.
+- **24-hour default dedupe TTL**, and the Node adapters release a key when the client disconnects.
+
 ## Future Plans: More Regional Payment Providers 🗓️
 
 Support for these providers is planned for a future release:
