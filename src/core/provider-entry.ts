@@ -7,6 +7,7 @@ import {
   VerificationResult,
   VerifyWebhookOptions,
   WebhookRequestInput,
+  WebhookSecret,
 } from "./types.js";
 
 /**
@@ -20,7 +21,7 @@ export function bindVerifier<P extends ProviderName>(
 ): ProviderVerifyFunction<P> {
   return <TEvent = EventFor<P>>(
     req: WebhookRequestInput,
-    secret: string,
+    secret: WebhookSecret,
     opts?: VerifyWebhookOptions,
   ) =>
     runVerification(provider, () => verifier, req, secret, opts) as Promise<

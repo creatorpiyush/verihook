@@ -2,7 +2,7 @@
 title: Edge runtimes and bundle size
 description: Run verihook on Cloudflare Workers, Vercel Edge, Deno and Bun, and import a single provider to keep edge bundles small.
 sidebar:
-  order: 7
+  order: 8
 ---
 
 verihook uses the Web Crypto API (`crypto.subtle`) and has no dependencies, so it runs on Cloudflare Workers, Vercel Edge, Deno, Bun and Node.js 18.17+ without polyfills.

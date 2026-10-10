@@ -10,6 +10,7 @@ import {
   VerifyWebhookOptions,
   WebhookErrorCode,
   WebhookRequestInput,
+  WebhookSecret,
 } from "./types.js";
 
 /**
@@ -28,7 +29,7 @@ export async function verifyWebhook<
 >(
   provider: P,
   req: WebhookRequestInput,
-  secret: string,
+  secret: WebhookSecret,
   options?: VerifyWebhookOptions,
 ): Promise<VerificationResult<ResolveEvent<TEvent, P>>> {
   const result = await runVerification(
@@ -53,7 +54,7 @@ export async function verifyWebhookOrThrow<
 >(
   provider: P,
   req: WebhookRequestInput,
-  secret: string,
+  secret: WebhookSecret,
   options?: VerifyWebhookOptions,
 ): Promise<VerificationResult<ResolveEvent<TEvent, P>>> {
   const result = await verifyWebhook<TEvent, P>(provider, req, secret, options);
@@ -75,7 +76,7 @@ function shortcut<P extends ProviderName>(
 ): ProviderVerifyFunction<P> {
   return <TEvent = EventFor<P>>(
     req: WebhookRequestInput,
-    secret: string,
+    secret: WebhookSecret,
     opts?: VerifyWebhookOptions,
   ) =>
     verifyWebhook(provider, req, secret, opts) as Promise<

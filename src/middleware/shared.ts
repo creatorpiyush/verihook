@@ -4,6 +4,7 @@ import {
   type ProviderName,
   type VerificationResult,
   type VerifyWebhookOptions,
+  type WebhookSecret,
 } from "../core/types.js";
 import { verifyWebhook } from "../core/verifier.js";
 import {
@@ -16,7 +17,7 @@ export { DEFAULT_MAX_BODY_SIZE, PayloadTooLargeError, readWebBodyWithLimit };
 
 /** A webhook secret, or a function that resolves it from the framework's request/context. */
 export type SecretResolver<Req> =
-  string | ((req: Req) => string | Promise<string>);
+  WebhookSecret | ((req: Req) => WebhookSecret | Promise<WebhookSecret>);
 
 export const securityHeaders: Record<string, string> = {
   "Content-Type": "application/json",

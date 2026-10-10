@@ -111,6 +111,7 @@ export type {
   VerifyWebhookOptions,
   WebhookHeaders,
   WebhookRequestInput,
+  WebhookSecret,
   NormalizedWebhookRequest,
   WebhookVerificationEvent,
   WebhookLoggerFn,

@@ -2,7 +2,7 @@
 title: Typed events
 description: Get the parsed, typed webhook payload and event name from a verified request with result.event and result.eventType.
 sidebar:
-  order: 4
+  order: 5
 ---
 
 A successful result carries the parsed payload, so you don't parse the body yourself and never act on an unverified one:

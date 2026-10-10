@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Secret rotation**: pass an array of secrets (`verifyWebhook('stripe', req, [NEW, OLD])`) to `verifyWebhook`, `verifyWebhookOrThrow`, the provider shortcuts and every adapter; a secret resolver may return one too. The request is valid if any secret matches, tried in order; if none does, the first secret's failure is reported. Empty entries are skipped. New exported type `WebhookSecret`. See the "Rotating secrets" guide.
+
 ## [1.16.0] - 2026-10-10
 
 ### Security

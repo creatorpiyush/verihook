@@ -13,6 +13,7 @@ import {
   WebhookErrorCode,
   WebhookRequestInput,
   WebhookVerificationEvent,
+  WebhookSecret,
 } from "./types.js";
 
 const KNOWN_ERROR_CODES = new Set<string>(Object.values(WebhookErrorCode));
@@ -82,7 +83,7 @@ export async function runVerification(
   provider: ProviderName,
   resolveVerifier: () => ProviderVerifier,
   req: WebhookRequestInput,
-  secret: string,
+  secret: WebhookSecret,
   options?: VerifyWebhookOptions,
 ): Promise<VerificationResult> {
   const attemptedAt = Date.now();
@@ -91,8 +92,11 @@ export async function runVerification(
   let result: VerificationResult;
   try {
     const verifier = resolveVerifier();
+    const secrets = (
+      typeof secret === "string" ? [secret] : (secret ?? [])
+    ).filter((s) => typeof s === "string" && s !== "");
 
-    if (!secret && verifier.requiresSecret !== false) {
+    if (secrets.length === 0 && verifier.requiresSecret !== false) {
       result = {
         valid: false,
         provider,
@@ -101,13 +105,19 @@ export async function runVerification(
       };
     } else {
       const normalizedReq = await normalizeRequest(req, options?.maxBodySize);
-      result = await verifier.verify(normalizedReq, secret || "", options);
+      // During a rotation, the first secret that verifies wins; if none does, the
+      // first secret's failure is reported.
+      result = await verifier.verify(normalizedReq, secrets[0] ?? "", options);
+      for (let i = 1; !result.valid && i < secrets.length; i++) {
+        const next = await verifier.verify(normalizedReq, secrets[i], options);
+        if (next.valid) result = next;
+      }
 
       if (!result.valid && !result.hint) {
         const hint = diagnoseFailure(
           provider,
           normalizedReq,
-          secret || "",
+          secrets[0] ?? "",
           result,
           options,
         );

@@ -2,7 +2,7 @@
 title: Custom providers
 description: Verify webhooks from any service with verihook's generic HMAC verifier, or register your own provider.
 sidebar:
-  order: 5
+  order: 6
 ---
 
 ## Generic HMAC
