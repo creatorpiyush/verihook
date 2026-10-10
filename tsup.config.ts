@@ -15,6 +15,7 @@ export default defineConfig({
     express: 'src/express.ts',
     next: 'src/next.ts',
     testing: 'src/testing.ts',
+    send: 'src/send.ts',
     fastify: 'src/fastify.ts',
     hono: 'src/hono.ts',
     h3: 'src/h3.ts',

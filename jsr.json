@@ -7,6 +7,7 @@
     "./express": "./src/express.ts",
     "./next": "./src/next.ts",
     "./testing": "./src/testing.ts",
+    "./send": "./src/send.ts",
     "./fastify": "./src/fastify.ts",
     "./hono": "./src/hono.ts",
     "./h3": "./src/h3.ts",
@@ -53,6 +54,7 @@
     "./vercel": "./src/entries/vercel.ts",
     "./webflow": "./src/entries/webflow.ts",
     "./workos": "./src/entries/workos.ts",
+    "./standard-webhooks": "./src/entries/standard-webhooks.ts",
     "./zoom": "./src/entries/zoom.ts"
   },
   "publish": {

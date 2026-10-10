@@ -45,9 +45,10 @@ const SIGNATURE_HEADERS: Array<[header: string, provider: string]> = [
   ["x-github-event", "github"],
   ["x-hub-signature-256", "github or meta"],
   ["x-hub-signature", "github or bitbucket or intercom"],
+  ["webhook-signature", "standard-webhooks"],
 ];
 
-const SVIX_FAMILY = new Set(["svix", "resend", "clerk"]);
+const SVIX_FAMILY = new Set(["svix", "resend", "clerk", "standard-webhooks"]);
 const URL_SIGNING = new Set(["twilio", "square"]);
 const RAW_BODY_FIX =
   'Pass the exact raw bytes: e.g. express.raw({ type: "*/*" }), `await request.text()`, or the verihook/express and verihook/next adapters.';
@@ -88,7 +89,7 @@ function secretHint(provider: string, secret: string): string | undefined {
     }
   }
   if (SVIX_FAMILY.has(provider) && !secret.startsWith("whsec_")) {
-    return "Svix-based signing secrets (Svix, Resend, Clerk) start with whsec_. Copy the endpoint's signing secret from the dashboard.";
+    return "Svix-based and Standard Webhooks signing secrets start with whsec_. Copy the endpoint's signing secret from the dashboard.";
   }
   return undefined;
 }

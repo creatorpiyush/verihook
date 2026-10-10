@@ -28,5 +28,11 @@
     "path": "dist/express.mjs",
     "import": "{ verihookExpress }",
     "limit": "12 kB"
+  },
+  {
+    "name": "verihook/send",
+    "path": "dist/send.mjs",
+    "import": "{ sendWebhook }",
+    "limit": "5 kB"
   }
 ]

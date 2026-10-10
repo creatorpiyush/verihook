@@ -15,7 +15,8 @@ const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 const svixSecret = "whsec_dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==";
 
 function secretFor(provider: string): string | undefined {
-  if (["svix", "resend", "clerk"].includes(provider)) return svixSecret;
+  if (["svix", "resend", "clerk", "standard-webhooks"].includes(provider))
+    return svixSecret;
   if (provider === "phonepe") return "phonepe_user:phonepe_pass";
   if (provider === "postmark") return "postmark_user:postmark_pass";
   if (provider === "adyen") return "0123456789abcdef0123456789abcdef";
@@ -78,11 +79,13 @@ describe("per-provider entry points", () => {
     "verihook/%s exports the same API names as the main entry",
     async (name) => {
       const entry = await loadEntry(name);
-      expect(entry[`${name}Verifier`]).toBe(providers[name]);
+      // `standard-webhooks` exports `standardWebhooksVerifier`.
+      const verifierName = `${name.replace(/-(\w)/g, (_, c: string) => c.toUpperCase())}Verifier`;
+      expect(entry[verifierName]).toBe(providers[name]);
       expect(entry.WebhookErrorCode).toBe(MainIndex.WebhookErrorCode);
       // `<name>Verifier` is reachable from the main entry through `providers`.
       for (const key of Object.keys(entry)) {
-        if (key === `${name}Verifier`) continue;
+        if (key === verifierName) continue;
         expect(MainIndex, `verihook/${name} exports ${key}`).toHaveProperty(
           key,
         );

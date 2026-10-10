@@ -1,7 +1,7 @@
 {
   "name": "verihook",
   "version": "1.20.0",
-  "description": "Universal typed webhook verifier for Stripe, GitHub, Shopify, Slack, Twilio, Svix, Meta, WhatsApp, Discord, Twitter, PayPal, LemonSqueezy, Paddle, PagerDuty, Webflow, WorkOS, Linear, Razorpay, Cashfree, PhonePe, Mollie, Adyen, Checkout.com, Authorize.net, Recurly, GitLab, Bitbucket, Vercel, Sentry, Twitch, Telegram, Postmark, SendGrid, Mailgun, HubSpot, Intercom, Calendly, Typeform, Zoom, and custom providers.",
+  "description": "Universal typed webhook verifier for Stripe, GitHub, Shopify, Slack, Twilio, Svix, Meta, WhatsApp, Discord, Twitter, PayPal, LemonSqueezy, Paddle, PagerDuty, Webflow, WorkOS, Linear, Razorpay, Cashfree, PhonePe, Mollie, Adyen, Checkout.com, Authorize.net, Recurly, GitLab, Bitbucket, Vercel, Sentry, Twitch, Telegram, Postmark, SendGrid, Mailgun, HubSpot, Intercom, Calendly, Typeform, Zoom, Standard Webhooks, and custom providers.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -26,6 +26,11 @@
       "types": "./dist/testing.d.ts",
       "import": "./dist/testing.mjs",
       "require": "./dist/testing.js"
+    },
+    "./send": {
+      "types": "./dist/send.d.ts",
+      "import": "./dist/send.mjs",
+      "require": "./dist/send.js"
     },
     "./fastify": {
       "types": "./dist/fastify.d.ts",
@@ -256,6 +261,11 @@
       "types": "./dist/workos.d.ts",
       "import": "./dist/workos.mjs",
       "require": "./dist/workos.js"
+    },
+    "./standard-webhooks": {
+      "types": "./dist/standard-webhooks.d.ts",
+      "import": "./dist/standard-webhooks.mjs",
+      "require": "./dist/standard-webhooks.js"
     },
     "./zoom": {
       "types": "./dist/zoom.d.ts",

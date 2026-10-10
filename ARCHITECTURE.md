@@ -260,6 +260,7 @@ Both CLI commands enforce origin validation as a best-effort defense-in-depth me
 | **Slack** | `x-slack-signature` | HMAC-SHA256 / Hex | `v0:${timestamp}:${rawBody}` | ✅ Default 300s |
 | **Twilio** | `x-twilio-signature` | HMAC-SHA1 / Base64 | Form: `url + sortedKeysAndValues` <br> JSON: `url?bodySHA256=hashHex` | N/A |
 | **Svix / Resend / Clerk** | `svix-signature` | HMAC-SHA256 / Base64 | `${svixId}.${svixTimestamp}.${rawBody}` | ✅ Default 300s |
+| **Standard Webhooks** | `webhook-signature` | HMAC-SHA256 / Base64 | `${webhookId}.${webhookTimestamp}.${rawBody}` | ✅ Default 300s |
 | **Meta / WhatsApp** | `x-hub-signature-256` | HMAC-SHA256 / Hex | `rawBody` (Supports GET handshake) | N/A |
 | **Discord** | `x-signature-ed25519` | Ed25519 / Hex | `${timestamp}${rawBody}` | ✅ Default 300s |
 | **Twitter / X** | `x-twitter-webhooks-signature` | HMAC-SHA256 / Base64 | `rawBody` (Supports GET CRC handshake) | N/A |

@@ -107,7 +107,7 @@ Each page says where to find the secret, which headers are sent and how to verif
 | [Vercel](https://creatorpiyush.github.io/verihook/providers/vercel/) `vercel` | [Sentry](https://creatorpiyush.github.io/verihook/providers/sentry/) `sentry` | [Twitch EventSub](https://creatorpiyush.github.io/verihook/providers/twitch/) `twitch` |
 | [Telegram](https://creatorpiyush.github.io/verihook/providers/telegram/) `telegram` | [Postmark](https://creatorpiyush.github.io/verihook/providers/postmark/) `postmark` | [SendGrid](https://creatorpiyush.github.io/verihook/providers/sendgrid/) `sendgrid` |
 | [Mailgun](https://creatorpiyush.github.io/verihook/providers/mailgun/) `mailgun` | [HubSpot](https://creatorpiyush.github.io/verihook/providers/hubspot/) `hubspot` | [Intercom](https://creatorpiyush.github.io/verihook/providers/intercom/) `intercom` |
-| [Calendly](https://creatorpiyush.github.io/verihook/providers/calendly/) `calendly` | [Typeform](https://creatorpiyush.github.io/verihook/providers/typeform/) `typeform` |  |
+| [Calendly](https://creatorpiyush.github.io/verihook/providers/calendly/) `calendly` | [Typeform](https://creatorpiyush.github.io/verihook/providers/typeform/) `typeform` | [Standard Webhooks](https://creatorpiyush.github.io/verihook/providers/standard-webhooks/) `standard-webhooks` |
 
 Anything else: the `generic` HMAC verifier or [your own provider](https://creatorpiyush.github.io/verihook/guides/custom-providers/).
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`verihook/send`**, for apps that send webhooks: `generateWebhookSecret()`, `signOutgoingWebhook()` (no I/O) and `sendWebhook(url, ...)` (one attempt with a timeout, no redirects, never throws for delivery failures). Signs with [Standard Webhooks](https://www.standardwebhooks.com); several secrets give one signature each, for rotation. Refuses loopback, private-network and cloud-metadata hosts unless `allowPrivateNetworks` is set. See the "Sending webhooks" guide.
+- **`standard-webhooks` provider** (`verifyStandardWebhooks`, `verihook/standard-webhooks`): verifies Standard Webhooks (`webhook-*` headers), including webhooks sent with `verihook/send`. Signable with `verihook/testing` and `npx verihook simulate`.
+
+### Fixed
+- Docs: the Svix page said `webhook-*` headers were accepted by the `svix` verifier; they aren't. It now points to the new `standard-webhooks` provider.
+- CLI SSRF checks now also cover IPv4-mapped IPv6 addresses, IPv6 unique-local and link-local ranges, `*.localhost` and `localhost.`.
+
 ## [1.20.0] - 2026-10-10
 
 ### Added

@@ -19,6 +19,7 @@ import { paddleVerifier } from "./paddle.js";
 import { pagerdutyVerifier } from "./pagerduty.js";
 import { webflowVerifier } from "./webflow.js";
 import { workosVerifier } from "./workos.js";
+import { standardWebhooksVerifier } from "./standard-webhooks.js";
 import { cashfreeVerifier } from "./cashfree.js";
 import { phonepeVerifier } from "./phonepe.js";
 import { mollieVerifier } from "./mollie.js";
@@ -63,6 +64,7 @@ export const providers: Record<string, ProviderVerifier> = {
   pagerduty: pagerdutyVerifier,
   webflow: webflowVerifier,
   workos: workosVerifier,
+  "standard-webhooks": standardWebhooksVerifier,
   linear: linearVerifier,
   razorpay: razorpayVerifier,
   square: squareVerifier,
@@ -136,6 +138,7 @@ export {
   pagerdutyVerifier,
   webflowVerifier,
   workosVerifier,
+  standardWebhooksVerifier,
   cashfreeVerifier,
   phonepeVerifier,
   mollieVerifier,

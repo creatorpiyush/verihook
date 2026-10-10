@@ -11,6 +11,21 @@ import { base64ToBytes, bytesToBase64 } from "../utils/encoding.js";
 import { toEpochSeconds } from "../utils/timestamp.js";
 
 /**
+ * The HMAC key for a Svix / Standard Webhooks secret: the base64 bytes after an
+ * optional `whsec_` prefix, or the raw string when it isn't base64.
+ */
+export function svixSecretKey(secret: string): Uint8Array {
+  if (secret.startsWith("whsec_")) {
+    return base64ToBytes(secret.slice(6));
+  }
+  try {
+    return base64ToBytes(secret);
+  } catch {
+    return new TextEncoder().encode(secret);
+  }
+}
+
+/**
  * Verifies a Svix / Standard Webhooks signature: `v1,<base64>` HMAC-SHA256 of
  * `<id>.<timestamp>.<body>`, keyed with the base64 secret (`whsec_` prefix optional).
  * `prefix` picks the header family: `svix-*` or Standard Webhooks' `webhook-*`.
@@ -60,16 +75,7 @@ export async function verifySvixStyle(
     }
   }
 
-  let secretBytes: Uint8Array;
-  if (secret.startsWith("whsec_")) {
-    secretBytes = base64ToBytes(secret.slice(6));
-  } else {
-    try {
-      secretBytes = base64ToBytes(secret);
-    } catch {
-      secretBytes = new TextEncoder().encode(secret);
-    }
-  }
+  const secretBytes = svixSecretKey(secret);
 
   const payloadToSign = `${svixId}.${svixTimestamp}.${req.rawBody}`;
   const hmacBytes = await computeHmacSha256(secretBytes, payloadToSign);
