@@ -124,6 +124,8 @@ export const verifyWebflow: ProviderVerifyFunction<"webflow"> =
   shortcut("webflow");
 export const verifyWorkOS: ProviderVerifyFunction<"workos"> =
   shortcut("workos");
+export const verifyStandardWebhooks: ProviderVerifyFunction<"standard-webhooks"> =
+  shortcut("standard-webhooks");
 export const verifyCashfree: ProviderVerifyFunction<"cashfree"> =
   shortcut("cashfree");
 export const verifyPhonePe: ProviderVerifyFunction<"phonepe"> =

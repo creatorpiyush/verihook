@@ -61,7 +61,13 @@ describe("strict mode", () => {
   it("every provider signed by verihook/testing verifies in strict mode", async () => {
     for (const provider of SIGNABLE_PROVIDERS) {
       if (provider === "generic") continue;
-      const key = ["svix", "resend", "clerk", "gitlab"].includes(provider)
+      const key = [
+        "svix",
+        "resend",
+        "clerk",
+        "gitlab",
+        "standard-webhooks",
+      ].includes(provider)
         ? "whsec_c3RyaWN0X3NlY3JldF9mb3JfdGVzdHM="
         : provider === "adyen"
           ? "0123456789abcdef0123456789abcdef"

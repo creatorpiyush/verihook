@@ -109,6 +109,7 @@ export const SIGNABLE_PROVIDERS: ReadonlySet<string> = new Set([
   "svix",
   "resend",
   "clerk",
+  "standard-webhooks",
   "meta",
   "whatsapp",
   "facebook",
@@ -489,6 +490,7 @@ export async function signWebhook(
     case "svix":
     case "resend":
     case "clerk":
+    case "standard-webhooks":
     case "gitlab": {
       secret = requireSecret(name, secret);
       if (name === "gitlab") {
@@ -499,7 +501,8 @@ export async function signWebhook(
           break;
         }
       }
-      const prefix = name === "gitlab" ? "webhook" : "svix";
+      const prefix =
+        name === "gitlab" || name === "standard-webhooks" ? "webhook" : "svix";
       const keyBytes = base64ToBytes(
         secret.startsWith("whsec_") ? secret.slice(6) : secret,
       );

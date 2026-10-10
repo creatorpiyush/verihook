@@ -11,6 +11,7 @@ import {
   SignWebhookOptions,
   signWebhook,
 } from "../testing/sign.js";
+import { isBlockedSsrfHost, isPrivateNetworkHost } from "../utils/ssrf.js";
 
 // Injected from package.json at build time (tsup/vitest `define`).
 declare const __VERIHOOK_VERSION__: string | undefined;
@@ -96,116 +97,6 @@ function parseArgs(args: string[]): ParsedCliArgs {
     process.exit(1);
   }
   return validation.data;
-}
-
-const BLOCKED_HOSTNAMES = new Set([
-  "169.254.169.254",
-  "169.254.170.2",
-  "168.63.129.16",
-  "100.100.100.200",
-  "metadata.google.internal",
-  "metadata.tencentyun.com",
-  "169.254.169.254.ipv4.super-int.sub",
-  "instance-data",
-]);
-
-function isPrivateNetworkHost(hostname: string): boolean {
-  const cleanHost = hostname.toLowerCase().replace(/^\[|\]$/g, "");
-
-  if (
-    cleanHost === "localhost" ||
-    cleanHost === "127.0.0.1" ||
-    cleanHost === "0.0.0.0" ||
-    cleanHost === "0" ||
-    cleanHost === "::1" ||
-    cleanHost === "0177.0.0.1" ||
-    cleanHost === "0x7f000001" ||
-    cleanHost === "2130706433"
-  ) {
-    return true;
-  }
-
-  const ipMatch = cleanHost.match(
-    /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/,
-  );
-
-  if (!ipMatch) {
-    return false;
-  }
-
-  const [_, o1, o2] = ipMatch.map(Number);
-
-  // 0.0.0.0/8
-  if (o1 === 0) return true;
-  // 10.0.0.0/8
-  if (o1 === 10) return true;
-  // 172.16.0.0/12 (172.16.0.0 - 172.31.255.255)
-  if (o1 === 172 && o2 >= 16 && o2 <= 31) return true;
-  // 192.168.0.0/16
-  if (o1 === 192 && o2 === 168) return true;
-  // 127.0.0.0/8 (Loopback)
-  if (o1 === 127) return true;
-  // 100.64.0.0/10 (Carrier-Grade NAT)
-  if (o1 === 100 && o2 >= 64 && o2 <= 127) return true;
-
-  return false;
-}
-
-/**
- * Denylist-based SSRF host origin validation.
- *
- * Provides best-effort defense-in-depth hardening against known cloud metadata
- * endpoints (e.g., 169.254.169.254) and common encoding bypasses.
- * Note: Denylist-based validation is inherently incomplete and is not a substitute
- * for network-level isolation (such as VPC security groups, firewalls, or egress proxies).
- */
-function isBlockedSsrfHost(hostname: string): boolean {
-  const cleanHost = hostname.toLowerCase().replace(/^\[|\]$/g, "");
-
-  if (BLOCKED_HOSTNAMES.has(cleanHost)) {
-    return true;
-  }
-
-  // Check 169.254.0.0/16 Link-Local subnet range (AWS/GCP/Azure/OpenStack metadata block)
-  const ipMatch = cleanHost.match(
-    /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/,
-  );
-  if (ipMatch) {
-    const oct1 = Number(ipMatch[1]);
-    const oct2 = Number(ipMatch[2]);
-    if (oct1 === 169 && oct2 === 254) {
-      return true;
-    }
-  }
-
-  // Check octal IP notation (e.g. 0251.0376.0251.0376 = 169.254.169.254)
-  const octalMatch = cleanHost.match(/^0[0-7]+\.0[0-7]+\.0[0-7]+\.0[0-7]+$/);
-  if (octalMatch) {
-    const parts = cleanHost.split(".").map((p) => parseInt(p, 8));
-    if (parts[0] === 169 && parts[1] === 254) {
-      return true;
-    }
-  }
-
-  // Check IPv4-mapped IPv6 (::ffff:169.254.x.x) or fe80:: link-local IPv6
-  if (
-    cleanHost.startsWith("::ffff:169.254.") ||
-    cleanHost.startsWith("fe80:") ||
-    cleanHost.startsWith("::ffff:a9fe:")
-  ) {
-    return true;
-  }
-
-  // Check decimal representation of 169.254.169.254 (2852039166) or hex representations (0xa9fea9fe)
-  if (
-    cleanHost === "2852039166" ||
-    cleanHost === "0xa9fea9fe" ||
-    cleanHost === "0xa9.0xfe.0xa9.0xfe"
-  ) {
-    return true;
-  }
-
-  return false;
 }
 
 function validateUrlForSsrf(urlStr: string, allowRemote: boolean): URL {
@@ -537,6 +428,7 @@ function simulationSample(
     case "svix":
     case "resend":
     case "clerk":
+    case "standard-webhooks":
       return {
         secret: "dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==",
         payload: {
@@ -881,7 +773,7 @@ Supported Providers:
   stripe, github, shopify, slack, twilio, svix, resend, clerk, meta, whatsapp, discord, twitter, x, paypal, lemonsqueezy, paddle, pagerduty, webflow, workos, linear, razorpay, square, zoom,
   cashfree, phonepe, mollie, adyen, checkout, authorizenet, recurly,
   gitlab, bitbucket, vercel, sentry, twitch, telegram, postmark, sendgrid, mailgun,
-  hubspot, intercom, calendly, typeform
+  hubspot, intercom, calendly, typeform, standard-webhooks
 
 Options:
   --forward-to <url>   Target webhook server endpoint to forward webhooks to (listen mode)

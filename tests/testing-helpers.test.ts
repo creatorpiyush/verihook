@@ -9,7 +9,8 @@ import {
 const svixSecret = "whsec_dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==";
 
 function secretFor(provider: string): string {
-  if (["svix", "resend", "clerk"].includes(provider)) return svixSecret;
+  if (["svix", "resend", "clerk", "standard-webhooks"].includes(provider))
+    return svixSecret;
   if (provider === "phonepe") return "phonepe_user:phonepe_pass";
   if (provider === "postmark") return "postmark_user:postmark_pass";
   if (provider === "adyen") return "0123456789abcdef0123456789abcdef";

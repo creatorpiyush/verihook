@@ -24,6 +24,7 @@ export {
   verifyPagerDuty,
   verifyWebflow,
   verifyWorkOS,
+  verifyStandardWebhooks,
   verifyCashfree,
   verifyPhonePe,
   verifyMollie,

@@ -125,9 +125,9 @@ export const providers = [
     fn: "verifySvix",
     entry: "svix",
     env: "SVIX_WEBHOOK_SECRET",
-    headers: ["svix-id", "svix-timestamp", "svix-signature", "or webhook-id / webhook-timestamp / webhook-signature"],
+    headers: ["svix-id", "svix-timestamp", "svix-signature"],
     scheme:
-      "HMAC-SHA256 of `<id>.<timestamp>.<raw body>`, keyed with the base64 secret, sent as `v1,<base64>`. Standard Webhooks headers (`webhook-*`) are accepted too.",
+      "HMAC-SHA256 of `<id>.<timestamp>.<raw body>`, keyed with the base64 secret, sent as `v1,<base64>`. For the same scheme with `webhook-*` headers, use [`'standard-webhooks'`](../standard-webhooks/).",
     secret:
       "The endpoint's **Signing Secret** (`whsec_...`) from the Svix App Portal or dashboard.",
     tolerance: "300 seconds",
@@ -138,6 +138,27 @@ export const providers = [
     ],
     testSecret: "whsec_dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==",
     docs: "https://docs.svix.com/receiving/verifying-payloads/how-manual",
+  },
+  {
+    id: "standard-webhooks",
+    name: "Standard Webhooks",
+    fn: "verifyStandardWebhooks",
+    entry: "standard-webhooks",
+    env: "WEBHOOK_SECRET",
+    headers: ["webhook-id", "webhook-timestamp", "webhook-signature"],
+    scheme:
+      "[Standard Webhooks](https://www.standardwebhooks.com): HMAC-SHA256 of `<webhook-id>.<webhook-timestamp>.<raw body>`, keyed with the base64 secret, sent as `v1,<base64>`.",
+    secret:
+      "The endpoint's signing secret (`whsec_...`), from the sender's dashboard. If you send the webhooks with `verihook/send`, it's the secret from `generateWebhookSecret()`.",
+    tolerance: "300 seconds",
+    eventType: "the body's `type`",
+    notes: [
+      "Any service that follows the spec works, as do webhooks sent with [`verihook/send`](../../guides/sending-webhooks/).",
+      "During secret rotation several signatures are sent, separated by spaces. Any one matching is enough.",
+      "The dedupe key is the signed `webhook-id`.",
+    ],
+    testSecret: "whsec_dGVzdF9zZWNyZXRfa2V5X2Zvcl9zdml4XzEyMw==",
+    docs: "https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md",
   },
   {
     id: "resend",

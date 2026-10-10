@@ -9,6 +9,7 @@ export type ProviderName =
   | "svix"
   | "resend"
   | "clerk"
+  | "standard-webhooks"
   | "linear"
   | "razorpay"
   | "square"

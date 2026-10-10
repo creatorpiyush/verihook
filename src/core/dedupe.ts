@@ -98,6 +98,7 @@ const SIGNED_ID_HEADERS: Partial<Record<ProviderName, readonly string[]>> = {
   resend: ["svix-id"],
   clerk: ["svix-id"],
   gitlab: ["webhook-id", "idempotency-key"],
+  "standard-webhooks": ["webhook-id"],
   paypal: ["paypal-transmission-id"],
   twitch: ["twitch-eventsub-message-id"],
 };

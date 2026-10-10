@@ -441,6 +441,7 @@ export interface ProviderEventMap {
   svix: SvixEvent;
   resend: SvixEvent;
   clerk: SvixEvent;
+  "standard-webhooks": SvixEvent;
   linear: LinearEvent;
   razorpay: RazorpayEvent;
   square: SquareEvent;
