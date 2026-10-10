@@ -102,6 +102,11 @@ export {
 } from "./core/logger.js";
 
 export { MemoryDedupeStore, extractEventId } from "./core/dedupe.js";
+export {
+  RedisDedupeStore,
+  type RedisClientLike,
+  type RedisDedupeStoreOptions,
+} from "./core/redis-dedupe.js";
 
 export type {
   ProviderName,

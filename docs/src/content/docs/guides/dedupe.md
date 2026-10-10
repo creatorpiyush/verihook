@@ -45,7 +45,32 @@ Override it with `options.eventId` if you know better.
 
 ## Shared stores
 
-`MemoryDedupeStore` lives in one process. Serverless functions and multiple replicas each have their own memory, so use a shared store. Implement the `DedupeStore` interface:
+`MemoryDedupeStore` lives in one process. Serverless functions and multiple replicas each have their own memory, so use a shared store.
+
+### Redis
+
+`RedisDedupeStore` works with the Redis client you already use (ioredis, node-redis v4+ or Bun's `RedisClient`); verihook adds no dependency.
+
+```ts
+import { Redis } from 'ioredis';
+import { RedisDedupeStore, verifyWebhook } from 'verihook';
+
+const dedupeStore = new RedisDedupeStore(new Redis(process.env.REDIS_URL!), {
+  keyPrefix: 'myapp:webhooks:', // default: 'verihook:dedupe:'
+});
+
+const result = await verifyWebhook('stripe', request, secret, { dedupeStore });
+```
+
+With node-redis, connect first: `new RedisDedupeStore(await createClient({ url }).connect())`. With Bun: `new RedisDedupeStore(new RedisClient(url))`.
+
+- Each event is recorded with one atomic `SET key 1 PX <ttl> NX`, so two instances receiving the same delivery at once can't both process it.
+- `delete()` runs `DEL`, so the adapters release the key when your handler fails.
+- If Redis is unreachable, verification fails (`UNKNOWN_ERROR`, a `500` from the adapters) and the provider retries. Events are never let through unchecked.
+
+### Your own store
+
+For anything else, implement the `DedupeStore` interface:
 
 ```ts
 import type { DedupeStore } from 'verihook';
@@ -57,5 +82,7 @@ const store: DedupeStore = {
   async delete(key) { /* ... */ },
 };
 ```
+
+Implement `delete` whenever you can: without it, a delivery whose handler failed is acked as a duplicate when the provider retries it, and the event is lost.
 
 Ready-made examples are in the repository: [Upstash Redis](https://github.com/creatorpiyush/verihook/blob/main/examples/dedupe-stores/upstash-redis.ts) for edge runtimes and [Cloudflare Workers KV](https://github.com/creatorpiyush/verihook/blob/main/examples/dedupe-stores/cloudflare-kv.ts).

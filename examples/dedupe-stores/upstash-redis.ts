@@ -57,6 +57,14 @@ export class UpstashDedupeStore implements DedupeStore {
     return setResult === null;
   }
 
+  /**
+   * Lets the verihook adapters release the key when your handler fails, so the
+   * provider's retry is processed instead of being acked as a duplicate.
+   */
+  async delete(key: string): Promise<void> {
+    await this.redis.del(this.keyPrefix + key);
+  }
+
   async clear(): Promise<void> {
     // Best-effort helper for tests/dev — scans and deletes keys under the
     // prefix. Avoid calling this in production against a shared database.
