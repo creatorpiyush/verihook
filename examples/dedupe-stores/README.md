@@ -29,6 +29,19 @@ npm run typecheck
 
 ## 📦 Available Stores
 
+### Built in: Redis over TCP ([`redis.ts`](./redis.ts))
+
+`RedisDedupeStore` ships with `verihook` itself: pass your own ioredis, node-redis (v4+) or Bun `RedisClient` instance. Atomic `SET ... NX PX`, and `delete()` so the adapters can release a key when your handler fails. No copy needed.
+
+```ts
+import { Redis } from "ioredis";
+import { RedisDedupeStore } from "verihook";
+
+const dedupeStore = new RedisDedupeStore(new Redis(process.env.REDIS_URL!));
+```
+
+---
+
 ### 1. Upstash Redis ([`upstash-redis.ts`](./upstash-redis.ts))
 
 - **Best for**: Serverless & Edge environments (Vercel Edge, Cloudflare Workers, Next.js, AWS Lambda) or standard Node.js applications.

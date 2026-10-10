@@ -35,6 +35,7 @@ export interface KVNamespaceLike {
     value: string,
     options?: { expirationTtl?: number },
   ): Promise<void>;
+  delete(key: string): Promise<void>;
 }
 
 export class CloudflareKVDedupeStore implements DedupeStore {
@@ -59,5 +60,13 @@ export class CloudflareKVDedupeStore implements DedupeStore {
     await this.kv.put(fullKey, "1", { expirationTtl });
 
     return false; // First time seeing event
+  }
+
+  /**
+   * Lets the verihook adapters release the key when your handler fails, so the
+   * provider's retry is processed instead of being acked as a duplicate.
+   */
+  async delete(key: string): Promise<void> {
+    await this.kv.delete(this.keyPrefix + key);
   }
 }
