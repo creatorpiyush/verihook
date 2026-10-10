@@ -11,6 +11,13 @@ import {
 import { bytesToHex } from "../utils/encoding.js";
 
 /**
+ * Default dedupe record lifetime: 24 hours. Many providers sign no timestamp
+ * (GitHub, Shopify, Square, ...), so a captured delivery can be replayed as soon
+ * as its record expires; a short TTL would reopen that window within minutes.
+ */
+export const DEFAULT_DEDUPE_TTL_MS = 86_400_000;
+
+/**
  * High-performance in-memory deduplication store with TTL management and LRU capacity bounds.
  */
 export class MemoryDedupeStore implements DedupeStore {
@@ -19,7 +26,7 @@ export class MemoryDedupeStore implements DedupeStore {
   private maxSize: number;
 
   constructor(options?: MemoryDedupeStoreOptions) {
-    this.defaultTtlMs = options?.ttlMs ?? 300_000; // 5 minutes default
+    this.defaultTtlMs = options?.ttlMs ?? DEFAULT_DEDUPE_TTL_MS;
     this.maxSize = options?.maxSize ?? 10_000;
   }
 

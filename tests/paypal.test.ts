@@ -11,7 +11,7 @@ describe("PayPal Webhook Verifier", () => {
     id: "WH-EVT-100",
   });
   const transId = "trans_123";
-  const transTime = "2026-07-26T12:00:00Z";
+  const transTime = new Date().toISOString();
   const expectedPayload = `${transId}|${transTime}|${webhookId}|${computeCrc32(body)}`;
 
   const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {

@@ -4,8 +4,9 @@ import {
   WebhookRequestInput,
   WebhookRequestInputObject,
 } from "../core/types.js";
-import { InvalidBodyError } from "../core/errors.js";
-import { bytesToString } from "./encoding.js";
+import { InvalidBodyError, PayloadTooLargeError } from "../core/errors.js";
+import { DEFAULT_MAX_BODY_SIZE, readWebBodyWithLimit } from "./body.js";
+import { bytesToString, stringToBytes } from "./encoding.js";
 
 /**
  * Normalizes headers from various input formats into a record of lowercase header keys to string values.
@@ -98,6 +99,7 @@ export function normalizeBody(
  */
 export async function normalizeRequest(
   input: WebhookRequestInput,
+  maxBytes: number = DEFAULT_MAX_BODY_SIZE,
 ): Promise<NormalizedWebhookRequest> {
   if (!input) {
     throw new Error("[verihook] Request input cannot be null or undefined");
@@ -112,7 +114,16 @@ export async function normalizeRequest(
   ) {
     const fetchReq = input as Request;
     const cloned = fetchReq.clone();
-    const rawBody = await cloned.text();
+    let rawBody: string;
+    if (typeof cloned.body?.getReader === "function") {
+      rawBody = await readWebBodyWithLimit(cloned, maxBytes);
+    } else {
+      // Request-like objects without a stream: read, then check the size.
+      rawBody = await cloned.text();
+      if (stringToBytes(rawBody).byteLength > maxBytes) {
+        throw new PayloadTooLargeError();
+      }
+    }
     const headers = normalizeHeaders(fetchReq.headers);
     return {
       headers,

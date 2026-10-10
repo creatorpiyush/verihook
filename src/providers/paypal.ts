@@ -6,6 +6,7 @@ import {
   VerifyWebhookOptions,
   WebhookErrorCode,
 } from "../core/types.js";
+import { toEpochSeconds } from "../utils/timestamp.js";
 
 // Exact hosts PayPal serves webhook signing certificates from.
 const PAYPAL_CERT_HOSTS = new Set([
@@ -15,6 +16,7 @@ const PAYPAL_CERT_HOSTS = new Set([
   "api-m.sandbox.paypal.com",
 ]);
 
+const PAYPAL_DEFAULT_TOLERANCE = 3 * 24 * 60 * 60; // PayPal's retry window, in seconds
 const CERT_FETCH_TIMEOUT_MS = 5_000;
 const CERT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const CERT_CACHE_MAX_SIZE = 50;
@@ -104,6 +106,32 @@ export const paypalVerifier: ProviderVerifier = {
       };
     }
 
+    // The transmission time is signed. PayPal retries for up to 3 days and doesn't
+    // document whether retries keep the original time, so the default window is 3 days.
+    const sentAt = Date.parse(transmissionTime);
+    if (isNaN(sentAt)) {
+      return {
+        valid: false,
+        provider: "paypal",
+        code: WebhookErrorCode.MISSING_HEADER,
+        reason: 'Invalid "paypal-transmission-time" header format',
+      };
+    }
+    const timestamp = Math.floor(sentAt / 1000);
+    const tolerance = options?.tolerance ?? PAYPAL_DEFAULT_TOLERANCE;
+    if (tolerance > 0) {
+      const now = toEpochSeconds(options?.now ?? Math.floor(Date.now() / 1000));
+      if (Math.abs(now - timestamp) > tolerance) {
+        return {
+          valid: false,
+          provider: "paypal",
+          code: WebhookErrorCode.EXPIRED_TIMESTAMP,
+          timestamp,
+          reason: `Timestamp outside tolerance window (timestamp: ${timestamp}, current: ${now}, tolerance: ${tolerance}s)`,
+        };
+      }
+    }
+
     // `secret` is either a pinned PEM public key/cert, or the webhook ID itself.
     const webhookId = options?.webhookId || (isPem(secret) ? "" : secret);
     if (!webhookId) {
@@ -163,10 +191,11 @@ export const paypalVerifier: ProviderVerifier = {
         valid: false,
         provider: "paypal",
         code: WebhookErrorCode.INVALID_SIGNATURE,
+        timestamp,
         reason: "PayPal RSA-SHA256 signature verification failed",
       };
     }
 
-    return { valid: true, provider: "paypal" };
+    return { valid: true, provider: "paypal", timestamp };
   },
 };

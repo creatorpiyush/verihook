@@ -52,7 +52,8 @@ export const metaVerifier: ProviderVerifier = {
       }
     }
 
-    if (sig1) {
+    // SHA-1 is only a fallback for requests that carry no SHA-256 signature.
+    if (sig1 && !sig256) {
       const cleanSig1 = sig1.startsWith("sha1=") ? sig1.slice(5) : sig1;
       const hmac1 = await computeHmacSha1(secret, req.rawBody);
       const expected1 = bytesToHex(hmac1);

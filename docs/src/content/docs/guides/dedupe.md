@@ -10,7 +10,7 @@ Providers deliver at least once: a timeout or a 5xx makes them retry, so the sam
 ```ts
 import { MemoryDedupeStore, verifyWebhook, WebhookErrorCode } from 'verihook';
 
-const dedupeStore = new MemoryDedupeStore({ ttlMs: 300_000, maxSize: 10_000 });
+const dedupeStore = new MemoryDedupeStore({ ttlMs: 86_400_000, maxSize: 10_000 });
 
 const result = await verifyWebhook('stripe', request, secret, { dedupeStore });
 
@@ -27,6 +27,10 @@ try {
 ```
 
 The adapters do both for you: duplicates get `200`, and if your handler throws or responds with a 5xx the key is released so the provider's retry is processed.
+
+## How long to remember keys
+
+Keys live for 24 hours by default (`dedupeTtlMs`). Many providers (GitHub, Shopify, Square, Twitter, ...) sign no timestamp, so the dedupe store is their only replay protection: once a key expires, a captured delivery verifies again. Keep the TTL at least as long as you care about replays, and size `MemoryDedupeStore`'s `maxSize` for a day of traffic, or use a shared store.
 
 ## What the key is
 

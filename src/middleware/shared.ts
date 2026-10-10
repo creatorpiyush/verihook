@@ -6,12 +6,17 @@ import {
   type VerifyWebhookOptions,
 } from "../core/types.js";
 import { verifyWebhook } from "../core/verifier.js";
+import {
+  DEFAULT_MAX_BODY_SIZE,
+  PayloadTooLargeError,
+  readWebBodyWithLimit,
+} from "../utils/body.js";
+
+export { DEFAULT_MAX_BODY_SIZE, PayloadTooLargeError, readWebBodyWithLimit };
 
 /** A webhook secret, or a function that resolves it from the framework's request/context. */
 export type SecretResolver<Req> =
   string | ((req: Req) => string | Promise<string>);
-
-export const DEFAULT_MAX_BODY_SIZE = 2 * 1024 * 1024; // 2MB
 
 export const securityHeaders: Record<string, string> = {
   "Content-Type": "application/json",
@@ -71,6 +76,34 @@ export function failureReply(result: VerificationResult): AdapterReply {
   return { status: 401, body: { error: result.reason, code: result.code } };
 }
 
+/** The Node `ServerResponse` events the Node-style adapters listen to. */
+export interface NodeResponseEvents {
+  on?(event: string, listener: () => void): unknown;
+  statusCode?: number;
+}
+
+/**
+ * Releases a verified event's dedupe key when the response ends with a 5xx, or when
+ * the connection closes before a response is sent (client disconnect, hung handler),
+ * so the provider's retry is processed instead of being acked as a duplicate.
+ */
+export function releaseDedupeOnFailure(
+  raw: NodeResponseEvents | undefined,
+  result: VerificationResult,
+  options: VerifyWebhookOptions | undefined,
+  statusCode: () => number = () => raw?.statusCode ?? 200,
+): void {
+  if (!result.dedupeKey || typeof raw?.on !== "function") return;
+  let finished = false;
+  raw.on("finish", () => {
+    finished = true;
+    if (statusCode() >= 500) void releaseDedupeKey(result, options);
+  });
+  raw.on("close", () => {
+    if (!finished) void releaseDedupeKey(result, options);
+  });
+}
+
 export function jsonResponse(reply: AdapterReply): Response {
   return new Response(JSON.stringify(reply.body), {
     status: reply.status,
@@ -113,42 +146,6 @@ export function toVerihookContext<TEvent>(
     timestamp: result.timestamp,
     result,
   };
-}
-
-export class PayloadTooLargeError extends Error {}
-
-/**
- * Reads a Web `Request` body as UTF-8, aborting once it exceeds `maxBytes`.
- */
-export async function readWebBodyWithLimit(
-  req: Request,
-  maxBytes: number,
-): Promise<string> {
-  const declaredLength = Number(req.headers.get("content-length"));
-  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
-    throw new PayloadTooLargeError();
-  }
-  if (!req.body) {
-    return "";
-  }
-
-  const reader = req.body.getReader();
-  const decoder = new TextDecoder();
-  let totalBytes = 0;
-  let text = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    totalBytes += value.byteLength;
-    if (totalBytes > maxBytes) {
-      // Not awaited: cancelling one branch of a cloned (tee'd) body only settles
-      // once the other branch is consumed or cancelled, which may never happen.
-      reader.cancel().catch(() => {});
-      throw new PayloadTooLargeError();
-    }
-    text += decoder.decode(value, { stream: true });
-  }
-  return text + decoder.decode();
 }
 
 /**

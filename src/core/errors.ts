@@ -63,3 +63,13 @@ export class UnsupportedProviderError extends Error {
     }
   }
 }
+
+export class PayloadTooLargeError extends Error {
+  public readonly code: VerificationErrorCode =
+    WebhookErrorCode.PAYLOAD_TOO_LARGE;
+
+  constructor(message = "Request body exceeds maxBodySize") {
+    super(message);
+    this.name = "PayloadTooLargeError";
+  }
+}

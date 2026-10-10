@@ -97,7 +97,7 @@ export interface DedupeStore {
 export interface MemoryDedupeStoreOptions {
   /**
    * Default time-to-live in milliseconds for stored event IDs.
-   * @default 300000 (5 minutes)
+   * @default 86400000 (24 hours)
    */
   ttlMs?: number;
 
@@ -159,7 +159,7 @@ export interface VerifyWebhookOptions {
   log?: WebhookLoggerFn;
 
   /**
-   * Maximum allowed body size in bytes when the Express or Next.js middleware reads the request body (defaults to 2MB = 2,097,152 bytes).
+   * Maximum body size in bytes read from a stream: by the framework adapters, and by `verifyWebhook` when given a Fetch `Request` (defaults to 2MB = 2,097,152 bytes). Larger bodies fail with `PAYLOAD_TOO_LARGE`.
    */
   maxBodySize?: number;
 
@@ -171,7 +171,7 @@ export interface VerifyWebhookOptions {
 
   /**
    * Time-to-live in milliseconds for deduplication records when `dedupeStore` is specified.
-   * @default 300000 (5 minutes)
+   * @default 86400000 (24 hours)
    */
   dedupeTtlMs?: number;
 
@@ -246,6 +246,7 @@ export enum WebhookErrorCode {
   MISSING_URL = "MISSING_URL",
   INVALID_SECRET = "INVALID_SECRET",
   INVALID_BODY = "INVALID_BODY",
+  PAYLOAD_TOO_LARGE = "PAYLOAD_TOO_LARGE",
   UNSUPPORTED_PROVIDER = "UNSUPPORTED_PROVIDER",
   DUPLICATE_EVENT = "DUPLICATE_EVENT",
   UNKNOWN_ERROR = "UNKNOWN_ERROR",

@@ -44,7 +44,7 @@ A header the provider always sends isn't there.
 
 ## EXPIRED_TIMESTAMP
 
-The provider's timestamp is outside the replay window (300 seconds by default; 180 for Calendly, 600 for Twitch).
+The provider's timestamp is outside the replay window (300 seconds by default; 60 for Linear, 180 for Calendly, 600 for Twitch, 3 days for PayPal).
 
 - Replaying a saved request in tests? Pass `options.now` with the time it was signed, or sign a fresh one with [`verihook/testing`](../guides/testing/).
 - Check the server clock. Containers and VMs can drift.
@@ -53,6 +53,10 @@ The provider's timestamp is outside the replay window (300 seconds by default; 1
 ## INVALID_BODY
 
 A plain object was passed as the body. verihook needs the raw string or bytes to recompute the signature. Pass `rawBody` or use an adapter.
+
+## PAYLOAD_TOO_LARGE
+
+`verifyWebhook` was given a Fetch `Request` whose body is larger than `options.maxBodySize` (2 MB by default). Raise `maxBodySize` if the provider really sends bodies that large.
 
 ## INVALID_SECRET
 

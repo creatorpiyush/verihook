@@ -202,7 +202,7 @@ describe("Ultimate Coverage Boost for >97%+ Test Suite", () => {
       .toString();
 
     const transmissionId = "tx_paypal_100";
-    const transmissionTime = "2026-08-08T12:00:00Z";
+    const transmissionTime = new Date().toISOString();
     const body = JSON.stringify({ event: "PAYMENT.CAPTURE.COMPLETED" });
 
     const crc = (await import("../src/core/crypto.js")).computeCrc32(body);
@@ -385,7 +385,7 @@ describe("Ultimate Coverage Boost for >97%+ Test Suite", () => {
     } as any);
 
     const transmissionId = "tx_paypal_fetch_100";
-    const transmissionTime = "2026-08-08T12:00:00Z";
+    const transmissionTime = new Date().toISOString();
     const body = JSON.stringify({ event: "PAYMENT.CAPTURE.COMPLETED" });
     const crc = (await import("../src/core/crypto.js")).computeCrc32(body);
     const expectedPayload = `${transmissionId}|${transmissionTime}|my_webhook_id|${crc}`;

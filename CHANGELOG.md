@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- PayPal: `paypal-transmission-time` is signed but was never checked, so a captured webhook could be replayed forever. It is now checked against `options.tolerance`, defaulting to 3 days (PayPal's retry window). Pass `{ tolerance: 300 }` for a tighter window.
+- Linear: the signed body's `webhookTimestamp` is now checked, with a 60-second default window as Linear recommends. Bodies without it skip the check.
+- `verifyWebhook` given a Fetch `Request` read the whole body with no size limit (only the adapters enforced `maxBodySize`). It now stops at `options.maxBodySize` (2 MB by default) and fails with the new `PAYLOAD_TOO_LARGE` code.
+- The default dedupe TTL (`dedupeTtlMs`, and `MemoryDedupeStore`'s `ttlMs`) is now 24 hours instead of 5 minutes. Providers that sign no timestamp (GitHub, Shopify, Square, ...) rely on the dedupe store alone for replay protection, and a 5-minute TTL let a captured delivery verify again 5 minutes later.
+- Meta: a request carrying an `x-hub-signature-256` header no longer falls back to the legacy SHA-1 `x-hub-signature`.
+
+### Fixed
+- Express, Fastify and NestJS adapters now release an event's dedupe key when the connection closes before a response is sent (client disconnect, hung handler), not only on a 5xx. Previously the provider's retry was acked as a duplicate and the event was lost.
+
+### Docs
+- Adyen: standard webhooks sign only a few fields; the provider page now warns that the rest of `result.event` is unsigned.
+
 ## [1.15.0] - 2026-10-03
 
 ### Added
