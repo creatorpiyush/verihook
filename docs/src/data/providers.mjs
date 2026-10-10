@@ -18,6 +18,7 @@
  *   notes      gotchas
  *   handshake  extra request the provider sends during setup
  *   signable   whether `verihook/testing` can sign it (default true)
+ *   verifyOptions  the testing snippet passes `hook.verifyOptions` (PayPal)
  *   testSecret secret used in the testing snippet
  *   docs       the provider's own documentation
  */
@@ -283,7 +284,7 @@ export async function GET(request: Request) {
       "Verification fetches PayPal's certificate from `paypal-cert-url` over HTTPS. Only PayPal API hosts are allowed, and certificates are cached in memory.",
       "Sandbox and live webhooks have different IDs.",
     ],
-    signable: false,
+    verifyOptions: true,
     docs: "https://developer.paypal.com/api/rest/webhooks/rest/",
   },
   {

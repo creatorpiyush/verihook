@@ -1,4 +1,5 @@
 import {
+  computeCrc32,
   computeHmac,
   computeHmacSha1,
   computeHmacSha256,
@@ -8,7 +9,7 @@ import {
 } from "../core/crypto.js";
 import { adyenSigningString } from "../providers/adyen.js";
 import { hubspotV3Uri } from "../providers/hubspot.js";
-import { ProviderName } from "../core/types.js";
+import { ProviderName, VerifyWebhookOptions } from "../core/types.js";
 import {
   base64ToBytes,
   bytesToBase64,
@@ -19,7 +20,7 @@ import {
 export interface SignWebhookOptions {
   /**
    * Signing secret, exactly as you pass it to `verifyWebhook()`.
-   * Required for every provider except `discord` and `sendgrid` (see `privateKey`).
+   * Required for every provider except `discord`, `sendgrid` and `paypal` (see `privateKey`).
    */
   secret?: string;
 
@@ -50,6 +51,8 @@ export interface SignWebhookOptions {
   /**
    * Message ID: `svix-id` for Svix-based providers, `webhook-id` for GitLab signing
    * tokens, `twitch-eventsub-message-id` for Twitch. @default random
+   *
+   * PayPal: the webhook ID that is signed. @default "WH-TEST"
    */
   webhookId?: string;
 
@@ -64,8 +67,9 @@ export interface SignWebhookOptions {
 
   /**
    * Discord: 32-byte Ed25519 private key seed (hex). SendGrid: P-256 private key
-   * (base64 PKCS#8). A throwaway key pair is generated when omitted; the matching
-   * public key is returned as `secret`.
+   * (base64 PKCS#8). PayPal: RSA private key (PKCS#8 PEM or base64). A throwaway
+   * key pair is generated when omitted; the matching public key is returned as
+   * `secret`.
    */
   privateKey?: string;
 
@@ -86,11 +90,16 @@ export interface SignedWebhook {
   headers: Record<string, string>;
   /** Exact raw body that was signed. Send it unmodified. */
   body: string;
-  /** Value to pass to `verifyWebhook()` as the secret (the public key for Discord). */
+  /** Value to pass to `verifyWebhook()` as the secret (the public key for Discord, SendGrid and PayPal). */
   secret: string;
+  /**
+   * Options to pass to `verifyWebhook()` alongside `secret`, when the provider
+   * needs any: `{ webhookId }` for PayPal. `undefined` otherwise.
+   */
+  verifyOptions?: VerifyWebhookOptions;
 }
 
-/** Built-in providers `signWebhook()` can sign (everything except PayPal). */
+/** Built-in providers `signWebhook()` can sign (all of them). */
 export const SIGNABLE_PROVIDERS: ReadonlySet<string> = new Set([
   "stripe",
   "github",
@@ -105,6 +114,7 @@ export const SIGNABLE_PROVIDERS: ReadonlySet<string> = new Set([
   "facebook",
   "instagram",
   "discord",
+  "paypal",
   "twitter",
   "x",
   "lemonsqueezy",
@@ -200,6 +210,76 @@ async function signEcdsaP256(
   };
 }
 
+const RSA_ALGORITHM = { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" };
+
+// RSA key generation is slow, so one throwaway pair is shared by the process.
+let rsaKeyPair: Promise<CryptoKeyPair> | undefined;
+
+function pemBody(pem: string): string {
+  return pem.replace(/-----(BEGIN|END) [A-Z ]+-----/g, "").replace(/\s+/g, "");
+}
+
+function toPem(label: string, der: ArrayBuffer): string {
+  const lines = bytesToBase64(new Uint8Array(der)).match(/.{1,64}/g) ?? [];
+  return `-----BEGIN ${label}-----\n${lines.join("\n")}\n-----END ${label}-----\n`;
+}
+
+async function signRsaSha256(
+  pkcs8: string | undefined,
+  data: string,
+): Promise<{ publicKeyPem: string; signature: string }> {
+  const subtle = globalThis.crypto.subtle;
+  let privateKey: CryptoKey;
+  if (pkcs8) {
+    try {
+      privateKey = await subtle.importKey(
+        "pkcs8",
+        base64ToBytes(pemBody(pkcs8)) as unknown as BufferSource,
+        RSA_ALGORITHM,
+        true,
+        ["sign"],
+      );
+    } catch {
+      throw new Error(
+        "[verihook/testing] PayPal privateKey must be an RSA PKCS#8 key (PEM or base64)",
+      );
+    }
+  } else {
+    rsaKeyPair ??= subtle.generateKey(
+      {
+        ...RSA_ALGORITHM,
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+      },
+      true,
+      ["sign", "verify"],
+    ) as Promise<CryptoKeyPair>;
+    privateKey = (await rsaKeyPair).privateKey;
+  }
+
+  // The public key is derived from the private key's modulus and exponent.
+  const { n, e } = await subtle.exportKey("jwk", privateKey);
+  const publicKey = await subtle.importKey(
+    "jwk",
+    { kty: "RSA", n, e, alg: "RS256", ext: true },
+    RSA_ALGORITHM,
+    true,
+    ["verify"],
+  );
+  const signature = await subtle.sign(
+    RSA_ALGORITHM,
+    privateKey,
+    new TextEncoder().encode(data) as unknown as BufferSource,
+  );
+  return {
+    publicKeyPem: toPem(
+      "PUBLIC KEY",
+      await subtle.exportKey("spki", publicKey),
+    ),
+    signature: bytesToBase64(new Uint8Array(signature)),
+  };
+}
+
 // PKCS#8 DER prefix for a raw 32-byte Ed25519 private key seed.
 const ED25519_PKCS8_HEADER = hexToBytes("302e020100300506032b657004220420");
 
@@ -274,7 +354,8 @@ async function signEd25519(
  * await request(app).post("/webhooks/stripe").set(hook.headers).send(hook.body);
  * ```
  *
- * PayPal is not supported: PayPal signs with its own private RSA key.
+ * PayPal requests are signed with a local RSA key (PayPal's own key is private):
+ * pass `hook.secret` (the public key) and `hook.verifyOptions` (the webhook ID).
  */
 export async function signWebhook(
   provider: ProviderName,
@@ -296,6 +377,7 @@ export async function signWebhook(
   }
 
   let secret = options.secret ?? "";
+  let verifyOptions: VerifyWebhookOptions | undefined;
 
   switch (name) {
     case "stripe": {
@@ -709,10 +791,24 @@ export async function signWebhook(
       break;
     }
 
-    case "paypal":
-      throw new Error(
-        "[verihook/testing] PayPal webhooks are signed with PayPal's private RSA key and cannot be signed locally. Use the PayPal Developer Dashboard webhook simulator.",
+    case "paypal": {
+      // Signed with a local RSA key instead of PayPal's; verify against the
+      // returned public key (pinned, so no certificate is fetched).
+      const webhookId = options.webhookId ?? "WH-TEST";
+      const transmissionId = randomId("");
+      const transmissionTime = new Date(timestamp * 1000).toISOString();
+      const signed = await signRsaSha256(
+        options.privateKey,
+        `${transmissionId}|${transmissionTime}|${webhookId}|${computeCrc32(body)}`,
       );
+      secret = signed.publicKeyPem;
+      verifyOptions = { webhookId };
+      headers["paypal-transmission-id"] = transmissionId;
+      headers["paypal-transmission-time"] = transmissionTime;
+      headers["paypal-transmission-sig"] = signed.signature;
+      headers["paypal-auth-algo"] = "SHA256withRSA";
+      break;
+    }
 
     case "generic": {
       secret = requireSecret(name, secret);
@@ -747,6 +843,7 @@ export async function signWebhook(
     headers: { ...headers, ...options.headers },
     body,
     secret,
+    ...(verifyOptions ? { verifyOptions } : {}),
   };
 }
 

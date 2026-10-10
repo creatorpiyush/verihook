@@ -105,13 +105,19 @@ describe("per-provider entry points", () => {
         });
         const req = { headers: hook.headers, body: hook.body, url: hook.url };
 
-        const result = await verify(req, hook.secret);
+        const result = await verify(req, hook.secret, hook.verifyOptions);
         expect(result.valid, `${name}: ${provider} ${result.reason}`).toBe(
           true,
         );
         expect(result.event).toEqual(
-          (await MainIndex.verifyWebhook(provider as never, req, hook.secret))
-            .event,
+          (
+            await MainIndex.verifyWebhook(
+              provider as never,
+              req,
+              hook.secret,
+              hook.verifyOptions,
+            )
+          ).event,
         );
       }
     },

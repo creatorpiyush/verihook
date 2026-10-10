@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-`verihook/testing` builds correctly signed requests for every built-in provider except PayPal, so you can test handlers end to end without real provider traffic.
+`verihook/testing` builds correctly signed requests for every built-in provider, so you can test handlers end to end without real provider traffic.
 
 ## With supertest (Express, Fastify, NestJS)
 
@@ -46,18 +46,29 @@ expect(res.status).toBe(200);
 
 | Option | Description |
 | :--- | :--- |
-| `secret` | Signing secret, as you pass it to `verifyWebhook()`. Not needed for Discord and SendGrid, which use key pairs. |
+| `secret` | Signing secret, as you pass it to `verifyWebhook()`. Not needed for Discord, SendGrid and PayPal, which use key pairs. |
 | `payload` | Object (serialized as JSON) or exact string body. Default `{}`. |
 | `form` | Form fields sent as `application/x-www-form-urlencoded` (Slack, Twilio). |
 | `url` | Public URL signed by Twilio, Square and HubSpot. Default `https://example.com/webhooks/<provider>`. |
 | `timestamp` | Unix seconds. Default now. Combine with `options.now` for fixed fixtures. |
-| `webhookId` | `svix-id` for Svix, Resend and Clerk. |
+| `webhookId` | `svix-id` for Svix, Resend and Clerk. The signed webhook ID for PayPal (default `WH-TEST`). |
 | `event` | `x-github-event` for GitHub. Default `ping`. |
-| `privateKey` | Discord: 32-byte Ed25519 seed (hex). Omitted: a key pair is generated and the public key is returned as `secret`. |
+| `privateKey` | Discord: 32-byte Ed25519 seed (hex). SendGrid: base64 PKCS#8 P-256 key. PayPal: RSA PKCS#8 key (PEM or base64). Omitted: a key pair is generated and the public key is returned as `secret`. |
 | `headerName`, `algorithm`, `encoding` | Generic provider settings. |
 | `headers` | Extra headers to send (e.g. `x-shopify-topic`). |
 
-The result is `{ provider, method, url, headers, body, secret }`.
+The result is `{ provider, method, url, headers, body, secret, verifyOptions? }`. Pass `verifyOptions` to `verifyWebhook()` too; it is only set for PayPal (`{ webhookId }`).
+
+## PayPal
+
+PayPal signs with its own private key, so `signWebhook('paypal')` signs with a generated RSA key instead and returns its public key. Your code under test must verify with that key pinned, not with PayPal's certificate:
+
+```ts
+const hook = await signWebhook('paypal', { payload: { id: 'WH-1', event_type: 'PAYMENT.CAPTURE.COMPLETED' } });
+const result = await verifyWebhook('paypal', hook, hook.secret, hook.verifyOptions);
+```
+
+In production, pass the webhook ID (or PayPal's certificate) as the secret, as usual. Make the secret configurable so tests can inject `hook.secret`.
 
 ## Fixed fixtures
 

@@ -18,6 +18,8 @@ npx verihook simulate whatsapp --secret meta_app_secret
 npx verihook simulate stripe --curl    # print a curl command instead
 ```
 
+Discord, SendGrid and PayPal sign with a private key, so `simulate` signs with a generated key pair and prints the public key. Configure your server with that key for the test: for PayPal, pass the printed PEM as the secret and the printed webhook ID as `options.webhookId` (`--secret` sets the webhook ID).
+
 ## listen
 
 Runs a local relay that verifies each incoming webhook, prints its headers and body, and forwards it to your app:

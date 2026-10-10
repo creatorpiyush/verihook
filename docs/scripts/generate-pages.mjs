@@ -141,7 +141,9 @@ ${p.name} signs with its own private key, so \`verihook/testing\` can't create $
     : "";
   const secretNote = p.testSecret
     ? ""
-    : `\n\n${p.name} uses a key pair. \`signWebhook\` generates one and returns the public key as \`hook.secret\`, so verify with that.`;
+    : p.verifyOptions
+      ? `\n\n${p.name} uses a key pair. \`signWebhook\` signs with a generated key (not ${p.name}'s), returns the public key as \`hook.secret\` and the options to verify with as \`hook.verifyOptions\`.`
+      : `\n\n${p.name} uses a key pair. \`signWebhook\` generates one and returns the public key as \`hook.secret\`, so verify with that.`;
   return `## Testing
 
 \`signWebhook\` from \`verihook/testing\` builds a correctly signed ${p.name} request for your tests:
@@ -157,7 +159,7 @@ ${secretLine}  payload: { id: 'evt_test' },
 
 const result = await ${p.fn}(
   { headers: hook.headers, body: hook.body, url: hook.url },
-  hook.secret,
+  hook.secret,${p.verifyOptions ? "\n  hook.verifyOptions," : ""}
 );
 // result.valid === true`,
 )}${secretNote}
