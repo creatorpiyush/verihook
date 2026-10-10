@@ -6,10 +6,11 @@
  *   Form posts (routes / legacy webhooks): `timestamp`, `token`, `signature` fields
  * `signature` is the hex HMAC-SHA256 of `<timestamp><token>`, keyed with the HTTP
  * webhook signing key. It authenticates the sender but does not cover the event data.
- * Dedupe stores key on `token`, as Mailgun recommends.
+ * Dedupe stores key on `token`, as Mailgun recommends; `strict` requires one.
  * https://documentation.mailgun.com/docs/mailgun/user-manual/webhooks/securing-webhooks
  */
 import { computeHmacSha256, timingSafeEqual } from "../core/crypto.js";
+import { warnHintOnce } from "../core/diagnostics.js";
 import { parseEvent, readString } from "../core/event.js";
 import {
   NormalizedWebhookRequest,
@@ -19,6 +20,7 @@ import {
   WebhookErrorCode,
 } from "../core/types.js";
 import { bytesToHex } from "../utils/encoding.js";
+import { weakScheme } from "../utils/strict.js";
 import { toEpochSeconds } from "../utils/timestamp.js";
 
 /** The `{ timestamp, token, signature }` block from a JSON or form body. */
@@ -48,6 +50,21 @@ export const mailgunVerifier: ProviderVerifier = {
     secret: string,
     options?: VerifyWebhookOptions,
   ): Promise<VerificationResult> {
+    // The signature doesn't cover the event data, so a captured signature can carry
+    // any event until its token is rejected as reused.
+    if (!options?.dedupeStore) {
+      if (options?.strict) {
+        return weakScheme(
+          "mailgun",
+          "Mailgun signs only timestamp + token, not the event data; pass a dedupeStore so a token can't be reused",
+        );
+      }
+      warnHintOnce(
+        "mailgun",
+        "Mailgun doesn't sign the event data. Pass a dedupeStore so a captured signature can't be reused with another event.",
+      );
+    }
+
     const fields = mailgunSignatureFields(parseEvent(req));
     if (!fields) {
       return {

@@ -8,6 +8,13 @@ import {
 } from "../core/types.js";
 import { bytesToBase64, bytesToHex } from "../utils/encoding.js";
 
+const ALGORITHMS = new Map<string, "SHA-256" | "SHA-1" | "SHA-512">([
+  ["sha256", "SHA-256"],
+  ["sha1", "SHA-1"],
+  ["sha512", "SHA-512"],
+]);
+const ENCODINGS = new Set(["hex", "base64", "prefix-hex"]);
+
 export const genericVerifier: ProviderVerifier = {
   name: "generic",
   async verify(
@@ -15,8 +22,19 @@ export const genericVerifier: ProviderVerifier = {
     secret: string,
     options?: VerifyWebhookOptions,
   ): Promise<VerificationResult> {
+    const algorithmName = options?.algorithm ?? "sha256";
+    const encoding = options?.encoding ?? "hex";
+    const alg = ALGORITHMS.get(algorithmName);
+    // An unknown value would leave the expected signature empty.
+    if (!alg) {
+      throw new TypeError(`Unsupported generic algorithm: ${algorithmName}`);
+    }
+    if (!ENCODINGS.has(encoding)) {
+      throw new TypeError(`Unsupported generic encoding: ${encoding}`);
+    }
+
     const headerName = options?.headerName?.toLowerCase() || "x-signature";
-    const signature = req.headers[headerName];
+    const signature = req.headers[headerName]?.trim();
 
     if (!signature) {
       return {
@@ -26,13 +44,6 @@ export const genericVerifier: ProviderVerifier = {
         reason: `Missing signature header "${headerName}"`,
       };
     }
-
-    const algorithmName = options?.algorithm ?? "sha256";
-    const encoding = options?.encoding ?? "hex";
-
-    let alg: "SHA-256" | "SHA-1" | "SHA-512" = "SHA-256";
-    if (algorithmName === "sha1") alg = "SHA-1";
-    if (algorithmName === "sha512") alg = "SHA-512";
 
     const hmacBytes = await computeHmac(alg, secret, req.rawBody);
     let expectedSig = "";
@@ -45,7 +56,7 @@ export const genericVerifier: ProviderVerifier = {
       expectedSig = `${algorithmName}=${bytesToHex(hmacBytes)}`;
     }
 
-    let cleanSignature = signature.trim();
+    let cleanSignature = signature;
     if (encoding === "prefix-hex" && !cleanSignature.includes("=")) {
       cleanSignature = `${algorithmName}=${cleanSignature}`;
     }

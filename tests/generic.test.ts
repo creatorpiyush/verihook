@@ -59,4 +59,26 @@ describe("Generic Webhook Verifier", () => {
 
     expect(result.valid).toBe(true);
   });
+  it("rejects an unknown algorithm or encoding instead of matching an empty signature", async () => {
+    const req = { headers: { "x-signature": "\u00a0" }, body };
+    for (const opts of [
+      { encoding: "HEX" },
+      { encoding: "base64url" },
+      { algorithm: "md5" },
+      { algorithm: "toString" },
+    ]) {
+      const result = await verifyWebhook("generic", req, secret, opts as never);
+      expect(result.valid, JSON.stringify(opts)).toBe(false);
+      expect(result.reason).toMatch(/Unsupported/);
+    }
+  });
+
+  it("rejects a signature that is empty after trimming", async () => {
+    const result = await verifyWebhook(
+      "generic",
+      { headers: { "x-signature": "\u00a0" }, body },
+      secret,
+    );
+    expect(result.code).toBe("MISSING_HEADER");
+  });
 });

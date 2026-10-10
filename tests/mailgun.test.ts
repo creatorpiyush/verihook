@@ -99,4 +99,18 @@ describe("Mailgun Webhook Verifier", () => {
       signWebhook("mailgun", { secret, payload: "raw" }),
     ).rejects.toThrow(/object/);
   });
+  it("strict mode requires a dedupe store: the event data isn't signed", async () => {
+    const strict = await verifyMailgun({ headers: {}, body }, secret, {
+      now,
+      strict: true,
+    });
+    expect(strict.code).toBe("WEAK_SCHEME");
+
+    const withStore = await verifyMailgun({ headers: {}, body }, secret, {
+      now,
+      strict: true,
+      dedupeStore: new MemoryDedupeStore(),
+    });
+    expect(withStore.valid).toBe(true);
+  });
 });

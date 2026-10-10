@@ -186,7 +186,8 @@ export interface VerifyWebhookOptions {
    * Accept only each provider's strongest signature scheme. Fallbacks that drop
    * replay protection or use SHA-1 fail with `WEAK_SCHEME`: HubSpot v1/v2, GitLab
    * secret tokens, Webflow and Linear without a timestamp, GitHub and Meta SHA-1
-   * headers, Paddle's legacy `h`. Providers with a single scheme are unaffected.
+   * headers, Paddle's legacy `h`, and Mailgun without a `dedupeStore` (its event
+   * data isn't signed). Providers with a single scheme are unaffected.
    * @default false
    */
   strict?: boolean;

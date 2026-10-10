@@ -9,6 +9,7 @@ import {
   VerifyWebhookOptions,
 } from "./types.js";
 import { bytesToHex } from "../utils/encoding.js";
+import { adyenSigningString, notificationItems } from "../providers/adyen.js";
 
 /**
  * Default dedupe record lifetime: 24 hours. Many providers sign no timestamp
@@ -105,9 +106,10 @@ const SIGNED_ID_HEADERS: Partial<Record<ProviderName, readonly string[]>> = {
 
 /**
  * Extracts the event ID used as the dedupe key. It only reads data the provider's
- * signature covers: a signed ID header, an ID in the signed body, or else a SHA-256
- * digest of the body. Unsigned headers (e.g. `x-github-delivery`) are never used,
- * because a client could change them to slip a replayed webhook past the store.
+ * signature covers: a signed ID header, an ID in the signed body, Adyen's signed
+ * item fields, or else a SHA-256 digest of the body. Unsigned headers (e.g.
+ * `x-github-delivery`) are never used, because a client could change them to slip
+ * a replayed webhook past the store.
  */
 export async function extractEventId(
   provider: ProviderName,
@@ -129,7 +131,17 @@ export async function extractEventId(
     if (token) return token;
   }
 
-  // 3. Common ID properties in the signed JSON body
+  // 3. Adyen notification items sign only some fields, so the rest of the body
+  // (including any top-level `id`) can't pick the key. Header mode signs the body.
+  if (provider === "adyen" && !req.headers["hmacsignature"]) {
+    const items = notificationItems(parsed);
+    if (items?.length) {
+      const signed = items.map(adyenSigningString).join("\n");
+      return bytesToHex(await computeSha256(`adyen:${signed}`));
+    }
+  }
+
+  // 4. Common ID properties in the signed JSON body
   if (parsed && typeof parsed === "object") {
     const id =
       readString(parsed, "id") ??
@@ -140,7 +152,7 @@ export async function extractEventId(
     if (id) return id;
   }
 
-  // 4. SHA-256 digest over provider + raw body
+  // 5. SHA-256 digest over provider + raw body
   const hashBytes = await computeSha256(`${provider}:${req.rawBody || ""}`);
   return bytesToHex(hashBytes);
 }
