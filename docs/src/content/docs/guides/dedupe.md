@@ -32,6 +32,8 @@ The adapters do both for you: duplicates get `200`, and if your handler throws o
 
 Keys live for 24 hours by default (`dedupeTtlMs`). Many providers (GitHub, Shopify, Square, Twitter, ...) sign no timestamp, so the dedupe store is their only replay protection: once a key expires, a captured delivery verifies again. Keep the TTL at least as long as you care about replays, and size `MemoryDedupeStore`'s `maxSize` for a day of traffic, or use a shared store.
 
+For these providers no TTL closes the window completely: a captured delivery stays validly signed forever. Treat the store as a fast filter, not a guarantee, and make the handler's side effects idempotent too, for example with a unique constraint on the event ID in your own database. Then a replay after the key expires can't charge, email or provision twice. Memory stores also forget keys on restart or eviction, so the same applies there.
+
 ## What the key is
 
 The key only uses data covered by the provider's signature, so an attacker can't change it to sneak a replay past the store:

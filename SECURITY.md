@@ -59,5 +59,5 @@ To ensure your application remains secure when processing webhooks:
 1. **Preserve Raw Body Bytes**: Pass raw, unparsed request bodies (`string` or `Uint8Array`) to `verifyWebhook`. Do not pre-parse JSON payloads before signature checking.
 2. **Use Secret Managers**: Store webhook secrets in environment variables or secret vaults. Never hardcode secrets in source code.
 3. **Enable Timestamp Tolerance**: Keep `tolerance` enabled (default: 300 seconds) for providers with timestamped headers to reject replayed requests.
-4. **Use Event Deduplication**: For idempotent handling, pass a `dedupeStore` option (`MemoryDedupeStore` or Redis adapter) to prevent duplicate webhook processing.
+4. **Use Event Deduplication and Idempotent Handlers**: Pass a `dedupeStore` option (`MemoryDedupeStore` or Redis adapter) to reject retries and replays while a key is remembered. Records expire, and providers without a signed timestamp (`timestampVerified: false`) have no other replay limit, so also make side effects idempotent (e.g. a unique constraint on the event ID).
 5. **Network Isolation for Outbound Requests**: Rely on network-level egress controls (VPC security groups, firewall rules, or egress proxies) rather than application-level IP denylists for primary SSRF prevention.
