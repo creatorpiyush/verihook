@@ -15,6 +15,7 @@ import {
   createVerihookGuard,
   type VerihookNestRequest,
 } from "../../src/nestjs.js";
+import { signWebhook } from "../../src/testing.js";
 import { dedupeOptions, SECRET, signStripe, tamper } from "./helpers.js";
 
 let fail = false;
@@ -98,6 +99,27 @@ describe("verihook/nestjs (Express platform)", () => {
       payloadId: "evt_nest_1",
       bodyId: "evt_nest_1",
     });
+  });
+
+  it("verifies the exact bytes sent, not a re-serialized body", async () => {
+    // Pretty-printed with a \u escape: JSON.parse + JSON.stringify changes both
+    // the whitespace and the byte length.
+    const body =
+      '{\n  "id": "evt_nest_bytes",\n  "type": "invoice.paid",\n  "name": "caf\\u00e9"\n}';
+    const signed = await signWebhook("stripe", {
+      secret: SECRET,
+      payload: body,
+    });
+
+    const res = await post("stripe", signed);
+    expect(res.status).toBe(201);
+    expect((await res.json()).payloadId).toBe("evt_nest_bytes");
+
+    const reserialized = JSON.stringify(JSON.parse(body));
+    expect(reserialized).not.toBe(body);
+    const bad = await post("stripe", { ...signed, body: reserialized });
+    expect(bad.status).toBe(401);
+    expect((await bad.json()).code).toBe("INVALID_SIGNATURE");
   });
 
   it("replies 401 to a forged signature without a 403 on top", async () => {
