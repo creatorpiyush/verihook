@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.2] - 2026-10-19
+
+No code changes; the published package is the same as 1.21.1.
+
+### Documentation
+- **Dedupe guide and SECURITY.md**: the dedupe store is a fast filter, not a guarantee. Providers without a signed timestamp (GitHub, Shopify, Square, ...) have no bounded replay window, so a captured delivery verifies again once its key expires, or after a memory store restarts or evicts it. Make handler side effects idempotent too, e.g. with a unique constraint on the event ID.
+
+### Tests
+- **NestJS**: an HTTP-level test signs a pretty-printed body with a `\u` escape and checks that the guard verifies the bytes as sent and rejects the parsed and re-serialized body.
+
 ## [1.21.1] - 2026-10-11
 
 ### Security
