@@ -394,9 +394,37 @@ describe("settling without a response to watch", () => {
       });
       expect((await handler(await makeReq())).status).toBe(200);
       expect(warn).toHaveBeenCalledWith(
-        `[verihook] dedupeStore commit failed for "${key}":`,
+        "[verihook] dedupeStore %s failed for %s:",
+        "commit",
+        `"${key}"`,
         expect.any(Error),
       );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("keeps a request-derived key out of the format string and off new lines", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const dedupeStore: DedupeStore = {
+        hasOrSet: () => false,
+        claim: () => "new",
+        commit: () => {
+          throw new Error("redis down");
+        },
+      };
+      const handler = createWebhookHandler("razorpay", secret, () => {}, {
+        dedupeStore,
+        eventId: "evt_%s\n[verihook] forged line\u001b[31m",
+      });
+      await handler(await makeReq());
+      const [format, , loggedKey] = warn.mock.calls[0];
+      expect(format).toBe("[verihook] dedupeStore %s failed for %s:");
+      expect(loggedKey).toBe(
+        '"razorpay:evt_%s[verihook] forged line\\u001b[31m"',
+      );
+      expect(loggedKey).not.toMatch(/[\r\n\u001b]/);
     } finally {
       warn.mockRestore();
     }

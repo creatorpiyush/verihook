@@ -231,7 +231,15 @@ export function usesTwoPhaseDedupe(options?: VerifyWebhookOptions): boolean {
 /** Store errors after verification are best-effort; say so outside production. */
 function warnStoreError(action: string, key: string, err: unknown): void {
   if (typeof process !== "undefined" && readNodeEnv() !== "production") {
-    console.warn(`[verihook] dedupeStore ${action} failed for "${key}":`, err);
+    // The key comes from the request: keep it out of the format string, and
+    // strip line breaks and escape control characters so it can't forge log lines.
+    const safeKey = JSON.stringify(key.replace(/[\r\n]/g, ""));
+    console.warn(
+      "[verihook] dedupeStore %s failed for %s:",
+      action,
+      safeKey,
+      err,
+    );
   }
 }
 
