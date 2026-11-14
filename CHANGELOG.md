@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Dedupe: an event was lost when the process died mid-handler.** The dedupe key was recorded for the full TTL (24 hours) before the handler ran, and only a live process could release it. After a crash, a deploy or a Lambda timeout, the provider's retry was acked as a duplicate and the event was never processed. The adapters now record a key in two phases: claimed for 60 seconds, then committed for the full TTL when the handler responds below 500. A claim left by a dead process expires, and the next retry is processed.
+
+### Added
+- **`dedupeProcessingTtlMs`** option: how long a new event stays "in progress". `60000` by default in every adapter (`0` turns two-phase recording off); in the AWS Lambda adapter, the invocation's remaining time when that is longer. Off in `verifyWebhook`, where you commit yourself with `dedupeStore.commit(result.dedupeKey, ttlMs, result.dedupeToken)`.
+- **`EVENT_IN_PROGRESS`** error code, for a delivery that arrives while an earlier one of the same event is still being processed.
+- **`DedupeStore.claim()` / `commit()`** (optional), implemented by `MemoryDedupeStore`, `RedisDedupeStore` and the Upstash and Cloudflare KV reference stores. New `DedupeClaim` type.
+- **`result.dedupeToken`**: each claim belongs to one delivery. `commit()` and `delete()` take it as an optional last argument and then only act on that delivery's claim, so a delivery whose claim expired can't remove a retry's claim or a committed record. `RedisDedupeStore` checks it atomically with a Lua script.
+- Commit and release failures in a dedupe store are logged with `console.warn` outside production (they were silent).
+
+### Changed
+- **Adapters answer `503` instead of `200`** to a delivery that arrives while an earlier delivery of the same event is still being processed (with a `dedupeStore` that has `claim` and `commit`). A `200` would stop the provider retrying an event whose first delivery may still fail. Custom `onError` handlers receive the new `EVENT_IN_PROGRESS` code for these; don't acknowledge it with `2xx`. Finished events still get `200 { received: true, duplicate: true }`.
+- `RedisDedupeStore` stores `p:<token>` for a key in progress and `1` for a processed one, and reads the state with one `GET` when a claim finds an existing key. With a token, commit and delete run as `EVAL` scripts (Redis 2.6+). Stores without `claim` and `commit` behave as before.
+
 ## [1.21.2] - 2026-10-19
 
 No code changes; the published package is the same as 1.21.1.

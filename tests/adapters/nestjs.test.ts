@@ -193,6 +193,13 @@ describe("createVerihookGuard with a Fastify reply", () => {
     await new Promise((resolve) => setImmediate(resolve));
     // Released, so the retry passes again.
     expect(await guard.canActivate(context(req(), reply))).toBe(true);
+    // Still being processed: the provider is asked to retry.
+    expect(await guard.canActivate(context(req(), reply))).toBe(false);
+    expect(reply.code).toHaveBeenCalledWith(503);
+    // The second delivery's response finishes with 200, which commits the key.
+    reply.raw.statusCode = 200;
+    listeners[2]();
+    await new Promise((resolve) => setImmediate(resolve));
     expect(await guard.canActivate(context(req(), reply))).toBe(false);
     expect(reply.code).toHaveBeenCalledWith(200);
 

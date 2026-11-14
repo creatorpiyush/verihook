@@ -17,6 +17,7 @@ The `secret` may be a string or an array of strings for [secret rotation](../../
 | `webhookId` | | PayPal webhook ID. |
 | `dedupeStore` | | Rejects repeated events with `DUPLICATE_EVENT`. See [Deduplication](../../guides/dedupe/). |
 | `dedupeTtlMs` | `86400000` (24 h) | How long a dedupe key is remembered, in milliseconds. Providers without a signed timestamp can be replayed once the key expires, so keep it long. |
+| `dedupeProcessingTtlMs` | off; `60000` in the adapters (Lambda: the invocation's remaining time, when longer) | Record a new event as "in progress" for this long, until `dedupeStore.commit()` marks it processed; a delivery in between fails with `EVENT_IN_PROGRESS`. If the process dies mid-handler the key expires and the retry is processed. A handler that runs longer can overlap with a retry, so raise it for slow handlers. The adapters commit for you; `0` turns it off. See [When the handler crashes](../../guides/dedupe/#when-the-handler-crashes). |
 | `eventId` | extracted | Overrides the dedupe key. |
 | `strict` | `false` | Accept only each provider's strongest scheme. Weaker fallbacks fail with `WEAK_SCHEME`. See [Strict mode](../../guides/dedupe/#strict-mode). |
 | `maxBodySize` | 2 MB | Largest body read from a stream, in bytes: by an adapter (larger bodies get `413`) or by `verifyWebhook` given a Fetch `Request` (fails with `PAYLOAD_TOO_LARGE`). |

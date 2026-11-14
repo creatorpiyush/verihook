@@ -26,6 +26,7 @@ Works with h3 v1 (Nuxt 3) and h3 v2. `readBody(event)` still works inside the ha
 | :--- | :--- |
 | Invalid, missing or expired signature | `401 { error, code }`, unless you pass `onError` |
 | Duplicate event (with `dedupeStore`) | `200 { received: true, duplicate: true }` |
+| Event still being processed (with `dedupeStore`) | `503 { error, code: "EVENT_IN_PROGRESS" }` |
 | Body over `maxBodySize` (default 2 MB) | `413 { code: "PAYLOAD_TOO_LARGE" }` |
 | Exception during verification | `500` with a generic message |
 | Your handler throws or responds `>= 500` | The dedupe key is released so the retry is processed |

@@ -17,7 +17,8 @@ import {
   type AdapterReply,
   type SecretResolver,
   type VerihookContext,
-  releaseDedupeOnFailure,
+  settleDedupeOnFinish,
+  withDedupeDefaults,
 } from "./shared.js";
 import { normalizeBody } from "../utils/normalize-request.js";
 
@@ -143,6 +144,7 @@ export function verihookFastify<
   secret: SecretResolver<FastifyRequestLike>,
   options?: VerihookFastifyOptions,
 ): (request: any, reply: any) => Promise<unknown> {
+  options = withDedupeDefaults(options);
   const maxBytes = options?.maxBodySize ?? DEFAULT_MAX_BODY_SIZE;
 
   return async (
@@ -197,12 +199,7 @@ export function verihookFastify<
       request.verihook = toVerihookContext(provider, payload, result);
 
       // If the route fails, forget the event so the provider's retry is handled.
-      releaseDedupeOnFailure(
-        reply.raw,
-        result,
-        options,
-        () => reply.statusCode,
-      );
+      settleDedupeOnFinish(reply.raw, result, options, () => reply.statusCode);
     } catch (err: unknown) {
       if (options?.onError) {
         return await options.onError(

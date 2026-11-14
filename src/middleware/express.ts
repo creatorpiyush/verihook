@@ -1,12 +1,15 @@
 import {
-  WebhookErrorCode,
   type ProviderName,
   type VerificationResult,
   type VerifyWebhookOptions,
   type WebhookSecret,
 } from "../core/types.js";
 import { verifyWebhook } from "../core/verifier.js";
-import { releaseDedupeOnFailure } from "./shared.js";
+import {
+  failureReply,
+  settleDedupeOnFinish,
+  withDedupeDefaults,
+} from "./shared.js";
 
 export interface ExpressRequestLike {
   headers?: Record<string, string | string[] | undefined>;
@@ -90,6 +93,7 @@ export function verihookExpress(
   res: ExpressResponseLike,
   next: ExpressNextLike,
 ) => Promise<void> {
+  options = withDedupeDefaults(options);
   const maxBytes = options?.maxBodySize ?? 2 * 1024 * 1024; // 2MB default
 
   return async (
@@ -143,15 +147,8 @@ export function verihookExpress(
 
         if (options?.respondOnError !== false) {
           setSecurityHeaders(res);
-          // Acknowledge duplicates with 2xx so the provider stops retrying them.
-          if (result.code === WebhookErrorCode.DUPLICATE_EVENT) {
-            res.status(200).json({ received: true, duplicate: true });
-            return;
-          }
-          res.status(401).json({
-            error: result.reason,
-            code: result.code,
-          });
+          const reply = failureReply(result);
+          res.status(reply.status).json(reply.body);
           return;
         }
         return next(result);
@@ -190,7 +187,7 @@ export function verihookExpress(
       (req as unknown as VerihookRequestAdditions).verifiedPayload = payload;
 
       // If downstream processing fails, forget the event so the provider's retry is handled.
-      releaseDedupeOnFailure(res, result, options);
+      settleDedupeOnFinish(res, result, options);
 
       next();
     } catch (err: unknown) {

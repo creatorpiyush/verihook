@@ -3,19 +3,34 @@ import { createWebhookHandler } from "../src/next.js";
 import { RedisDedupeStore, verifyWebhook } from "../src/index.js";
 import { signWebhook } from "../src/testing.js";
 
-/** A minimal Redis: SET ... PX ... NX and DEL, recording every command. */
+/**
+ * A minimal Redis: SET ... PX ... [NX], GET, DEL, and EVAL of the two
+ * check-and-act scripts, recording every command.
+ */
 function fakeRedis() {
-  const data = new Map<string, number>();
+  const data = new Map<string, { value: string; expiry: number }>();
   const commands: string[][] = [];
   const exec = async (args: (string | number)[]): Promise<unknown> => {
-    const [cmd, key, , , ttl] = args.map(String);
+    const [cmd, key, value, , ttl, nx] = args.map(String);
     commands.push(args.map(String));
-    if (cmd === "SET") {
-      const expiry = data.get(key);
-      if (expiry !== undefined && expiry > Date.now()) return null;
-      data.set(key, Date.now() + Number(ttl));
+    if (cmd === "EVAL") {
+      const [, script, , k, owner, evalTtl] = args.map(String);
+      const entry = data.get(k);
+      const current = entry && entry.expiry > Date.now() ? entry.value : null;
+      if (script.includes("'DEL'")) {
+        return current === owner && data.delete(k) ? 1 : 0;
+      }
+      if (current !== null && current !== owner) return 0;
+      data.set(k, { value: "1", expiry: Date.now() + Number(evalTtl) });
       return "OK";
     }
+    const live = (data.get(key)?.expiry ?? 0) > Date.now();
+    if (cmd === "SET") {
+      if (nx === "NX" && live) return null;
+      data.set(key, { value, expiry: Date.now() + Number(ttl) });
+      return "OK";
+    }
+    if (cmd === "GET") return live ? data.get(key)!.value : null;
     if (cmd === "DEL") return data.delete(key) ? 1 : 0;
     throw new Error(`unexpected ${cmd}`);
   };

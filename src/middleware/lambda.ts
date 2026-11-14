@@ -1,4 +1,8 @@
-import { releaseDedupeKey } from "../core/dedupe.js";
+import {
+  commitDedupeKey,
+  releaseDedupeKey,
+  settleDedupeKey,
+} from "../core/dedupe.js";
 import type { ResolveEvent } from "../core/event-types.js";
 import type {
   ProviderName,
@@ -16,6 +20,7 @@ import {
   securityHeaders,
   type AdapterReply,
   type SecretResolver,
+  withDedupeDefaults,
 } from "./shared.js";
 
 /**
@@ -72,6 +77,26 @@ export type LambdaWebhookCallback<
   event: Event,
   context: Context,
 ) => Promise<LambdaHttpResult | void> | LambdaHttpResult | void;
+
+/**
+ * A Lambda handler can't outlive its invocation, so a claim that lasts until the
+ * invocation's timeout (when that is longer than the default) never expires under
+ * a handler that is still running, and still expires soon after a timeout kill.
+ */
+function claimForInvocation<O extends VerifyWebhookOptions>(
+  options: O | undefined,
+  context: unknown,
+): O | undefined {
+  const remaining = (
+    context as { getRemainingTimeInMillis?: () => number } | null
+  )?.getRemainingTimeInMillis;
+  if (!options?.dedupeStore || typeof remaining !== "function") return options;
+  const ttl = Math.max(
+    options.dedupeProcessingTtlMs ?? 0,
+    remaining.call(context) + 1_000,
+  );
+  return { ...options, dedupeProcessingTtlMs: ttl };
+}
 
 function toResult({ status, body }: AdapterReply): LambdaHttpResult {
   return {
@@ -131,9 +156,15 @@ export function createWebhookHandler<
   handler: LambdaWebhookCallback<ResolveEvent<TEvent, P>, Event, Context>,
   options?: VerihookLambdaOptions<Event>,
 ): (event: Event, context: Context) => Promise<LambdaHttpResult> {
-  const maxBytes = options?.maxBodySize ?? DEFAULT_MAX_BODY_SIZE;
+  // An explicit dedupeProcessingTtlMs (including 0) is used as given.
+  const fixedClaim = options?.dedupeProcessingTtlMs !== undefined;
+  const baseOptions = withDedupeDefaults(options);
+  const maxBytes = baseOptions?.maxBodySize ?? DEFAULT_MAX_BODY_SIZE;
 
   return async (event, context) => {
+    const options = fixedClaim
+      ? baseOptions
+      : claimForInvocation(baseOptions, context);
     try {
       const resolvedSecret =
         typeof secret === "function" ? await secret(event) : secret;
@@ -186,11 +217,10 @@ export function createWebhookHandler<
       }
 
       if (handlerResult) {
-        if (handlerResult.statusCode >= 500) {
-          await releaseDedupeKey(result, options);
-        }
+        await settleDedupeKey(result, options, handlerResult.statusCode);
         return handlerResult;
       }
+      await commitDedupeKey(result, options);
       return toResult({ status: 200, body: { received: true } });
     } catch (err: unknown) {
       if (options?.onError) {

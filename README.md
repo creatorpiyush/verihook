@@ -86,7 +86,7 @@ app.post('/webhooks/stripe', verihookExpress('stripe', process.env.STRIPE_WEBHOO
 | Astro | `verihook/astro` | [docs](https://creatorpiyush.github.io/verihook/frameworks/astro/) |
 | AWS Lambda | `verihook/lambda` | [docs](https://creatorpiyush.github.io/verihook/frameworks/aws-lambda/) |
 
-Every adapter answers `401` to a bad signature, `413` to an oversized body and `200` to a duplicate event.
+Every adapter answers `401` to a bad signature, `413` to an oversized body, `200` to a duplicate event and `503` to one that an earlier delivery is still processing.
 
 ## Providers
 

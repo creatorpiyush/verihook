@@ -81,7 +81,11 @@ describe("dedupe retry semantics", () => {
     const middleware = verihookExpress("razorpay", secret, { dedupeStore });
     const headers = await signedHeaders();
 
-    await middleware({ headers, body }, mockRes(), vi.fn());
+    const first = mockRes();
+    await middleware({ headers, body }, first, vi.fn());
+    first.emit("finish");
+    await Promise.resolve();
+
     const res = mockRes();
     const next = vi.fn();
     await middleware({ headers, body }, res, next);

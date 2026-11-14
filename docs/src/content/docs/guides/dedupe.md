@@ -28,6 +28,46 @@ try {
 
 The adapters do both for you: duplicates get `200`, and if your handler throws or responds with a 5xx the key is released so the provider's retry is processed.
 
+## When the handler crashes
+
+Releasing a key needs a live process. If yours is killed mid-handler (out of memory, a deploy, a Lambda timeout), nothing releases it, and a key recorded for 24 hours would make the provider's retry a "duplicate": the event would never be processed.
+
+So the adapters record an event in two phases:
+
+1. A new event is **claimed** for 60 seconds (`dedupeProcessingTtlMs`).
+2. When your handler finishes with a response below 500, the key is **committed** for the full `dedupeTtlMs`.
+
+A delivery that arrives while the first one is still claimed fails with `EVENT_IN_PROGRESS`, and the adapters answer `503` so the provider retries later. They don't answer `200`: if the first delivery then crashed, nothing would retry the event. If the process dies, the claim expires after 60 seconds and the next retry is processed.
+
+This needs a store with `claim` and `commit`: `MemoryDedupeStore`, `RedisDedupeStore` and the reference stores have them. With any other store, or with `dedupeProcessingTtlMs: 0`, the adapters record the key once for the full TTL, as before.
+
+Events are processed at least once, not exactly once: a handler that runs longer than `dedupeProcessingTtlMs` can overlap with a retry, so raise it for slow handlers and keep side effects idempotent. The AWS Lambda adapter does this for you: it holds the claim until the invocation's timeout (`context.getRemainingTimeInMillis()`) when that is longer than 60 seconds, since a handler can't outlive it.
+
+Each claim belongs to one delivery (`result.dedupeToken`). If a slow delivery finishes after its claim expired and a retry took over, its commit or release is ignored, so it can't remove the retry's claim or a finished record.
+
+`verifyWebhook` on its own can't know when your handler has finished, so it stays single-phase unless you opt in and commit yourself:
+
+```ts
+const options = { dedupeStore, dedupeProcessingTtlMs: 60_000 };
+const result = await verifyWebhook('stripe', request, secret, options);
+
+if (!result.valid) {
+  if (result.code === WebhookErrorCode.DUPLICATE_EVENT) return Response.json({ received: true });
+  if (result.code === WebhookErrorCode.EVENT_IN_PROGRESS) return new Response(null, { status: 503 });
+  return new Response('Invalid signature', { status: 401 });
+}
+
+try {
+  await processEvent(result.event);
+} catch (err) {
+  await dedupeStore.delete(result.dedupeKey!, result.dedupeToken);
+  throw err;
+}
+await dedupeStore.commit(result.dedupeKey!, 86_400_000, result.dedupeToken);
+```
+
+Don't set `dedupeProcessingTtlMs` without calling `commit`: the key would expire after 60 seconds and a replay would verify again.
+
 ## How long to remember keys
 
 Keys live for 24 hours by default (`dedupeTtlMs`). Many providers (GitHub, Shopify, Square, Twitter, ...) sign no timestamp, so the dedupe store is their only replay protection: once a key expires, a captured delivery verifies again. Keep the TTL at least as long as you care about replays, and size `MemoryDedupeStore`'s `maxSize` for a day of traffic, or use a shared store.
@@ -67,7 +107,7 @@ const result = await verifyWebhook('stripe', request, secret, { dedupeStore });
 
 With node-redis, connect first: `new RedisDedupeStore(await createClient({ url }).connect())`. With Bun: `new RedisDedupeStore(new RedisClient(url))`.
 
-- Each event is recorded with one atomic `SET key 1 PX <ttl> NX`, so two instances receiving the same delivery at once can't both process it.
+- Each event is recorded with one atomic `SET key <state> PX <ttl> NX`, so two instances receiving the same delivery at once can't both process it. The state is `p` while the event is being processed and `1` once committed (see [When the handler crashes](#when-the-handler-crashes)).
 - `delete()` runs `DEL`, so the adapters release the key when your handler fails.
 - If Redis is unreachable, verification fails (`UNKNOWN_ERROR`, a `500` from the adapters) and the provider retries. Events are never let through unchecked.
 
@@ -82,11 +122,23 @@ const store: DedupeStore = {
   // Returns true if the key was already seen; otherwise records it for ttlMs and returns false.
   async hasOrSet(key, ttlMs) { /* ... */ },
   // Optional: lets the adapters release a key when your handler fails.
-  async delete(key) { /* ... */ },
+  // With a token, delete only while the key is still claimed with that token.
+  async delete(key, token) { /* ... */ },
+  // Optional pair: two-phase recording, so a crashed handler's retry is processed.
+  // Returns 'new' after recording the key as in progress for processingTtlMs,
+  // owned by token; 'processing' if it is claimed but not committed; 'done' if
+  // it is committed.
+  async claim(key, processingTtlMs, token) { /* ... */ },
+  // Marks the key as processed and keeps it for ttlMs. With a token, do nothing
+  // if the key is claimed by another token or already committed; record a
+  // missing key.
+  async commit(key, ttlMs, token) { /* ... */ },
 };
 ```
 
-Implement `delete` whenever you can: without it, a delivery whose handler failed is acked as a duplicate when the provider retries it, and the event is lost.
+Make the token checks atomic where your store allows it (a Lua script in Redis, like `RedisDedupeStore`). Otherwise a slow delivery can, in a narrow race, remove a retry's claim.
+
+Implement `delete` whenever you can: without it, a delivery whose handler failed is acked as a duplicate when the provider retries it, and the event is lost. Implement `claim` and `commit` too, so the same doesn't happen when the process dies mid-handler.
 
 Ready-made examples are in the repository: [Upstash Redis](https://github.com/creatorpiyush/verihook/blob/main/examples/dedupe-stores/upstash-redis.ts) for edge runtimes and [Cloudflare Workers KV](https://github.com/creatorpiyush/verihook/blob/main/examples/dedupe-stores/cloudflare-kv.ts).
 
