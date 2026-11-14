@@ -1,4 +1,4 @@
-import type { DedupeStore } from "./types.js";
+import type { DedupeClaim, DedupeStore } from "./types.js";
 
 /** ioredis: `redis.call("SET", ...)`. */
 interface IORedisLike {
@@ -63,22 +63,87 @@ export class RedisDedupeStore implements DedupeStore {
     this.keyPrefix = options?.keyPrefix ?? "verihook:dedupe:";
   }
 
-  async hasOrSet(key: string, ttlMs: number): Promise<boolean> {
-    const ttl = String(Math.max(1, Math.round(ttlMs)));
-    // "OK" when the key was set (new event), null when it already existed. Anything
-    // else counts as new: processing twice beats silently dropping an event.
+  /**
+   * `SET key <value> PX <ttl> NX`: true when the key was set. Redis replies "OK"
+   * for a new key and null for an existing one. Anything else counts as new:
+   * processing twice beats silently dropping an event.
+   */
+  private async setIfAbsent(
+    key: string,
+    value: string,
+    ttlMs: number,
+  ): Promise<boolean> {
     const reply = await this.run([
       "SET",
       this.keyPrefix + key,
-      "1",
+      value,
       "PX",
-      ttl,
+      String(Math.max(1, Math.round(ttlMs))),
       "NX",
     ]);
-    return reply === null;
+    return reply !== null;
   }
 
-  async delete(key: string): Promise<void> {
-    await this.run(["DEL", this.keyPrefix + key]);
+  async hasOrSet(key: string, ttlMs: number): Promise<boolean> {
+    return !(await this.setIfAbsent(key, "1", ttlMs));
+  }
+
+  /**
+   * Records a new key as in progress (`p:<token>`) for `processingTtlMs`. Two
+   * round trips only when the key exists (a retry): `SET ... NX GET` would do it
+   * in one, but needs Redis 7.
+   */
+  async claim(
+    key: string,
+    processingTtlMs: number,
+    token: string,
+  ): Promise<DedupeClaim> {
+    if (await this.setIfAbsent(key, `p:${token}`, processingTtlMs)) {
+      return "new";
+    }
+    // A key that expired or was released between the two commands reads as in
+    // progress, so the provider is asked to retry rather than told it is done.
+    const value = await this.run(["GET", this.keyPrefix + key]);
+    return String(value) === "1" ? "done" : "processing";
+  }
+
+  /**
+   * Marks a claimed key as processed (`1`) and keeps it for `ttlMs`. With
+   * `token`, atomically skipped when another delivery owns the key.
+   */
+  async commit(key: string, ttlMs: number, token?: string): Promise<void> {
+    const ttl = String(Math.max(1, Math.round(ttlMs)));
+    const fullKey = this.keyPrefix + key;
+    if (token === undefined) {
+      await this.run(["SET", fullKey, "1", "PX", ttl]);
+      return;
+    }
+    await this.run(["EVAL", COMMIT_SCRIPT, "1", fullKey, `p:${token}`, ttl]);
+  }
+
+  /**
+   * Deletes the key. With `token`, atomically only while it is still claimed
+   * with that token.
+   */
+  async delete(key: string, token?: string): Promise<void> {
+    const fullKey = this.keyPrefix + key;
+    if (token === undefined) {
+      await this.run(["DEL", fullKey]);
+      return;
+    }
+    await this.run(["EVAL", RELEASE_SCRIPT, "1", fullKey, `p:${token}`]);
   }
 }
+
+/** Commit unless another delivery claimed or committed the key (a missing key is recorded). */
+const COMMIT_SCRIPT = `local v = redis.call('GET', KEYS[1])
+if v == false or v == ARGV[1] then
+  return redis.call('SET', KEYS[1], '1', 'PX', ARGV[2])
+end
+return 0`;
+
+/** Delete only while the key is still claimed by this delivery. */
+const RELEASE_SCRIPT = `if redis.call('GET', KEYS[1]) == ARGV[1] then
+  return redis.call('DEL', KEYS[1])
+end
+return 0`;

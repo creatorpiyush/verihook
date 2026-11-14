@@ -66,7 +66,50 @@ export class CloudflareKVDedupeStore implements DedupeStore {
    * Lets the verihook adapters release the key when your handler fails, so the
    * provider's retry is processed instead of being acked as a duplicate.
    */
-  async delete(key: string): Promise<void> {
-    await this.kv.delete(this.keyPrefix + key);
+  /**
+   * With `token`, deletes only while the key is still claimed by that
+   * delivery (checked with a read first, so not atomic).
+   */
+  async delete(key: string, token?: string): Promise<void> {
+    const fullKey = this.keyPrefix + key;
+    if (token !== undefined && (await this.kv.get(fullKey)) !== `p:${token}`) {
+      return;
+    }
+    await this.kv.delete(fullKey);
+  }
+
+  /**
+   * Two-phase recording: a new key is held as in progress (`p:<token>`) for a
+   * short time, so a handler that crashes before `commit` doesn't leave a
+   * record that drops the provider's retry. Like `hasOrSet`, the get-then-put
+   * is not atomic, and KV's minimum TTL is 60 seconds.
+   */
+  async claim(
+    key: string,
+    processingTtlMs: number,
+    token: string,
+  ): Promise<"new" | "processing" | "done"> {
+    const fullKey = this.keyPrefix + key;
+    const existing = await this.kv.get(fullKey);
+    if (existing !== null) return existing === "1" ? "done" : "processing";
+
+    const expirationTtl = Math.max(60, Math.ceil(processingTtlMs / 1000));
+    await this.kv.put(fullKey, `p:${token}`, { expirationTtl });
+    return "new";
+  }
+
+  /**
+   * Marks a claimed key as processed and keeps it for `ttlMs`. With `token`,
+   * skipped when another delivery has claimed or committed the key (checked
+   * with a read first, so not atomic).
+   */
+  async commit(key: string, ttlMs: number, token?: string): Promise<void> {
+    const fullKey = this.keyPrefix + key;
+    if (token !== undefined) {
+      const existing = await this.kv.get(fullKey);
+      if (existing !== null && existing !== `p:${token}`) return;
+    }
+    const expirationTtl = Math.max(60, Math.ceil(ttlMs / 1000));
+    await this.kv.put(fullKey, "1", { expirationTtl });
   }
 }

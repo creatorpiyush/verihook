@@ -1,10 +1,16 @@
 import { readNodeEnv } from "../utils/env.js";
 import { normalizeRequest } from "../utils/normalize-request.js";
-import { DEFAULT_DEDUPE_TTL_MS, extractEventId } from "./dedupe.js";
+import {
+  DEFAULT_DEDUPE_TTL_MS,
+  extractEventId,
+  newDedupeToken,
+  usesTwoPhaseDedupe,
+} from "./dedupe.js";
 import { diagnoseFailure, warnHintOnce } from "./diagnostics.js";
 import { parseEvent, resolveEventType } from "./event.js";
 import { getGlobalLogger } from "./logger.js";
 import {
+  DedupeClaim,
   ProviderName,
   ProviderVerifier,
   VerificationErrorCode,
@@ -143,12 +149,32 @@ export async function runVerification(
         const eventId =
           options.eventId || (await extractEventId(provider, normalizedReq));
         const dedupeKey = `${provider}:${eventId}`;
-        const ttlMs = options.dedupeTtlMs ?? DEFAULT_DEDUPE_TTL_MS;
-        const isDuplicate = await options.dedupeStore.hasOrSet(
-          dedupeKey,
-          ttlMs,
-        );
-        if (isDuplicate) {
+        const store = options.dedupeStore;
+        // Two-phase: hold the key as "in progress" for a short time, so a handler
+        // that dies before `commit` doesn't leave a record that drops the retry.
+        let claim: DedupeClaim;
+        let dedupeToken: string | undefined;
+        if (usesTwoPhaseDedupe(options)) {
+          dedupeToken = newDedupeToken();
+          claim = await store.claim!(
+            dedupeKey,
+            options.dedupeProcessingTtlMs!,
+            dedupeToken,
+          );
+        } else {
+          const ttlMs = options.dedupeTtlMs ?? DEFAULT_DEDUPE_TTL_MS;
+          claim = (await store.hasOrSet(dedupeKey, ttlMs)) ? "done" : "new";
+        }
+        if (claim === "processing") {
+          result = {
+            valid: false,
+            provider,
+            code: WebhookErrorCode.EVENT_IN_PROGRESS,
+            reason:
+              "An earlier delivery of this webhook event is still being processed",
+            timestamp: result.timestamp,
+          };
+        } else if (claim === "done") {
           result = {
             valid: false,
             provider,
@@ -157,7 +183,7 @@ export async function runVerification(
             timestamp: result.timestamp,
           };
         } else {
-          result = { ...result, dedupeKey };
+          result = { ...result, dedupeKey, dedupeToken };
         }
       }
     }

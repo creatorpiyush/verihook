@@ -17,7 +17,8 @@ import {
   type AdapterReply,
   type SecretResolver,
   type VerihookContext,
-  releaseDedupeOnFailure,
+  settleDedupeOnFinish,
+  withDedupeDefaults,
 } from "./shared.js";
 
 /** The parts of an Express or Fastify request (as Nest passes it) the guard uses. */
@@ -95,6 +96,7 @@ export function createVerihookGuard(
   secret: SecretResolver<NestRequestLike>,
   options?: VerihookGuardOptions,
 ): VerihookGuard {
+  options = withDedupeDefaults(options);
   const maxBytes = options?.maxBodySize ?? DEFAULT_MAX_BODY_SIZE;
 
   type Outcome =
@@ -173,7 +175,7 @@ export function createVerihookGuard(
       // Express passes the Node response; Fastify wraps it in `reply.raw`.
       const reply = res as any;
       const raw = typeof reply.on === "function" ? reply : reply.raw;
-      releaseDedupeOnFailure(
+      settleDedupeOnFinish(
         raw,
         result,
         options,

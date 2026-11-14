@@ -74,6 +74,9 @@ export interface NormalizedWebhookRequest {
   protocol?: string;
 }
 
+/** State of a dedupe key, as returned by `DedupeStore.claim`. */
+export type DedupeClaim = "new" | "processing" | "done";
+
 export interface DedupeStore {
   /**
    * Checks if an event ID is already present in the store.
@@ -86,8 +89,33 @@ export interface DedupeStore {
    * Removes a recorded event ID (optional). When implemented, the framework
    * middlewares call it if the webhook handler fails, so the provider's retry
    * is processed instead of being rejected as a duplicate.
+   *
+   * With `token` (two-phase recording), delete the key only while it is still
+   * claimed with that token: a delivery whose claim expired must not remove a
+   * newer delivery's claim or a committed record.
    */
-  delete?(key: string): Promise<void> | void;
+  delete?(key: string, token?: string): Promise<void> | void;
+
+  /**
+   * Two-phase recording (optional, together with `commit`). Records a new key as
+   * in progress for `processingTtlMs`, owned by `token`, and returns `"new"`;
+   * otherwise returns `"processing"` (claimed, not committed yet) or `"done"`
+   * (committed). Used when `dedupeProcessingTtlMs` is set, which the adapters do
+   * by default, so an event whose handler crashed is processed again when it is
+   * retried.
+   */
+  claim?(
+    key: string,
+    processingTtlMs: number,
+    token: string,
+  ): Promise<DedupeClaim> | DedupeClaim;
+
+  /**
+   * Marks a claimed key as processed and keeps it for `ttlMs` (optional,
+   * together with `claim`). With `token`, do nothing if another delivery has
+   * claimed or committed the key since; a missing key is recorded.
+   */
+  commit?(key: string, ttlMs: number, token?: string): Promise<void> | void;
 
   /**
    * Clears all stored event IDs (optional, useful for testing or flushing).
@@ -175,6 +203,23 @@ export interface VerifyWebhookOptions {
    * @default 86400000 (24 hours)
    */
   dedupeTtlMs?: number;
+
+  /**
+   * Record a new event as "in progress" for this many milliseconds instead of
+   * for `dedupeTtlMs`, until
+   * `dedupeStore.commit(result.dedupeKey, ttlMs, result.dedupeToken)` marks it
+   * processed. A delivery that arrives in between fails with
+   * `EVENT_IN_PROGRESS`. If the process dies before committing, the key expires
+   * and the provider's retry is processed instead of being dropped as a duplicate.
+   *
+   * The framework adapters set this to 60000 (the Lambda adapter: the
+   * invocation's remaining time, when longer) and commit for you; `0` turns it
+   * off. A handler that runs longer than this can overlap with a retry of the
+   * same event, so raise it for slow handlers. `verifyWebhook` leaves it off:
+   * only set it there if you call `commit`. Ignored when the store has no
+   * `claim` and `commit`.
+   */
+  dedupeProcessingTtlMs?: number;
 
   /**
    * Explicit event ID override for deduplication tracking.
@@ -268,6 +313,7 @@ export enum WebhookErrorCode {
   PAYLOAD_TOO_LARGE = "PAYLOAD_TOO_LARGE",
   UNSUPPORTED_PROVIDER = "UNSUPPORTED_PROVIDER",
   DUPLICATE_EVENT = "DUPLICATE_EVENT",
+  EVENT_IN_PROGRESS = "EVENT_IN_PROGRESS",
   WEAK_SCHEME = "WEAK_SCHEME",
   UNKNOWN_ERROR = "UNKNOWN_ERROR",
 }
@@ -337,6 +383,13 @@ export interface VerificationResult<TEvent = unknown> {
    * Pass it to `dedupeStore.delete()` to allow a retry if processing fails.
    */
   dedupeKey?: string;
+
+  /**
+   * Owner of this delivery's claim, when the event was recorded in two phases
+   * (`dedupeProcessingTtlMs`). Pass it to `dedupeStore.commit()` and
+   * `dedupeStore.delete()` so they only act on this delivery's claim.
+   */
+  dedupeToken?: string;
 }
 
 export interface ProviderVerifier {

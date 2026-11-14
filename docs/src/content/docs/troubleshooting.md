@@ -74,6 +74,10 @@ The provider signs the URL (Twilio, Square, HubSpot) and verihook couldn't build
 
 A `dedupeStore` has already seen this event within its TTL. This is expected when providers retry. Respond `2xx` so the provider stops; the adapters respond `200 { received: true, duplicate: true }`. See [Deduplication](../guides/dedupe/).
 
+## EVENT_IN_PROGRESS
+
+An earlier delivery of this event was claimed in the `dedupeStore` and hasn't been committed yet: its handler is still running, or the process died before it finished. Don't acknowledge it with `2xx`; the adapters respond `503` so the provider retries. If you see this for every retry of an event, the handler runs longer than `dedupeProcessingTtlMs` (60 seconds in the adapters): raise it, or check that your own code calls `dedupeStore.commit(result.dedupeKey, ttlMs, result.dedupeToken)`. See [When the handler crashes](../guides/dedupe/#when-the-handler-crashes).
+
 ## UNSUPPORTED_PROVIDER
 
 The identifier isn't built in or registered. Check the spelling against [All providers](../providers/) or [register a custom provider](../guides/custom-providers/).

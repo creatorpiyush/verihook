@@ -122,6 +122,7 @@ export type {
   WebhookVerificationEvent,
   WebhookLoggerFn,
   DedupeStore,
+  DedupeClaim,
   MemoryDedupeStoreOptions,
 } from "./core/types.js";
 

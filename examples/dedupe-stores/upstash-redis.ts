@@ -27,6 +27,19 @@
 import { Redis } from "@upstash/redis";
 import type { DedupeStore } from "verihook";
 
+/** Commit unless another delivery claimed or committed the key (a missing key is recorded). */
+const COMMIT_SCRIPT = `local v = redis.call('GET', KEYS[1])
+if v == false or v == ARGV[1] then
+  return redis.call('SET', KEYS[1], '1', 'PX', ARGV[2])
+end
+return 0`;
+
+/** Delete only while the key is still claimed by this delivery. */
+const RELEASE_SCRIPT = `if redis.call('GET', KEYS[1]) == ARGV[1] then
+  return redis.call('DEL', KEYS[1])
+end
+return 0`;
+
 export class UpstashDedupeStore implements DedupeStore {
   private redis: Redis;
   private keyPrefix: string;
@@ -59,10 +72,53 @@ export class UpstashDedupeStore implements DedupeStore {
 
   /**
    * Lets the verihook adapters release the key when your handler fails, so the
-   * provider's retry is processed instead of being acked as a duplicate.
+   * provider's retry is processed instead of being acked as a duplicate. With
+   * `token`, only while the key is still claimed by that delivery.
    */
-  async delete(key: string): Promise<void> {
-    await this.redis.del(this.keyPrefix + key);
+  async delete(key: string, token?: string): Promise<void> {
+    const fullKey = this.keyPrefix + key;
+    if (token === undefined) {
+      await this.redis.del(fullKey);
+      return;
+    }
+    await this.redis.eval(RELEASE_SCRIPT, [fullKey], [`p:${token}`]);
+  }
+
+  /**
+   * Two-phase recording: a new key is held as in progress ("p") for a short
+   * time, so a handler that crashes before `commit` doesn't leave a record
+   * that drops the provider's retry.
+   */
+  async claim(
+    key: string,
+    processingTtlMs: number,
+    token: string,
+  ): Promise<"new" | "processing" | "done"> {
+    const fullKey = this.keyPrefix + key;
+    const setResult = await this.redis.set(fullKey, `p:${token}`, {
+      nx: true,
+      px: Math.max(1, Math.round(processingTtlMs)),
+    });
+    if (setResult !== null) return "new";
+    // A key that expired between the two commands reads as in progress, so the
+    // provider is asked to retry.
+    return String(await this.redis.get(fullKey)) === "1"
+      ? "done"
+      : "processing";
+  }
+
+  /**
+   * Marks a claimed key as processed and keeps it for `ttlMs`. With `token`,
+   * atomically skipped when another delivery has claimed or committed it.
+   */
+  async commit(key: string, ttlMs: number, token?: string): Promise<void> {
+    const fullKey = this.keyPrefix + key;
+    const px = Math.max(1, Math.round(ttlMs));
+    if (token === undefined) {
+      await this.redis.set(fullKey, "1", { px });
+      return;
+    }
+    await this.redis.eval(COMMIT_SCRIPT, [fullKey], [`p:${token}`, String(px)]);
   }
 
   async clear(): Promise<void> {

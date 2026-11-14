@@ -1,4 +1,4 @@
-import { releaseDedupeKey } from "../core/dedupe.js";
+import { releaseDedupeKey, settleDedupeKey } from "../core/dedupe.js";
 import type { ResolveEvent } from "../core/event-types.js";
 import type {
   ProviderName,
@@ -19,6 +19,7 @@ import {
   toVerihookContext,
   type SecretResolver,
   type VerihookContext,
+  withDedupeDefaults,
 } from "./shared.js";
 
 /** The parts of Hono's `Context` the middleware uses. */
@@ -66,6 +67,7 @@ export function verihookHono<
   secret: SecretResolver<C>,
   options?: VerihookHonoOptions<C>,
 ): (c: C, next: () => Promise<void>) => Promise<Response | void> {
+  options = withDedupeDefaults(options);
   const maxBytes = options?.maxBodySize ?? DEFAULT_MAX_BODY_SIZE;
 
   return async (c, next) => {
@@ -116,9 +118,7 @@ export function verihookHono<
       throw err;
     }
     // Hono turns handler errors into a 500 response before `next()` resolves.
-    if (c.res.status >= 500) {
-      await releaseDedupeKey(result, options);
-    }
+    await settleDedupeKey(result, options, c.res.status);
     return undefined;
   };
 }

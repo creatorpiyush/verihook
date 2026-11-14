@@ -1,4 +1,9 @@
-import { releaseDedupeKey } from "../core/dedupe.js";
+import {
+  commitDedupeKey,
+  DEFAULT_DEDUPE_PROCESSING_TTL_MS,
+  releaseDedupeKey,
+  settleDedupeKey,
+} from "../core/dedupe.js";
 import {
   WebhookErrorCode,
   type ProviderName,
@@ -50,6 +55,27 @@ export const DUPLICATE_REPLY: AdapterReply = {
   body: { received: true, duplicate: true },
 };
 
+export const IN_PROGRESS_REPLY: AdapterReply = {
+  // Not a 2xx: if the delivery being processed crashes, the provider must retry.
+  status: 503,
+  body: {
+    error: "Webhook event is still being processed",
+    code: "EVENT_IN_PROGRESS",
+  },
+};
+
+/**
+ * The adapters know when the handler has finished, so with a dedupe store they
+ * record events in two phases unless `dedupeProcessingTtlMs` says otherwise.
+ */
+export function withDedupeDefaults<T extends VerifyWebhookOptions>(
+  options: T | undefined,
+): T | undefined {
+  return options?.dedupeStore && options.dedupeProcessingTtlMs === undefined
+    ? { ...options, dedupeProcessingTtlMs: DEFAULT_DEDUPE_PROCESSING_TTL_MS }
+    : options;
+}
+
 export const INTERNAL_ERROR_REPLY: AdapterReply = {
   // Details stay server-side (onError / telemetry); clients get a generic message.
   status: 500,
@@ -68,11 +94,15 @@ export function payloadTooLargeReply(maxBytes: number): AdapterReply {
 
 /**
  * The default reply for a failed verification. Duplicates are acknowledged with 2xx
- * so the provider stops retrying them.
+ * so the provider stops retrying them; a delivery that is still being processed
+ * gets a 503 so the provider retries it later.
  */
 export function failureReply(result: VerificationResult): AdapterReply {
   if (result.code === WebhookErrorCode.DUPLICATE_EVENT) {
     return DUPLICATE_REPLY;
+  }
+  if (result.code === WebhookErrorCode.EVENT_IN_PROGRESS) {
+    return IN_PROGRESS_REPLY;
   }
   return { status: 401, body: { error: result.reason, code: result.code } };
 }
@@ -84,21 +114,29 @@ export interface NodeResponseEvents {
 }
 
 /**
- * Releases a verified event's dedupe key when the response ends with a 5xx, or when
- * the connection closes before a response is sent (client disconnect, hung handler),
+ * Settles a verified event's dedupe key when the Node response finishes: released
+ * on a 5xx, committed otherwise (two-phase dedupe). Also released when the
+ * connection closes before a response is sent (client disconnect, hung handler),
  * so the provider's retry is processed instead of being acked as a duplicate.
  */
-export function releaseDedupeOnFailure(
+export function settleDedupeOnFinish(
   raw: NodeResponseEvents | undefined,
   result: VerificationResult,
   options: VerifyWebhookOptions | undefined,
   statusCode: () => number = () => raw?.statusCode ?? 200,
 ): void {
-  if (!result.dedupeKey || typeof raw?.on !== "function") return;
+  if (!result.dedupeKey) return;
+  if (typeof raw?.on !== "function") {
+    // No way to see the response: commit now, so the key isn't left to expire
+    // after the short claim (and replays pass again). A failing handler then
+    // can't release it, as before two-phase recording.
+    void commitDedupeKey(result, options);
+    return;
+  }
   let finished = false;
   raw.on("finish", () => {
     finished = true;
-    if (statusCode() >= 500) void releaseDedupeKey(result, options);
+    void settleDedupeKey(result, options, statusCode());
   });
   raw.on("close", () => {
     if (!finished) void releaseDedupeKey(result, options);
@@ -199,6 +237,7 @@ export function createWebAdapter<TEvent, Ctx>(
   options: WebAdapterOptions<Ctx> | undefined,
   getRequest: (ctx: Ctx) => Request | Promise<Request>,
 ): (ctx: Ctx) => Promise<Response> {
+  options = withDedupeDefaults(options);
   const maxBytes = options?.maxBodySize ?? DEFAULT_MAX_BODY_SIZE;
 
   return async (ctx: Ctx): Promise<Response> => {
@@ -238,13 +277,14 @@ export function createWebAdapter<TEvent, Ctx>(
         throw handlerErr;
       }
 
+      // Awaited, not deferred: a serverless runtime may freeze the process once
+      // the response is returned, and an unsettled claim would just expire.
       if (handlerResult instanceof Response) {
-        if (handlerResult.status >= 500) {
-          await releaseDedupeKey(result, options);
-        }
+        await settleDedupeKey(result, options, handlerResult.status);
         return handlerResult;
       }
 
+      await commitDedupeKey(result, options);
       return jsonResponse({ status: 200, body: { received: true } });
     } catch (err: unknown) {
       if (options?.onError) {
