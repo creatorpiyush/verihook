@@ -277,6 +277,7 @@ Both CLI commands enforce origin validation as a best-effort defense-in-depth me
 | **Cashfree** | `x-webhook-signature` | HMAC-SHA256 / Base64 | `${timestamp}${rawBody}` (ms timestamp) | ✅ Default 300s |
 | **PhonePe** | `authorization` | SHA-256 / Hex | `${username}:${password}` (body not signed) | N/A |
 | **Mollie** | `x-mollie-signature` | HMAC-SHA256 / Hex | `rawBody` (any of the signatures may match) | N/A |
+| **Mercado Pago** | `x-signature` (`ts=…,v1=…`) + `x-request-id` | HMAC-SHA256 / Hex | `id:${query data.id};request-id:${x-request-id};ts:${ts};` (missing pairs omitted; body not signed) | ✅ Default 300s |
 | **Adyen** | `additionalData.hmacSignature` / `hmacsignature` | HMAC-SHA256 (hex-decoded key) / Base64 | Per item: `pspReference:originalReference:merchantAccountCode:merchantReference:value:currency:eventCode:success` <br> Header: `rawBody` | N/A |
 | **Checkout.com** | `cko-signature` | HMAC-SHA256 / Hex | `rawBody` | N/A |
 | **Authorize.net** | `x-anet-signature` | HMAC-SHA512 / Hex (uppercase) | `rawBody` | N/A |

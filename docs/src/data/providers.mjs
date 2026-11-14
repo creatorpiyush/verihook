@@ -514,6 +514,31 @@ export async function GET(request: Request) {
     docs: "https://docs.mollie.com/reference/webhooks-new",
   },
   {
+    id: "mercadopago",
+    name: "Mercado Pago",
+    region: "LATAM",
+    fn: "verifyMercadoPago",
+    entry: "mercadopago",
+    env: "MERCADOPAGO_WEBHOOK_SECRET",
+    headers: ["x-signature", "x-request-id"],
+    scheme:
+      "HMAC-SHA256 of `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`, hex-encoded, sent as `ts=<unix seconds>,v1=<hex>`. `data.id` is the query-string parameter as received; a pair whose value is missing is left out.",
+    secret:
+      "The webhook **secret signature**: in **Your integrations**, open the application → **Webhooks** → **Configure notifications**. It is not your access token.",
+    tolerance: "300 seconds",
+    eventType: "the body's `action` (e.g. `payment.created`), else its `type`",
+    notes: [
+      "**The body is not signed.** Anyone who sees one signed request can resend its headers and URL with another body for 5 minutes. Treat `result.event` as a notification: fetch the resource from the Mercado Pago API with the query's `data.id` before acting on it.",
+      "`data.id` is signed from the **URL query string**, so verihook needs the request URL. Pass `{ url }` if your framework doesn't expose it; a proxy that rewrites the query breaks the signature.",
+      "With a dedupe store, the key is the signed `x-request-id` (or the signature), never the unsigned body `id`.",
+      "`{ strict: true }` rejects signatures that don't cover both `data.id` and `x-request-id` (`WEAK_SCHEME`).",
+      "A proxy that overwrites the `x-request-id` header breaks the signature: forward Mercado Pago's value unchanged.",
+      "QR Code notifications are not signed and can't be verified. Fetch the order from the API instead.",
+    ],
+    testSecret: "mercadopago_test_secret",
+    docs: "https://github.com/mercadopago/sdk-nodejs/blob/master/docs/webhooks.md",
+  },
+  {
     id: "adyen",
     name: "Adyen",
     region: "Europe",

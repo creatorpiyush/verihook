@@ -32,6 +32,7 @@
     "./mailgun": "./src/entries/mailgun.ts",
     "./meta": "./src/entries/meta.ts",
     "./mollie": "./src/entries/mollie.ts",
+    "./mercadopago": "./src/entries/mercadopago.ts",
     "./paddle": "./src/entries/paddle.ts",
     "./pagerduty": "./src/entries/pagerduty.ts",
     "./paypal": "./src/entries/paypal.ts",

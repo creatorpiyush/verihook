@@ -199,6 +199,15 @@ export async function extractEventId(
     }
   }
 
+  // Mercado Pago doesn't sign the body, so its `id` can't pick the key. The
+  // request ID is signed whenever it is sent; else the signature itself (the HMAC
+  // of the signed data.id and timestamp) identifies the delivery.
+  if (provider === "mercadopago") {
+    const signed =
+      req.headers["x-request-id"]?.trim() || req.headers["x-signature"]?.trim();
+    if (signed) return signed;
+  }
+
   // 4. Common ID properties in the signed JSON body
   if (parsed && typeof parsed === "object") {
     const id =

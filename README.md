@@ -108,6 +108,7 @@ Each page says where to find the secret, which headers are sent and how to verif
 | [Telegram](https://creatorpiyush.github.io/verihook/providers/telegram/) `telegram` | [Postmark](https://creatorpiyush.github.io/verihook/providers/postmark/) `postmark` | [SendGrid](https://creatorpiyush.github.io/verihook/providers/sendgrid/) `sendgrid` |
 | [Mailgun](https://creatorpiyush.github.io/verihook/providers/mailgun/) `mailgun` | [HubSpot](https://creatorpiyush.github.io/verihook/providers/hubspot/) `hubspot` | [Intercom](https://creatorpiyush.github.io/verihook/providers/intercom/) `intercom` |
 | [Calendly](https://creatorpiyush.github.io/verihook/providers/calendly/) `calendly` | [Typeform](https://creatorpiyush.github.io/verihook/providers/typeform/) `typeform` | [Standard Webhooks](https://creatorpiyush.github.io/verihook/providers/standard-webhooks/) `standard-webhooks` |
+| [Mercado Pago](https://creatorpiyush.github.io/verihook/providers/mercadopago/) `mercadopago` | | |
 
 Anything else: the `generic` HMAC verifier or [your own provider](https://creatorpiyush.github.io/verihook/guides/custom-providers/).
 

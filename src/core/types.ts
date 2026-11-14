@@ -30,6 +30,7 @@ export type ProviderName =
   | "cashfree"
   | "phonepe"
   | "mollie"
+  | "mercadopago"
   | "adyen"
   | "checkout"
   | "authorizenet"

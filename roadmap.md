@@ -210,8 +210,9 @@ Support for these providers is planned for a future release:
 | Region | Providers |
 | :--- | :--- |
 | Africa | Paystack, Flutterwave |
-| LATAM | Mercado Pago |
 | SE Asia | Xendit, Midtrans |
+
+Mercado Pago (LATAM) shipped in the next release after v1.21.2 ([#60](https://github.com/creatorpiyush/verihook/issues/60)).
 
 Each will ship like the v1.12.0 providers: a `verify*` shortcut, a typed event, `signWebhook()` / `npx verihook simulate` support and known-good test vectors. Need one sooner? Open a [provider request](https://github.com/creatorpiyush/verihook/issues/new/choose) or contribute it (see [CONTRIBUTING.md](./CONTRIBUTING.md)).
 
