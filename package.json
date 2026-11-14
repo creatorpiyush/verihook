@@ -378,17 +378,17 @@
     "access": "public"
   },
   "devDependencies": {
-    "@nestjs/common": "12.1.2",
-    "@nestjs/core": "12.1.2",
-    "@nestjs/platform-express": "12.1.2",
+    "@nestjs/common": "12.5.0",
+    "@nestjs/core": "12.5.0",
+    "@nestjs/platform-express": "12.5.0",
     "@octokit/webhooks-methods": "6.0.0",
     "@size-limit/preset-small-lib": "14.1.0",
     "@types/node": "20.19.43",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "4.1.12",
     "fast-check": "4.10.2",
-    "fastify": "5.12.5",
+    "fastify": "5.12.8",
     "h3": "1.15.11",
-    "hono": "4.13.12",
+    "hono": "4.13.18",
     "prettier": "3.9.6",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
@@ -398,7 +398,7 @@
     "tsup": "8.5.1",
     "twilio": "6.1.2",
     "typescript": "5.9.3",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
   },
   "overrides": {
     "esbuild": "0.28.1"
