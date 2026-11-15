@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-11-15
+
+Adds Mercado Pago and fixes a lost-event bug in the dedupe store. The adapters now answer `503` (not `200`) when a retry arrives while the first delivery of the same event is still being processed: see **Changed**.
+
 ### Fixed
 - **Dedupe: an event was lost when the process died mid-handler.** The dedupe key was recorded for the full TTL (24 hours) before the handler ran, and only a live process could release it. After a crash, a deploy or a Lambda timeout, the provider's retry was acked as a duplicate and the event was never processed. The adapters now record a key in two phases: claimed for 60 seconds, then committed for the full TTL when the handler responds below 500. A claim left by a dead process expires, and the next retry is processed.
 
@@ -22,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Adapters answer `503` instead of `200`** to a delivery that arrives while an earlier delivery of the same event is still being processed (with a `dedupeStore` that has `claim` and `commit`). A `200` would stop the provider retrying an event whose first delivery may still fail. Custom `onError` handlers receive the new `EVENT_IN_PROGRESS` code for these; don't acknowledge it with `2xx`. Finished events still get `200 { received: true, duplicate: true }`.
 - `RedisDedupeStore` stores `p:<token>` for a key in progress and `1` for a processed one, and reads the state with one `GET` when a claim finds an existing key. With a token, commit and delete run as `EVAL` scripts (Redis 2.6+). Stores without `claim` and `commit` behave as before.
+- `verihook/express` size budget 12 kB → 13 kB: it bundles every provider.
+
+### Internal
+- Dev dependencies bumped for `npm audit` (NestJS 12.5.0, vitest 4.1.12, fastify 5.12.8, hono 4.13.18). The published package still has no runtime dependencies.
+- `mercadopago` (devDependency) for the cross-SDK conformance tests.
+- The `examples/hono-worker` secret resolver is typed as Hono's `Context<Env>`, so the example typechecks again.
 
 ## [1.21.2] - 2026-10-19
 

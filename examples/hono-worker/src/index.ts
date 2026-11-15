@@ -1,5 +1,5 @@
 import { serve } from '@hono/node-server';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { verihookHono, type VerihookVariables } from 'verihook/hono';
 
 type Env = {
@@ -10,7 +10,7 @@ type Env = {
 const app = new Hono<Env>();
 
 // On Cloudflare Workers the secret comes from c.env. Locally it falls back to process.env.
-const secret = (c: { env?: Env['Bindings'] }) =>
+const secret = (c: Context<Env>) =>
   c.env?.WEBHOOK_SECRET || process.env.WEBHOOK_SECRET || 'secret123';
 
 app.get('/', (c) => {
