@@ -74,6 +74,20 @@ export const mercadopagoVerifier: ProviderVerifier = {
   eventType: (event) =>
     readString(event, "action") ?? readString(event, "type"),
 
+  // The body isn't signed, so its `id` can't pick the dedupe key. The request
+  // ID is signed whenever it is sent; else the signature identifies the
+  // delivery. Use its parsed ts and v1, not the header text: a reformatted
+  // header (spaces, extra keys, uppercase hex) verifies the same and must get
+  // the same key.
+  dedupeId(req) {
+    const requestId = req.headers["x-request-id"]?.trim();
+    if (requestId) return requestId;
+    const { ts, hashes } = parseMercadoPagoSignature(
+      req.headers["x-signature"] ?? "",
+    );
+    return ts && hashes.v1 ? `sig:${ts}:${hashes.v1.toLowerCase()}` : undefined;
+  },
+
   async verify(
     req: NormalizedWebhookRequest,
     secret: string,
@@ -112,8 +126,33 @@ export const mercadopagoVerifier: ProviderVerifier = {
           "Missing request URL: Mercado Pago signs the data.id query parameter. Pass the request URL or options.url",
       };
     }
-    const dataId = mercadoPagoDataId(url);
+    // Only accept values that read one way: the app must see exactly the
+    // data.id that was signed, and a value can't smuggle in another pair.
+    let dataIds: string[];
+    try {
+      dataIds = new URL(url, "http://localhost").searchParams.getAll("data.id");
+    } catch {
+      dataIds = [];
+    }
+    const rawDataId = dataIds[0];
+    const dataId = rawDataId?.trim() || undefined;
     const requestId = req.headers["x-request-id"]?.trim() || undefined;
+    const ambiguous =
+      dataIds.length > 1
+        ? "more than one data.id query parameter"
+        : dataId && dataId !== rawDataId
+          ? "data.id has leading or trailing whitespace"
+          : /[;:]/.test(dataId ?? "") || /[;:]/.test(requestId ?? "")
+            ? 'data.id or x-request-id contains ";" or ":"'
+            : undefined;
+    if (ambiguous) {
+      return {
+        valid: false,
+        provider: "mercadopago",
+        code: WebhookErrorCode.INVALID_SIGNATURE,
+        reason: `Rejected: ${ambiguous}`,
+      };
+    }
 
     if (options?.strict && (!dataId || !requestId)) {
       const missing = [

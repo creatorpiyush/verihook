@@ -362,13 +362,77 @@ describe("Mercado Pago", () => {
         now: NOW,
         dedupeStore,
       });
-      expect(first.dedupeKey).toBe(`mercadopago:${req.headers["x-signature"]}`);
+      const v1 = req.headers["x-signature"].split("v1=")[1];
+      expect(first.dedupeKey).toBe(`mercadopago:sig:${NOW}:${v1}`);
       const replay = await verifyMercadoPago(
         { ...req, body: JSON.stringify({ id: 1 }) },
         SECRET,
         { now: NOW, dedupeStore },
       );
       expect(replay.code).toBe("DUPLICATE_EVENT");
+    });
+
+    it("gives a reformatted x-signature the same key (no replay past the store)", async () => {
+      const dedupeStore = new MemoryDedupeStore();
+      const req = await signed({ dataId: "123456" });
+      await verifyMercadoPago(req, SECRET, { now: NOW, dedupeStore });
+      const [ts, v1] = req.headers["x-signature"].split(",");
+      const reformatted = ` ${v1.toUpperCase().replace("V1=", "v1=")} , v2=zz, ${ts} `;
+      const replay = await verifyMercadoPago(
+        { ...req, headers: { "x-signature": reformatted } },
+        SECRET,
+        { now: NOW, dedupeStore },
+      );
+      expect(replay.code).toBe("DUPLICATE_EVENT");
+    });
+  });
+
+  describe("values that could be read two ways", () => {
+    it("rejects a repeated data.id, which frameworks resolve differently", async () => {
+      const req = await signed({ dataId: "123456", requestId: "r" });
+      for (const extra of ["&data.id=evil", "&data%2Eid=evil"]) {
+        const result = await verifyMercadoPago(
+          { ...req, url: req.url + extra },
+          SECRET,
+          { now: NOW },
+        );
+        expect(result.code).toBe("INVALID_SIGNATURE");
+        expect(result.reason).toContain("more than one data.id");
+      }
+    });
+
+    it("rejects a padded data.id: the app would read a different value", async () => {
+      const req = await signed({ dataId: "123456", requestId: "r" });
+      const result = await verifyMercadoPago(
+        { ...req, url: "/webhooks/mp?data.id=%20123456" },
+        SECRET,
+        { now: NOW },
+      );
+      expect(result.reason).toContain("whitespace");
+    });
+
+    it("rejects a data.id that smuggles in the request-id pair", async () => {
+      // Signed for data.id "1" + x-request-id "X": the manifest
+      // "id:1;request-id:X;ts:…;" is also what data.id "1;request-id:X"
+      // with no x-request-id would produce.
+      const req = await signed({ dataId: "1", requestId: "X" });
+      const result = await verifyMercadoPago(
+        {
+          headers: { "x-signature": req.headers["x-signature"] },
+          body,
+          url: `/webhooks/mp?data.id=${encodeURIComponent("1;request-id:X")}`,
+        },
+        SECRET,
+        { now: NOW },
+      );
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain('";" or ":"');
+    });
+
+    it("rejects ';' or ':' in x-request-id", async () => {
+      const req = await signed({ dataId: "1", requestId: "a;b" });
+      const result = await verifyMercadoPago(req, SECRET, { now: NOW });
+      expect(result.valid).toBe(false);
     });
   });
 

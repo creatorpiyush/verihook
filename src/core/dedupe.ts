@@ -6,6 +6,7 @@ import {
   MemoryDedupeStoreOptions,
   NormalizedWebhookRequest,
   ProviderName,
+  ProviderVerifier,
   VerificationResult,
   VerifyWebhookOptions,
 } from "./types.js";
@@ -168,11 +169,19 @@ const SIGNED_ID_HEADERS: Partial<Record<ProviderName, readonly string[]>> = {
  * item fields, or else a SHA-256 digest of the body. Unsigned headers (e.g.
  * `x-github-delivery`) are never used, because a client could change them to slip
  * a replayed webhook past the store.
+ *
+ * Pass the provider's `verifier` so its `dedupeId` hook applies (Mercado Pago,
+ * custom providers); `verifyWebhook` always does.
  */
 export async function extractEventId(
   provider: ProviderName,
   req: NormalizedWebhookRequest,
+  verifier?: Pick<ProviderVerifier, "dedupeId">,
 ): Promise<string> {
+  // 0. The provider's own signed ID
+  const fromProvider = verifier?.dedupeId?.(req);
+  if (fromProvider) return fromProvider;
+
   // 1. Signed ID headers for this provider
   for (const name of SIGNED_ID_HEADERS[provider] ?? []) {
     const value = req.headers[name];
@@ -197,15 +206,6 @@ export async function extractEventId(
       const signed = items.map(adyenSigningString).join("\n");
       return bytesToHex(await computeSha256(`adyen:${signed}`));
     }
-  }
-
-  // Mercado Pago doesn't sign the body, so its `id` can't pick the key. The
-  // request ID is signed whenever it is sent; else the signature itself (the HMAC
-  // of the signed data.id and timestamp) identifies the delivery.
-  if (provider === "mercadopago") {
-    const signed =
-      req.headers["x-request-id"]?.trim() || req.headers["x-signature"]?.trim();
-    if (signed) return signed;
   }
 
   // 4. Common ID properties in the signed JSON body

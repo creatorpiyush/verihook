@@ -419,6 +419,14 @@ export interface ProviderVerifier {
    * `type`, `event` or `event_type` field is used.
    */
   eventType?(event: unknown, req: NormalizedWebhookRequest): string | undefined;
+
+  /**
+   * The event ID recorded in `options.dedupeStore`, for providers whose ID isn't
+   * found by the built-in rules (see `extractEventId`). Build it only from data
+   * the signature covers, and canonically: two requests that verify the same
+   * must get the same ID. Return `undefined` to use the built-in rules.
+   */
+  dedupeId?(req: NormalizedWebhookRequest): string | undefined;
 }
 
 /**

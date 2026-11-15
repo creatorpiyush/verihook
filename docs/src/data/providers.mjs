@@ -531,6 +531,7 @@ export async function GET(request: Request) {
       "**The body is not signed.** Anyone who sees one signed request can resend its headers and URL with another body for 5 minutes. Treat `result.event` as a notification: fetch the resource from the Mercado Pago API with the query's `data.id` before acting on it.",
       "`data.id` is signed from the **URL query string**, so verihook needs the request URL. Pass `{ url }` if your framework doesn't expose it; a proxy that rewrites the query breaks the signature.",
       "With a dedupe store, the key is the signed `x-request-id` (or the signature), never the unsigned body `id`.",
+      "Requests with a repeated `data.id`, a `data.id` with surrounding spaces, or `;` / `:` in `data.id` or `x-request-id` are rejected: they could be read two ways, so the `data.id` your app reads might not be the one that was signed. Read `data.id` from the query once and use that value.",
       "`{ strict: true }` rejects signatures that don't cover both `data.id` and `x-request-id` (`WEAK_SCHEME`).",
       "A proxy that overwrites the `x-request-id` header breaks the signature: forward Mercado Pago's value unchanged.",
       "QR Code notifications are not signed and can't be verified. Fetch the order from the API instead.",
