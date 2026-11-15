@@ -147,7 +147,8 @@ export async function runVerification(
 
       if (result.valid && options?.dedupeStore) {
         const eventId =
-          options.eventId || (await extractEventId(provider, normalizedReq));
+          options.eventId ||
+          (await extractEventId(provider, normalizedReq, verifier));
         const dedupeKey = `${provider}:${eventId}`;
         const store = options.dedupeStore;
         // Two-phase: hold the key as "in progress" for a short time, so a handler

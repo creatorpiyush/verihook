@@ -224,6 +224,22 @@ export interface MollieEvent {
   [key: string]: unknown;
 }
 
+/**
+ * Mercado Pago notification, e.g. `payment.created`. Not signed: fetch the
+ * resource from the API with the query's `data.id` before acting on it.
+ */
+export interface MercadoPagoEvent {
+  id?: number | string;
+  action?: string;
+  type?: string;
+  api_version?: string;
+  live_mode?: boolean;
+  date_created?: string;
+  user_id?: number | string;
+  data?: Fields & { id?: string };
+  [key: string]: unknown;
+}
+
 export interface AdyenNotificationRequestItem {
   eventCode: string;
   success: "true" | "false";
@@ -462,6 +478,7 @@ export interface ProviderEventMap {
   cashfree: CashfreeEvent;
   phonepe: PhonePeEvent;
   mollie: MollieEvent;
+  mercadopago: MercadoPagoEvent;
   adyen: AdyenEvent;
   checkout: CheckoutEvent;
   authorizenet: AuthorizeNetEvent;

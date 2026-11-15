@@ -132,6 +132,8 @@ export const verifyPhonePe: ProviderVerifyFunction<"phonepe"> =
   shortcut("phonepe");
 export const verifyMollie: ProviderVerifyFunction<"mollie"> =
   shortcut("mollie");
+export const verifyMercadoPago: ProviderVerifyFunction<"mercadopago"> =
+  shortcut("mercadopago");
 export const verifyAdyen: ProviderVerifyFunction<"adyen"> = shortcut("adyen");
 export const verifyCheckout: ProviderVerifyFunction<"checkout"> =
   shortcut("checkout");

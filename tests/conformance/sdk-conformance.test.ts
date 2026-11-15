@@ -7,6 +7,8 @@ import {
   sign as octokitSign,
   verify as octokitVerify,
 } from "@octokit/webhooks-methods";
+import fc from "fast-check";
+import { WebhookSignatureValidator } from "mercadopago";
 import Stripe from "stripe";
 import { Webhook as SvixWebhook } from "svix";
 import twilio from "twilio";
@@ -228,6 +230,105 @@ describe("Twilio SDK (twilio)", () => {
     expect(result.valid).toBe(false);
     expect(twilio.validateRequest(authToken, signature, url, changed)).toBe(
       false,
+    );
+  });
+});
+
+describe("Mercado Pago SDK (mercadopago)", () => {
+  /** The SDK's verdict, given what a framework hands it (decoded query value). */
+  function sdkAccepts(hook: {
+    url: string;
+    headers: Record<string, string>;
+    secret: string;
+  }): boolean {
+    try {
+      WebhookSignatureValidator.validate({
+        xSignature: hook.headers["x-signature"],
+        xRequestId: hook.headers["x-request-id"],
+        dataId: new URL(hook.url, "http://localhost").searchParams.get(
+          "data.id",
+        ),
+        secret: hook.secret,
+        toleranceSeconds: 300,
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function verihookAccepts(hook: {
+    url: string;
+    headers: Record<string, string>;
+    body: string;
+    secret: string;
+  }): Promise<boolean> {
+    const result = await verifyWebhook(
+      "mercadopago",
+      { headers: hook.headers, body: hook.body, url: hook.url },
+      hook.secret,
+    );
+    return result.valid;
+  }
+
+  it("WebhookSignatureValidator accepts a verihook-signed webhook", async () => {
+    const hook = await signWebhook("mercadopago", {
+      secret: "mp_conformance_secret",
+      payload: { type: "payment", data: { id: "ORD01ABC" } },
+    });
+    expect(sdkAccepts({ ...hook, secret: "mp_conformance_secret" })).toBe(true);
+    expect(await verihookAccepts(hook)).toBe(true);
+  });
+
+  it("both give the same verdict on random and tampered deliveries", async () => {
+    const id = fc.stringMatching(/^[A-Za-z0-9_-]{1,24}$/);
+    await fc.assert(
+      fc.asyncProperty(
+        id,
+        fc.option(fc.uuid(), { nil: undefined }),
+        fc.string({ minLength: 1, maxLength: 24 }),
+        fc.constantFrom(
+          "none",
+          "data.id",
+          "data.id case",
+          "request-id",
+          "drop request-id",
+          "secret",
+          "body",
+        ),
+        async (dataId, requestId, secret, tamper) => {
+          const hook = await signWebhook("mercadopago", {
+            secret,
+            payload: { type: "payment", data: { id: dataId } },
+            ...(requestId ? { webhookId: requestId } : {}),
+          });
+          const headers = { ...hook.headers };
+          let url = hook.url;
+          let body = hook.body;
+          let verifySecret = secret;
+          const swapId = (next: string) => {
+            const u = new URL(url);
+            u.searchParams.set("data.id", next);
+            url = u.toString();
+          };
+          if (tamper === "data.id") swapId(`${dataId}x`);
+          if (tamper === "data.id case" && /[a-z]/i.test(dataId)) {
+            swapId(
+              dataId === dataId.toLowerCase()
+                ? dataId.toUpperCase()
+                : dataId.toLowerCase(),
+            );
+          }
+          if (tamper === "request-id") headers["x-request-id"] = "changed";
+          if (tamper === "drop request-id") delete headers["x-request-id"];
+          if (tamper === "secret") verifySecret = `${secret}x`;
+          if (tamper === "body") body = JSON.stringify({ forged: true });
+
+          const changed = { url, headers, body, secret: verifySecret };
+          expect(await verihookAccepts(changed)).toBe(sdkAccepts(changed));
+        },
+      ),
+      { numRuns: 200 },
     );
   });
 });

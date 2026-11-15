@@ -23,6 +23,7 @@ import { standardWebhooksVerifier } from "./standard-webhooks.js";
 import { cashfreeVerifier } from "./cashfree.js";
 import { phonepeVerifier } from "./phonepe.js";
 import { mollieVerifier } from "./mollie.js";
+import { mercadopagoVerifier } from "./mercadopago.js";
 import { adyenVerifier } from "./adyen.js";
 import { checkoutVerifier } from "./checkout.js";
 import { authorizenetVerifier } from "./authorizenet.js";
@@ -72,6 +73,7 @@ export const providers: Record<string, ProviderVerifier> = {
   cashfree: cashfreeVerifier,
   phonepe: phonepeVerifier,
   mollie: mollieVerifier,
+  mercadopago: mercadopagoVerifier,
   adyen: adyenVerifier,
   checkout: checkoutVerifier,
   authorizenet: authorizenetVerifier,
@@ -142,6 +144,7 @@ export {
   cashfreeVerifier,
   phonepeVerifier,
   mollieVerifier,
+  mercadopagoVerifier,
   adyenVerifier,
   checkoutVerifier,
   authorizenetVerifier,

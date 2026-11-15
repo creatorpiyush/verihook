@@ -9,6 +9,10 @@ import {
 } from "../core/crypto.js";
 import { adyenSigningString } from "../providers/adyen.js";
 import { hubspotV3Uri } from "../providers/hubspot.js";
+import {
+  mercadoPagoDataId,
+  mercadoPagoManifest,
+} from "../providers/mercadopago.js";
 import { ProviderName, VerifyWebhookOptions } from "../core/types.js";
 import {
   base64ToBytes,
@@ -50,7 +54,8 @@ export interface SignWebhookOptions {
 
   /**
    * Message ID: `svix-id` for Svix-based providers, `webhook-id` for GitLab signing
-   * tokens, `twitch-eventsub-message-id` for Twitch. @default random
+   * tokens, `twitch-eventsub-message-id` for Twitch, `x-request-id` for Mercado
+   * Pago. @default random
    *
    * PayPal: the webhook ID that is signed. @default "WH-TEST"
    */
@@ -130,6 +135,7 @@ export const SIGNABLE_PROVIDERS: ReadonlySet<string> = new Set([
   "cashfree",
   "phonepe",
   "mollie",
+  "mercadopago",
   "adyen",
   "checkout",
   "authorizenet",
@@ -572,6 +578,42 @@ export async function signWebhook(
       secret = requireSecret(name, secret);
       const hmac = await computeHmacSha256(secret, body);
       headers["x-mollie-signature"] = `sha256=${bytesToHex(hmac)}`;
+      break;
+    }
+
+    case "mercadopago": {
+      secret = requireSecret(name, secret);
+      // data.id travels (signed) in the query string; the body isn't signed.
+      let parsed: { data?: { id?: unknown }; id?: unknown; type?: unknown } =
+        {};
+      try {
+        parsed = JSON.parse(body) ?? {};
+      } catch {
+        // not JSON: data.id falls back to a random ID
+      }
+      const target = new URL(url, "http://localhost");
+      if (!target.searchParams.has("data.id")) {
+        const id = parsed.data?.id ?? parsed.id;
+        target.searchParams.set(
+          "data.id",
+          typeof id === "string" || typeof id === "number"
+            ? String(id)
+            : randomId(""),
+        );
+      }
+      if (!target.searchParams.has("type") && typeof parsed.type === "string") {
+        target.searchParams.set("type", parsed.type);
+      }
+      url = url.startsWith("/")
+        ? target.pathname + target.search
+        : target.toString();
+      const requestId = options.webhookId ?? randomId("");
+      const hmac = await computeHmacSha256(
+        secret,
+        mercadoPagoManifest(mercadoPagoDataId(url), requestId, `${timestamp}`),
+      );
+      headers["x-signature"] = `ts=${timestamp},v1=${bytesToHex(hmac)}`;
+      headers["x-request-id"] = requestId;
       break;
     }
 

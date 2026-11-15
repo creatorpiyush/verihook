@@ -6,6 +6,7 @@ import {
   MemoryDedupeStoreOptions,
   NormalizedWebhookRequest,
   ProviderName,
+  ProviderVerifier,
   VerificationResult,
   VerifyWebhookOptions,
 } from "./types.js";
@@ -168,11 +169,27 @@ const SIGNED_ID_HEADERS: Partial<Record<ProviderName, readonly string[]>> = {
  * item fields, or else a SHA-256 digest of the body. Unsigned headers (e.g.
  * `x-github-delivery`) are never used, because a client could change them to slip
  * a replayed webhook past the store.
+ *
+ * Pass the provider's `verifier` so its `dedupeId` hook applies (Mercado Pago,
+ * custom providers); `verifyWebhook` always does.
  */
 export async function extractEventId(
   provider: ProviderName,
   req: NormalizedWebhookRequest,
+  verifier?: Pick<ProviderVerifier, "dedupeId">,
 ): Promise<string> {
+  // 0. The provider's own signed ID
+  const fromProvider = verifier?.dedupeId?.(req);
+  if (fromProvider) return fromProvider;
+
+  // Mercado Pago doesn't sign its body, so the rules below would key on
+  // unsigned data. Only its verifier's dedupeId knows the signed ID.
+  if (provider === "mercadopago") {
+    throw new TypeError(
+      '[verihook] extractEventId("mercadopago") needs the verifier: extractEventId("mercadopago", req, providers.mercadopago)',
+    );
+  }
+
   // 1. Signed ID headers for this provider
   for (const name of SIGNED_ID_HEADERS[provider] ?? []) {
     const value = req.headers[name];

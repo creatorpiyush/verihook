@@ -514,6 +514,20 @@ function simulationSample(
           createdAt: new Date(now).toISOString(),
         },
       };
+    case "mercadopago":
+      return {
+        secret: "mercadopago_secret_signature_123",
+        payload: {
+          id: now,
+          action: eventType || "payment.created",
+          type: "payment",
+          api_version: "v1",
+          live_mode: false,
+          date_created: new Date(now).toISOString(),
+          user_id: "123456789",
+          data: { id: String(now) },
+        },
+      };
     case "adyen":
       return {
         // Adyen HMAC keys are hex; this placeholder is not a real key.
@@ -771,7 +785,7 @@ Commands:
 
 Supported Providers:
   stripe, github, shopify, slack, twilio, svix, resend, clerk, meta, whatsapp, discord, twitter, x, paypal, lemonsqueezy, paddle, pagerduty, webflow, workos, linear, razorpay, square, zoom,
-  cashfree, phonepe, mollie, adyen, checkout, authorizenet, recurly,
+  cashfree, phonepe, mollie, mercadopago, adyen, checkout, authorizenet, recurly,
   gitlab, bitbucket, vercel, sentry, twitch, telegram, postmark, sendgrid, mailgun,
   hubspot, intercom, calendly, typeform, standard-webhooks
 
