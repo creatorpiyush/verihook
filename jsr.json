@@ -1,6 +1,6 @@
 {
   "name": "@verihook/verihook",
-  "version": "1.21.2",
+  "version": "1.22.0",
   "license": "MIT",
   "exports": {
     ".": "./src/index.ts",

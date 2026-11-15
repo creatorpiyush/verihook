@@ -203,6 +203,11 @@ Expand the CLI toolchain into a live local developer relay proxy:
 - **Mailgun**: `{ strict: true }` requires a dedupe store, since the event data isn't signed.
 - **Generic**: an unknown `algorithm` or `encoding` fails verification instead of matching an empty signature.
 
+## 21. Crash-Safe Dedupe & Mercado Pago (v1.22.0) — ✅ Completed
+
+- **Two-phase dedupe in the adapters**: an event is claimed for 60 s (Lambda: the invocation's remaining time) and committed when the handler succeeds, so a process that dies mid-handler no longer loses the event. A retry during processing gets `503 EVENT_IN_PROGRESS`. Each claim carries a token, so a slow delivery can't remove a retry's claim.
+- **Mercado Pago** (`mercadopago`, LATAM): verified like the official SDK and conformance-tested against it. The body isn't signed, so the dedupe key comes from signed data only.
+
 ## Future Plans: More Regional Payment Providers 🗓️
 
 Support for these providers is planned for a future release:
@@ -212,7 +217,7 @@ Support for these providers is planned for a future release:
 | Africa | Paystack, Flutterwave |
 | SE Asia | Xendit, Midtrans |
 
-Mercado Pago (LATAM) shipped in the next release after v1.21.2 ([#60](https://github.com/creatorpiyush/verihook/issues/60)).
+Mercado Pago (LATAM) shipped in v1.22.0 ([#60](https://github.com/creatorpiyush/verihook/issues/60)).
 
 Each will ship like the v1.12.0 providers: a `verify*` shortcut, a typed event, `signWebhook()` / `npx verihook simulate` support and known-good test vectors. Need one sooner? Open a [provider request](https://github.com/creatorpiyush/verihook/issues/new/choose) or contribute it (see [CONTRIBUTING.md](./CONTRIBUTING.md)).
 

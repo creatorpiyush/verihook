@@ -10,11 +10,12 @@ We actively maintain and provide security patches for the following versions of 
 
 | Version | Supported | Security Notes |
 | :--- | :--- | :--- |
-| `1.21.x` | :white_check_mark: | Current release family. Actively maintained. Adds `verihook/send` (outbound signing, SSRF-guarded) and the `standard-webhooks` provider. Upgrade to `1.21.1` or later: earlier versions let a captured Adyen standard notification with an unsigned field changed past a `dedupeStore`, and accepted any body for the `generic` provider when `algorithm` or `encoding` had an unknown value. Mailgun users should use a `dedupeStore` (required by `{ strict: true }` since `1.21.1`): Mailgun doesn't sign the event data. |
-| `1.16.x` – `1.20.x` | :x: | Superseded by `1.21.x` (drop-in upgrade). `1.20.0` added strict mode: HubSpot users should enable `{ strict: true }` to close a v3→v1 signature downgrade that bypasses the replay window. `1.19.0` signs PayPal in `verihook/testing`, `1.18.0` added `RedisDedupeStore`, `1.17.0` secret rotation. `1.16.0` added replay windows for PayPal and Linear, a body-size limit in `verifyWebhook`, and a 24-hour default dedupe TTL. |
-| `1.8.x` – `1.15.x` | :x: | Superseded by `1.21.x` (no API changes; see the 1.16.0 changelog for new defaults). Versions before `1.14.1` are affected by a `dedupeStore` replay bypass via unsigned ID headers. |
-| `1.7.x` | :x: | Affected by PayPal signature forgery via HMAC fallback. Upgrade to latest `1.21.x`. |
-| `< 1.7.0` | :x: | Legacy release (also affected by the PayPal issue). Upgrade to latest `1.21.x`. |
+| `1.22.x` | :white_check_mark: | Current release family. Actively maintained. Adds Mercado Pago (its body isn't signed: fetch the resource with the query's `data.id`) and crash-safe dedupe: the adapters claim an event for 60 s and commit it when the handler succeeds, so an event whose process died mid-handler is processed on the provider's retry. Commit and release only act on the delivery's own claim. Mailgun users should use a `dedupeStore` (required by `{ strict: true }` since `1.21.1`): Mailgun doesn't sign the event data. |
+| `1.21.x` | :x: | Superseded by `1.22.x`. With a `dedupeStore`, a process that dies mid-handler leaves the event recorded as processed, so the provider's retry is acked as a duplicate and the event is lost. `1.21.0` added `verihook/send` and the `standard-webhooks` provider. Versions before `1.21.1` let a captured Adyen standard notification with an unsigned field changed past a `dedupeStore`, and accepted any body for the `generic` provider when `algorithm` or `encoding` had an unknown value. |
+| `1.16.x` – `1.20.x` | :x: | Superseded by `1.22.x` (drop-in upgrade; see the 1.22.0 changelog for the adapters' new `503` reply). `1.20.0` added strict mode: HubSpot users should enable `{ strict: true }` to close a v3→v1 signature downgrade that bypasses the replay window. `1.19.0` signs PayPal in `verihook/testing`, `1.18.0` added `RedisDedupeStore`, `1.17.0` secret rotation. `1.16.0` added replay windows for PayPal and Linear, a body-size limit in `verifyWebhook`, and a 24-hour default dedupe TTL. |
+| `1.8.x` – `1.15.x` | :x: | Superseded by `1.22.x` (no API changes; see the 1.16.0 changelog for new defaults). Versions before `1.14.1` are affected by a `dedupeStore` replay bypass via unsigned ID headers. |
+| `1.7.x` | :x: | Affected by PayPal signature forgery via HMAC fallback. Upgrade to latest `1.22.x`. |
+| `< 1.7.0` | :x: | Legacy release (also affected by the PayPal issue). Upgrade to latest `1.22.x`. |
 
 ---
 
