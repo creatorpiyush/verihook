@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  extractEventId,
   MemoryDedupeStore,
+  providers,
   verifyMercadoPago,
   verifyWebhook,
 } from "../src/index.js";
@@ -384,6 +386,29 @@ describe("Mercado Pago", () => {
         { now: NOW, dedupeStore },
       );
       expect(replay.code).toBe("DUPLICATE_EVENT");
+    });
+  });
+
+  describe("extractEventId called directly", () => {
+    it("uses the verifier's signed ID when given the verifier", async () => {
+      const req = await signed({ dataId: "1", requestId: "req-9" });
+      const normalized = {
+        headers: req.headers,
+        rawBody: JSON.stringify({ id: "unsigned" }),
+      };
+      expect(
+        await extractEventId("mercadopago", normalized, providers.mercadopago),
+      ).toBe("req-9");
+    });
+
+    it("refuses without the verifier instead of keying on the unsigned body", async () => {
+      const req = await signed({ dataId: "1", requestId: "req-9" });
+      await expect(
+        extractEventId("mercadopago", {
+          headers: req.headers,
+          rawBody: JSON.stringify({ id: "unsigned" }),
+        }),
+      ).rejects.toThrow("needs the verifier");
     });
   });
 

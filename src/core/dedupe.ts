@@ -182,6 +182,14 @@ export async function extractEventId(
   const fromProvider = verifier?.dedupeId?.(req);
   if (fromProvider) return fromProvider;
 
+  // Mercado Pago doesn't sign its body, so the rules below would key on
+  // unsigned data. Only its verifier's dedupeId knows the signed ID.
+  if (provider === "mercadopago") {
+    throw new TypeError(
+      '[verihook] extractEventId("mercadopago") needs the verifier: extractEventId("mercadopago", req, providers.mercadopago)',
+    );
+  }
+
   // 1. Signed ID headers for this provider
   for (const name of SIGNED_ID_HEADERS[provider] ?? []) {
     const value = req.headers[name];
